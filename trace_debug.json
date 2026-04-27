@@ -1,0 +1,52 @@
+[
+  {
+    "university": "慶應義塾大学",
+    "faculty": "商学部",
+    "department": "商学科",
+    "field_name": "application_period",
+    "extracted_value": "2025年10月15日（水）10：00～10月29日（水）16：00／2025年10月15日（水）～10月30日（木）",
+    "source_page": 1,
+    "source_snippet": "2025年10月15日 水 速達・簡易書留 ~10月30日 木 締切日",
+    "risk_reason": "partial: date tokens matched; page selected by highest overlap"
+  },
+  {
+    "university": "慶應義塾大学",
+    "faculty": "環境情報学部",
+    "department": "環境情報学科",
+    "field_name": "application_period",
+    "extracted_value": "2025年10月15日（水）10：00～10月29日（水）16：00／2025年10月15日（水）～10月30日（木）",
+    "source_page": 1,
+    "source_snippet": "2025年10月15日 水 速達・簡易書留 ~10月30日 木 締切日",
+    "risk_reason": "partial: date tokens matched; page selected by highest overlap"
+  },
+  {
+    "university": "慶應義塾大学",
+    "faculty": "総合政策学部",
+    "department": "総合政策学科",
+    "field_name": "application_period",
+    "extracted_value": "2025年10月15日（水）10：00～10月29日（水）16：00／2025年10月15日（水）～10月30日（木）",
+    "source_page": 1,
+    "source_snippet": "2025年10月15日 水 速達・簡易書留 ~10月30日 木 締切日",
+    "risk_reason": "partial: date tokens matched; page selected by highest overlap"
+  },
+  {
+    "university": "慶應義塾大学",
+    "faculty": "法学部",
+    "department": "法律学科 / 政治学科",
+    "field_name": "application_period",
+    "extracted_value": "2025年10月15日（水）10：00～10月29日（水）16：00／2025年10月15日（水）～10月30日（木）",
+    "source_page": 1,
+    "source_snippet": "2025年10月15日 水 速達・簡易書留 ~10月30日 木 締切日",
+    "risk_reason": "partial: date tokens matched; page selected by highest overlap"
+  },
+  {
+    "university": "慶應義塾大学",
+    "faculty": "経済学部",
+    "department": "経済学科",
+    "field_name": "application_period",
+    "extracted_value": "2025年10月15日（水）10：00～10月29日（水）16：00／2025年10月15日（水）～10月30日（木）",
+    "source_page": 1,
+    "source_snippet": "2025年10月15日 水 速達・簡易書留 ~10月30日 木 締切日",
+    "risk_reason": "partial: date tokens matched; page selected by highest overlap"
+  }
+]

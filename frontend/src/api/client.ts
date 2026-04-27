@@ -1,0 +1,101 @@
+import axios from "axios";
+import type {
+  ConfirmResponse,
+  ConfirmedRecord,
+  ExtractResponse,
+  StagingRecord,
+  StatsResponse,
+  UploadResponse,
+} from "../types";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+const client = axios.create({
+  baseURL: BASE_URL,
+  timeout: 120000,
+});
+
+function toErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (detail) return JSON.stringify(detail);
+    return error.message;
+  }
+  return String(error);
+}
+
+export async function uploadPdf(file: File): Promise<UploadResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await client.post<UploadResponse>("/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function extractPdf(payload: {
+  file_name: string;
+  university: string;
+  year: string;
+  url?: string;
+}): Promise<ExtractResponse> {
+  const { data } = await client.post<ExtractResponse>("/extract", payload);
+  return data;
+}
+
+export async function getStaging(docId: number): Promise<StagingRecord[]> {
+  const { data } = await client.get<StagingRecord[]>(`/staging/${docId}`);
+  return data;
+}
+
+export async function patchStaging(stagingId: number, patch: Record<string, unknown>): Promise<StagingRecord> {
+  const { data } = await client.patch<StagingRecord>(`/staging/${stagingId}`, { data: patch });
+  return data;
+}
+
+export async function deleteStaging(stagingId: number): Promise<{ status: string; id: number }> {
+  const { data } = await client.delete<{ status: string; id: number }>(`/staging/${stagingId}`);
+  return data;
+}
+
+export async function createManualStaging(payload: {
+  document_id: number;
+  data: Record<string, unknown>;
+}): Promise<{ id: number; status: string }> {
+  const { data } = await client.post<{ id: number; status: string }>("/staging/manual", payload);
+  return data;
+}
+
+export async function confirmDoc(docId: number): Promise<ConfirmResponse> {
+  const { data } = await client.post<ConfirmResponse>(`/confirm/${docId}`);
+  return data;
+}
+
+export async function getRecords(params?: {
+  university?: string;
+  year?: number;
+  faculty?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ConfirmedRecord[]> {
+  const { data } = await client.get<ConfirmedRecord[]>("/records", { params });
+  return data;
+}
+
+export async function getStats(): Promise<StatsResponse> {
+  const { data } = await client.get<StatsResponse>("/stats");
+  return data;
+}
+
+export function downloadExcel(params?: { university?: string; year?: number; faculty?: string }): void {
+  const search = new URLSearchParams();
+  if (params?.university) search.set("university", params.university);
+  if (params?.year) search.set("year", String(params.year));
+  if (params?.faculty) search.set("faculty", params.faculty);
+  const qs = search.toString();
+  const url = `${BASE_URL}/export/excel${qs ? `?${qs}` : ""}`;
+  window.open(url, "_blank");
+}
+
+export { toErrorMessage };

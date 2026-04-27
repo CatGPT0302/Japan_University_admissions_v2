@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>留学生招生信息抽取系统 Demo</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --line: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --blue: #2563eb;
+      --green: #059669;
+      --amber: #d97706;
+      --dark: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .layout { display: flex; min-height: 100vh; }
+    aside {
+      width: 230px;
+      background: rgba(255,255,255,.96);
+      border-right: 1px solid var(--line);
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand {
+      border: 1px solid var(--line);
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+    .brand small { display:block; color: var(--muted); font-weight: 700; font-size: 11px; letter-spacing: .08em; }
+    .brand b { display:block; margin-top: 4px; font-size: 17px; }
+    nav button {
+      width: 100%; border: 0; background: transparent; text-align: left;
+      padding: 10px 12px; border-radius: 10px; color: #4b5563; margin-bottom: 6px;
+      font-size: 13px;
+    }
+    nav button.active { background: var(--dark); color: white; font-weight: 700; }
+    main { flex: 1; padding: 32px; }
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; }
+    h2 { margin: 0 0 10px; font-size: 20px; }
+    p { color: var(--muted); line-height: 1.7; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid #bbf7d0; background: #ecfdf5; color: #047857;
+      padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .grid { display: grid; gap: 16px; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+      padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .metric .label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .metric .value { font-size: 30px; font-weight: 800; margin-top: 10px; }
+    .section { margin-top: 18px; }
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .step { background: white; border: 1px solid var(--line); border-radius: 16px; padding: 16px; min-height: 122px; }
+    .step .num { color: var(--blue); font-weight: 900; font-size: 13px; }
+    .step b { display:block; margin-top: 8px; }
+    .step span { display:block; margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .mock {
+      background: white; border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+    }
+    .mock-head { background: #f9fafb; border-bottom: 1px solid var(--line); padding: 12px 16px; display:flex; justify-content:space-between; align-items:center; }
+    .mock-head b { font-size: 14px; }
+    .mock-body { padding: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+    th { text-align:left; background:#f9fafb; color:#6b7280; font-size:12px; padding:10px; border-bottom: 1px solid var(--line); }
+    td { padding: 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+    .pill { display:inline-block; border-radius:999px; padding:3px 8px; font-size:11px; font-weight:700; }
+    .pill.ok { background:#ecfdf5; color:#047857; border:1px solid #bbf7d0; }
+    .pill.warn { background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
+    .btn { border: 1px solid var(--line); background:white; border-radius:10px; padding:9px 12px; font-size:13px; font-weight:700; }
+    .btn.primary { background: var(--blue); color:white; border-color: var(--blue); }
+    .btn.dark { background: var(--dark); color:white; border-color: var(--dark); }
+    .review-card { display:grid; grid-template-columns: 1.1fr 1fr; gap:16px; }
+    .field { margin-bottom: 12px; }
+    .field label { display:block; color:var(--muted); font-size:12px; margin-bottom:5px; }
+    .field input, .field textarea {
+      width:100%; border:1px solid var(--line); border-radius:10px; padding:10px; font-size:13px; font-family: inherit;
+    }
+    .evidence {
+      background:#f9fafb; border:1px solid var(--line); border-radius:14px; padding:14px; color:#374151; line-height:1.7; font-size:13px;
+    }
+    .note { color:#6b7280; font-size:13px; line-height:1.7; }
+    .two { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .footer { margin-top:18px; color:#9ca3af; font-size:12px; }
+    @media (max-width: 1000px) {
+      aside { display:none; }
+      main { padding:18px; }
+      .grid-3, .grid-4, .flow, .review-card, .two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">
+        <small>内部工具 DEMO</small>
+        <b>留学生招生系统</b>
+      </div>
+      <nav>
+        <button class="active">概览</button>
+        <button>上传PDF</button>
+        <button>人工复查</button>
+        <button>确认入库</button>
+        <button>已确认记录</button>
+      </nav>
+    </aside>
+    <main>
+      <section class="hero">
+        <div class="badge">演示版本 · Demo Ready</div>
+        <h1>日本大学留学生招生信息抽取系统</h1>
+        <p>面向募集要项 PDF 的内部录入后台：上传 PDF 后，系统自动整理招生字段；工作人员逐条复查、确认后入库，最后导出 Excel 或进入数据库。</p>
+      </section>
+
+      <section class="section grid grid-4">
+        <div class="card metric"><div class="label">当前样本高校</div><div class="value">1+</div></div>
+        <div class="card metric"><div class="label">已确认记录</div><div class="value">28</div></div>
+        <div class="card metric"><div class="label">待复核记录</div><div class="value">0</div></div>
+        <div class="card metric"><div class="label">平均置信度</div><div class="value">0.92</div></div>
+      </section>
+
+      <section class="section card">
+        <h2>核心流程</h2>
+        <p>这个 demo 不是给技术人员看模型细节，而是给业务方看：人工整理募集要项的流程如何被系统化。</p>
+        <div class="flow">
+          <div class="step"><div class="num">01</div><b>上传募集要项</b><span>选择 PDF，填写大学名和年份。</span></div>
+          <div class="step"><div class="num">02</div><b>自动抽取字段</b><span>系统提取学部、学科、出愿期限、英语要求等。</span></div>
+          <div class="step"><div class="num">03</div><b>人工复查</b><span>工作人员一条一条核对，修改或标记问题。</span></div>
+          <div class="step"><div class="num">04</div><b>确认入库</b><span>复查完成后写入正式招生数据库。</span></div>
+          <div class="step"><div class="num">05</div><b>导出/检索</b><span>按大学、学部、年度筛选并导出 Excel。</span></div>
+        </div>
+      </section>
+
+      <section class="section two">
+        <div class="mock">
+          <div class="mock-head"><b>上传 PDF</b><button class="btn primary">开始抽取</button></div>
+          <div class="mock-body">
+            <div class="field"><label>PDF 文件</label><input value="keio.pdf" readonly></div>
+            <div class="field"><label>大学</label><input value="慶應義塾大学" readonly></div>
+            <div class="field"><label>年份</label><input value="2026" readonly></div>
+            <p class="note">抽取完成后进入人工复查页面。</p>
+          </div>
+        </div>
+
+        <div class="mock">
+          <div class="mock-head"><b>人工复查</b><span class="pill warn">当前第 3 / 28 条</span></div>
+          <div class="mock-body review-card">
+            <div>
+              <div class="field"><label>学部</label><input value="経済学部" readonly></div>
+              <div class="field"><label>学科</label><input value="経済学科" readonly></div>
+              <div class="field"><label>英语要求</label><input value="TOEFL iBT 等外部英语资格" readonly></div>
+              <button class="btn">保存修改</button>
+              <button class="btn dark">确认本条</button>
+            </div>
+            <div>
+              <label class="note">原文证据 / Source Evidence</label>
+              <div class="evidence">募集要項中关于出願資格、英語外部試験および選考方法的相关段落将显示在这里，方便人工核对。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section mock">
+        <div class="mock-head"><b>已确认记录</b><button class="btn primary">导出 Excel</button></div>
+        <div class="mock-body">
+          <table>
+            <thead><tr><th>大学</th><th>学部</th><th>学科</th><th>英语要求</th><th>选拔方式</th><th>年度</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>慶應義塾大学</td><td>経済学部</td><td>経済学科</td><td>TOEFL iBT 等</td><td>书类 + 面试</td><td>2026</td><td><span class="pill ok">已确认</span></td></tr>
+              <tr><td>慶應義塾大学</td><td>商学部</td><td>商学科</td><td>外部英语资格</td><td>书类审查</td><td>2026</td><td><span class="pill ok">已确认</span></td></tr>
+              <tr><td>慶應義塾大学</td><td>文学部</td><td>人文社会学科</td><td>按募集要项确认</td><td>综合选考</td><td>2026</td><td><span class="pill warn">待复核</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section card">
+        <h2>当前结论</h2>
+        <p><b>已经验证：</b>PDF → 自动抽取 → 人工复查 → 确认入库 → 导出 的后台流程成立。</p>
+        <p><b>下一步：</b>扩大样本前，优先优化“原文证据展示”和人工复查体验，让录入人员更快确认每个字段是否可信。</p>
+      </section>
+      <div class="footer">Demo page for internal explanation only. No API key, no backend dependency.</div>
+    </main>
+  </div>
+</body>
+</html>
