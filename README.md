@@ -12,6 +12,16 @@ Any organization may only use this tool under explicit permission from the autho
 
 Source code, deployment credentials, database schema, prompts, extraction workflow, and review logic remain the author's intellectual assets unless otherwise agreed in writing.
 
+## Data & Ownership Notice
+
+The repository does not include proprietary datasets, internal company documents, or third-party confidential materials.
+
+Any sample data included in this repository is for demonstration only and should be replaceable by users' own public-source data.
+
+The codebase, extraction workflow, review workflow, confidence/evidence/risk logic, UI design, and product structure are maintained as the author's personal work.
+
+Third-party datasets or organization-specific templates, if any, must not be committed to this repository.
+
 ## Project Positioning
 
 This project is not a pure OCR or PDF vision engine project.
@@ -34,7 +44,7 @@ The goal is to use LLM- and agent-assisted reading to extract key admission info
 - The cloud demo and review workflow are available
 - The technical direction is validated
 - The current bottleneck is extraction quality and source-PDF stability, not UI availability
-- The system is suitable for controlled demos and internal validation, but it is not a general-purpose production service
+- The system is suitable for controlled demos and validation, but it is not a general-purpose production service
 
 ## Repository Components
 
@@ -43,6 +53,14 @@ The goal is to use LLM- and agent-assisted reading to extract key admission info
 - Extraction entry: `scripts/extract_direct.py`
 - React frontend: `frontend/`
 - Runtime database is created locally at runtime and is not part of the default deliverable scope
+
+## Schema Note
+
+The admissions_v2 data structure is designed around public admissions-PDF information and the system's own review workflow needs.
+
+The working schema includes standardized operational fields such as `field_confidence`, `field_evidence`, `risk_level`, `manual_modified_fields`, review-status flags, and source-document linkage.
+
+It should not be described as an organization-specific template.
 
 ## Quick Start
 

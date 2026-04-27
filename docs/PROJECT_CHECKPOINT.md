@@ -14,7 +14,7 @@ This branch is a demo/handoff checkpoint. It contains enough project context for
 - docs/leader_demo.md
 - trace_debug.json
 - FastAPI backend
-- Streamlit internal tool
+- Streamlit review tool
 - React demo frontend
 
 ## What Has Been Validated

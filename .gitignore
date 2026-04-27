@@ -27,6 +27,9 @@ input_pdfs/
 *.zip
 *.sqlite
 *.db
+private_data/
+data/university_index.csv
+data/*index*.csv
 .claude/
 *_raw_log.txt
 *_raw_response.json.txt
