@@ -1,370 +1,789 @@
 """
-admissions_v2 database — PostgreSQL (production) / SQLite (local dev).
-Auto-switches based on DATABASE_URL environment variable.
+admissions_v2 database layer.
+Supports PostgreSQL in production and SQLite in local development.
 """
 from __future__ import annotations
-import json, os, sqlite3
+
+import json
+import os
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from scripts.validator import normalize_manual_modified_fields, validate
+
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+JSON_LIST_FIELDS = {"warnings_json", "manual_modified_fields"}
+JSON_DICT_FIELDS = {"field_confidence", "field_evidence", "raw_llm_json"}
+STAGING_JSON_FIELDS = JSON_LIST_FIELDS | JSON_DICT_FIELDS
+
 
 def _pg() -> bool:
     return bool(DATABASE_URL and DATABASE_URL.startswith("postgres"))
 
+
 def _ph() -> str:
     return "%s" if _pg() else "?"
 
+
 def _phn(n: int) -> str:
-    p = _ph()
-    return ",".join(p for _ in range(n))
+    return ",".join(_ph() for _ in range(n))
+
 
 def _now() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
+
 def get_conn():
     if _pg():
-        import psycopg2, psycopg2.extras
+        import psycopg2
+        import psycopg2.extras
+
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
-    DB = Path(__file__).resolve().parent.parent / "database" / "admissions_v2.db"
-    DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB))
+
+    db_path = Path(__file__).resolve().parent.parent / "database" / "admissions_v2.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
-def _fetchall(conn, sql, params=()):
-    if _pg():
-        cur = conn.cursor(); cur.execute(sql, params)
-        return [dict(r) for r in cur.fetchall()]
-    return [dict(r) for r in conn.execute(sql, params).fetchall()]
 
-def _fetchone(conn, sql, params=()):
+def _fetchall(conn, sql: str, params=()):
     if _pg():
-        cur = conn.cursor(); cur.execute(sql, params)
-        r = cur.fetchone(); return dict(r) if r else None
-    r = conn.execute(sql, params).fetchone(); return dict(r) if r else None
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        return [dict(row) for row in cur.fetchall()]
+    return [dict(row) for row in conn.execute(sql, params).fetchall()]
 
-def _execute(conn, sql, params=()):
+
+def _fetchone(conn, sql: str, params=()):
     if _pg():
-        cur = conn.cursor(); cur.execute(sql, params); return cur
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        row = cur.fetchone()
+        return dict(row) if row else None
+    row = conn.execute(sql, params).fetchone()
+    return dict(row) if row else None
+
+
+def _execute(conn, sql: str, params=()):
+    if _pg():
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        return cur
     return conn.execute(sql, params)
+
 
 def _lastrowid(cur) -> int:
     if _pg():
-        r = cur.fetchone()
-        if r is None: return 0
-        v = list(r.values())[0] if hasattr(r, 'values') else r[0]
-        return int(v)
-    return cur.lastrowid
+        row = cur.fetchone()
+        if row is None:
+            return 0
+        value = list(row.values())[0] if hasattr(row, "values") else row[0]
+        return int(value)
+    return int(cur.lastrowid)
+
+
+def _encode_json_field(field: str, value: Any) -> Any:
+    if field in STAGING_JSON_FIELDS:
+        if field in JSON_LIST_FIELDS:
+            if isinstance(value, str):
+                return value
+            return json.dumps(list(value or []), ensure_ascii=False)
+        if field in JSON_DICT_FIELDS:
+            if isinstance(value, str):
+                return value
+            return json.dumps(value or {}, ensure_ascii=False)
+    return value
+
+
+def _decode_json_value(field: str, value: Any) -> Any:
+    if value in ("", None):
+        return [] if field in JSON_LIST_FIELDS else {}
+    if isinstance(value, (dict, list)):
+        return value
+    try:
+        decoded = json.loads(value)
+    except Exception:
+        return [] if field in JSON_LIST_FIELDS else {}
+    if field in JSON_LIST_FIELDS:
+        return decoded if isinstance(decoded, list) else []
+    return decoded if isinstance(decoded, dict) else {}
+
+
+def _decode_staging_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not row:
+        return row
+    decoded = dict(row)
+    for field in STAGING_JSON_FIELDS:
+        decoded[field] = _decode_json_value(field, decoded.get(field))
+    for flag in ("needs_review", "is_confirmed", "is_reviewed"):
+        if flag in decoded and decoded[flag] is not None:
+            decoded[flag] = int(decoded[flag])
+    if decoded.get("confidence") is not None:
+        decoded["confidence"] = float(decoded["confidence"] or 0)
+    return decoded
+
 
 _SCHEMA_PG = """
 CREATE TABLE IF NOT EXISTS source_documents (
-    id SERIAL PRIMARY KEY, university TEXT NOT NULL, pdf_url TEXT,
-    file_name TEXT NOT NULL, file_path TEXT, admission_year TEXT,
+    id SERIAL PRIMARY KEY,
+    university TEXT NOT NULL,
+    pdf_url TEXT,
+    file_name TEXT NOT NULL,
+    file_path TEXT,
+    admission_year TEXT,
     status TEXT DEFAULT 'uploaded',
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
-    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'));
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE TABLE IF NOT EXISTS document_pages (
-    id SERIAL PRIMARY KEY, document_id INTEGER NOT NULL REFERENCES source_documents(id),
-    page_number INTEGER NOT NULL, image_path TEXT, status TEXT DEFAULT 'pending',
+    id SERIAL PRIMARY KEY,
+    document_id INTEGER NOT NULL REFERENCES source_documents(id),
+    page_number INTEGER NOT NULL,
+    image_path TEXT,
+    status TEXT DEFAULT 'pending',
     raw_llm_json TEXT,
-    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'));
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE TABLE IF NOT EXISTS admission_records_staging (
-    id SERIAL PRIMARY KEY, document_id INTEGER NOT NULL REFERENCES source_documents(id),
-    page_number INTEGER, university TEXT, admission_year TEXT, admission_period TEXT,
-    faculty TEXT, department TEXT, application_period TEXT, deadline_rule TEXT,
-    eju_session TEXT, eju_japanese TEXT, eju_general TEXT, eju_math TEXT,
-    eju_physics TEXT, eju_chemistry TEXT, eju_biology TEXT,
-    english_requirement TEXT, screening_method TEXT, screening_schedule TEXT,
-    result_date TEXT, enrollment_period TEXT, prefecture TEXT, campus TEXT,
-    confidence REAL DEFAULT 0.0, needs_review INTEGER DEFAULT 1,
-    warnings_json TEXT DEFAULT '[]', is_confirmed INTEGER DEFAULT 0,
+    id SERIAL PRIMARY KEY,
+    document_id INTEGER NOT NULL REFERENCES source_documents(id),
+    page_number INTEGER,
+    university TEXT,
+    admission_year TEXT,
+    admission_period TEXT,
+    faculty TEXT,
+    department TEXT,
+    application_period TEXT,
+    deadline_rule TEXT,
+    eju_session TEXT,
+    eju_japanese TEXT,
+    eju_general TEXT,
+    eju_math TEXT,
+    eju_physics TEXT,
+    eju_chemistry TEXT,
+    eju_biology TEXT,
+    english_requirement TEXT,
+    screening_method TEXT,
+    screening_schedule TEXT,
+    result_date TEXT,
+    enrollment_period TEXT,
+    prefecture TEXT,
+    campus TEXT,
+    confidence REAL DEFAULT 0.0,
+    needs_review INTEGER DEFAULT 1,
+    warnings_json TEXT DEFAULT '[]',
+    is_confirmed INTEGER DEFAULT 0,
     raw_llm_json TEXT,
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
-    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'));
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE TABLE IF NOT EXISTS admission_records (
     id SERIAL PRIMARY KEY,
     source_staging_id INTEGER REFERENCES admission_records_staging(id),
     document_id INTEGER REFERENCES source_documents(id),
-    university TEXT, pdf_url TEXT, admission_year TEXT, admission_period TEXT,
-    faculty TEXT, department TEXT, application_period TEXT, deadline_rule TEXT,
-    eju_session TEXT, eju_japanese TEXT, eju_general TEXT, eju_math TEXT,
-    eju_physics TEXT, eju_chemistry TEXT, eju_biology TEXT,
-    english_requirement TEXT, screening_method TEXT, screening_schedule TEXT,
-    result_date TEXT, enrollment_period TEXT, prefecture TEXT, campus TEXT,
+    university TEXT,
+    pdf_url TEXT,
+    admission_year TEXT,
+    admission_period TEXT,
+    faculty TEXT,
+    department TEXT,
+    application_period TEXT,
+    deadline_rule TEXT,
+    eju_session TEXT,
+    eju_japanese TEXT,
+    eju_general TEXT,
+    eju_math TEXT,
+    eju_physics TEXT,
+    eju_chemistry TEXT,
+    eju_biology TEXT,
+    english_requirement TEXT,
+    screening_method TEXT,
+    screening_schedule TEXT,
+    result_date TEXT,
+    enrollment_period TEXT,
+    prefecture TEXT,
+    campus TEXT,
     confirmed_by TEXT DEFAULT 'human',
     confirmed_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
-    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'));
-CREATE INDEX IF NOT EXISTS idx_stg_doc  ON admission_records_staging(document_id);
-CREATE INDEX IF NOT EXISTS idx_stg_rev  ON admission_records_staging(needs_review);
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
+CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
+CREATE INDEX IF NOT EXISTS idx_stg_rev ON admission_records_staging(needs_review);
 CREATE INDEX IF NOT EXISTS idx_rec_univ ON admission_records(university);
-CREATE INDEX IF NOT EXISTS idx_rec_fac  ON admission_records(faculty);
+CREATE INDEX IF NOT EXISTS idx_rec_fac ON admission_records(faculty);
 """
 
 _SCHEMA_SQLITE = """
 CREATE TABLE IF NOT EXISTS source_documents (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, university TEXT NOT NULL, pdf_url TEXT,
-    file_name TEXT NOT NULL, file_path TEXT, admission_year TEXT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    university TEXT NOT NULL,
+    pdf_url TEXT,
+    file_name TEXT NOT NULL,
+    file_path TEXT,
+    admission_year TEXT,
     status TEXT DEFAULT 'uploaded',
     created_at TEXT DEFAULT (datetime('now','localtime')),
-    updated_at TEXT DEFAULT (datetime('now','localtime')));
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
 CREATE TABLE IF NOT EXISTS document_pages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     document_id INTEGER NOT NULL REFERENCES source_documents(id),
-    page_number INTEGER NOT NULL, image_path TEXT, status TEXT DEFAULT 'pending',
+    page_number INTEGER NOT NULL,
+    image_path TEXT,
+    status TEXT DEFAULT 'pending',
     raw_llm_json TEXT,
-    created_at TEXT DEFAULT (datetime('now','localtime')));
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
 CREATE TABLE IF NOT EXISTS admission_records_staging (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     document_id INTEGER NOT NULL REFERENCES source_documents(id),
-    page_number INTEGER, university TEXT, admission_year TEXT, admission_period TEXT,
-    faculty TEXT, department TEXT, application_period TEXT, deadline_rule TEXT,
-    eju_session TEXT, eju_japanese TEXT, eju_general TEXT, eju_math TEXT,
-    eju_physics TEXT, eju_chemistry TEXT, eju_biology TEXT,
-    english_requirement TEXT, screening_method TEXT, screening_schedule TEXT,
-    result_date TEXT, enrollment_period TEXT, prefecture TEXT, campus TEXT,
-    confidence REAL DEFAULT 0.0, needs_review INTEGER DEFAULT 1,
-    warnings_json TEXT DEFAULT '[]', is_confirmed INTEGER DEFAULT 0,
+    page_number INTEGER,
+    university TEXT,
+    admission_year TEXT,
+    admission_period TEXT,
+    faculty TEXT,
+    department TEXT,
+    application_period TEXT,
+    deadline_rule TEXT,
+    eju_session TEXT,
+    eju_japanese TEXT,
+    eju_general TEXT,
+    eju_math TEXT,
+    eju_physics TEXT,
+    eju_chemistry TEXT,
+    eju_biology TEXT,
+    english_requirement TEXT,
+    screening_method TEXT,
+    screening_schedule TEXT,
+    result_date TEXT,
+    enrollment_period TEXT,
+    prefecture TEXT,
+    campus TEXT,
+    confidence REAL DEFAULT 0.0,
+    needs_review INTEGER DEFAULT 1,
+    warnings_json TEXT DEFAULT '[]',
+    is_confirmed INTEGER DEFAULT 0,
     raw_llm_json TEXT,
     created_at TEXT DEFAULT (datetime('now','localtime')),
-    updated_at TEXT DEFAULT (datetime('now','localtime')));
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
 CREATE TABLE IF NOT EXISTS admission_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_staging_id INTEGER REFERENCES admission_records_staging(id),
     document_id INTEGER REFERENCES source_documents(id),
-    university TEXT, pdf_url TEXT, admission_year TEXT, admission_period TEXT,
-    faculty TEXT, department TEXT, application_period TEXT, deadline_rule TEXT,
-    eju_session TEXT, eju_japanese TEXT, eju_general TEXT, eju_math TEXT,
-    eju_physics TEXT, eju_chemistry TEXT, eju_biology TEXT,
-    english_requirement TEXT, screening_method TEXT, screening_schedule TEXT,
-    result_date TEXT, enrollment_period TEXT, prefecture TEXT, campus TEXT,
+    university TEXT,
+    pdf_url TEXT,
+    admission_year TEXT,
+    admission_period TEXT,
+    faculty TEXT,
+    department TEXT,
+    application_period TEXT,
+    deadline_rule TEXT,
+    eju_session TEXT,
+    eju_japanese TEXT,
+    eju_general TEXT,
+    eju_math TEXT,
+    eju_physics TEXT,
+    eju_chemistry TEXT,
+    eju_biology TEXT,
+    english_requirement TEXT,
+    screening_method TEXT,
+    screening_schedule TEXT,
+    result_date TEXT,
+    enrollment_period TEXT,
+    prefecture TEXT,
+    campus TEXT,
     confirmed_by TEXT DEFAULT 'human',
     confirmed_at TEXT DEFAULT (datetime('now','localtime')),
     created_at TEXT DEFAULT (datetime('now','localtime')),
-    updated_at TEXT DEFAULT (datetime('now','localtime')));
-CREATE INDEX IF NOT EXISTS idx_stg_doc  ON admission_records_staging(document_id);
-CREATE INDEX IF NOT EXISTS idx_stg_rev  ON admission_records_staging(needs_review);
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
+CREATE INDEX IF NOT EXISTS idx_stg_rev ON admission_records_staging(needs_review);
 CREATE INDEX IF NOT EXISTS idx_rec_univ ON admission_records(university);
-CREATE INDEX IF NOT EXISTS idx_rec_fac  ON admission_records(faculty);
+CREATE INDEX IF NOT EXISTS idx_rec_fac ON admission_records(faculty);
 """
+
+_STAGING_MIGRATION_COLUMNS = {
+    "field_confidence": "TEXT DEFAULT '{}'",
+    "field_evidence": "TEXT DEFAULT '{}'",
+    "risk_level": "TEXT DEFAULT 'medium'",
+    "manual_modified_fields": "TEXT DEFAULT '[]'",
+    "is_reviewed": "INTEGER DEFAULT 0",
+    "reviewed_at": "TEXT",
+}
+
+
+def _ensure_staging_columns(conn) -> None:
+    if _pg():
+        for column, definition in _STAGING_MIGRATION_COLUMNS.items():
+            _execute(
+                conn,
+                f"ALTER TABLE admission_records_staging ADD COLUMN IF NOT EXISTS {column} {definition}",
+            )
+        return
+
+    existing = {
+        row["name"]
+        for row in _fetchall(conn, "PRAGMA table_info(admission_records_staging)")
+    }
+    for column, definition in _STAGING_MIGRATION_COLUMNS.items():
+        if column not in existing:
+            _execute(conn, f"ALTER TABLE admission_records_staging ADD COLUMN {column} {definition}")
+
 
 def init_db() -> None:
     conn = get_conn()
     if _pg():
-        cur = conn.cursor()
-        for stmt in _SCHEMA_PG.split(";"):
-            stmt = stmt.strip()
-            if stmt: cur.execute(stmt)
-        conn.commit()
-        print("DB initialised (PostgreSQL)")
+        for stmt in [part.strip() for part in _SCHEMA_PG.split(";") if part.strip()]:
+            _execute(conn, stmt)
     else:
         conn.executescript(_SCHEMA_SQLITE)
-        conn.commit()
-        print("DB initialised (SQLite)")
+    _ensure_staging_columns(conn)
+    conn.commit()
     conn.close()
+    print("DB initialised (PostgreSQL)" if _pg() else "DB initialised (SQLite)")
+
 
 def create_source_document(university, file_name, file_path="", pdf_url="", admission_year="") -> int:
-    ph = _ph()
-    sql = f"INSERT INTO source_documents (university,file_name,file_path,pdf_url,admission_year) VALUES ({ph},{ph},{ph},{ph},{ph})"
-    if _pg(): sql += " RETURNING id"
+    sql = (
+        f"INSERT INTO source_documents (university,file_name,file_path,pdf_url,admission_year) "
+        f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()},{_ph()})"
+    )
+    if _pg():
+        sql += " RETURNING id"
     conn = get_conn()
     cur = _execute(conn, sql, (university, file_name, file_path, pdf_url, admission_year))
     doc_id = _lastrowid(cur)
-    conn.commit(); conn.close()
+    conn.commit()
+    conn.close()
     return doc_id
 
+
 def update_source_document(doc_id, **kwargs):
-    if not kwargs: return
+    if not kwargs:
+        return
     kwargs["updated_at"] = _now()
-    ph = _ph()
-    sets = ", ".join(f"{k}={ph}" for k in kwargs)
+    sets = ", ".join(f"{key}={_ph()}" for key in kwargs)
     conn = get_conn()
-    _execute(conn, f"UPDATE source_documents SET {sets} WHERE id={ph}", (*kwargs.values(), doc_id))
-    conn.commit(); conn.close()
+    _execute(conn, f"UPDATE source_documents SET {sets} WHERE id={_ph()}", (*kwargs.values(), doc_id))
+    conn.commit()
+    conn.close()
+
 
 def insert_document_page(doc_id, page_number, image_path) -> int:
-    ph = _ph()
-    sql = f"INSERT INTO document_pages (document_id,page_number,image_path,status) VALUES ({ph},{ph},{ph},'pending')"
-    if _pg(): sql += " RETURNING id"
+    sql = f"INSERT INTO document_pages (document_id,page_number,image_path,status) VALUES ({_ph()},{_ph()},{_ph()},'pending')"
+    if _pg():
+        sql += " RETURNING id"
     conn = get_conn()
     cur = _execute(conn, sql, (doc_id, page_number, image_path))
     page_id = _lastrowid(cur)
-    conn.commit(); conn.close()
+    conn.commit()
+    conn.close()
     return page_id
 
+
 def update_document_page(page_id, status, raw_llm_json=""):
-    ph = _ph()
     conn = get_conn()
-    _execute(conn, f"UPDATE document_pages SET status={ph},raw_llm_json={ph} WHERE id={ph}", (status, raw_llm_json, page_id))
-    conn.commit(); conn.close()
+    _execute(
+        conn,
+        f"UPDATE document_pages SET status={_ph()}, raw_llm_json={_ph()} WHERE id={_ph()}",
+        (status, raw_llm_json, page_id),
+    )
+    conn.commit()
+    conn.close()
+
 
 def insert_staging_record(doc_id, page_number, record) -> int:
-    fields = ["document_id","page_number","university","admission_year","admission_period",
-              "faculty","department","application_period","deadline_rule",
-              "eju_session","eju_japanese","eju_general","eju_math",
-              "eju_physics","eju_chemistry","eju_biology","english_requirement",
-              "screening_method","screening_schedule","result_date",
-              "enrollment_period","prefecture","campus",
-              "confidence","needs_review","warnings_json","raw_llm_json"]
+    fields = [
+        "document_id",
+        "page_number",
+        "university",
+        "admission_year",
+        "admission_period",
+        "faculty",
+        "department",
+        "application_period",
+        "deadline_rule",
+        "eju_session",
+        "eju_japanese",
+        "eju_general",
+        "eju_math",
+        "eju_physics",
+        "eju_chemistry",
+        "eju_biology",
+        "english_requirement",
+        "screening_method",
+        "screening_schedule",
+        "result_date",
+        "enrollment_period",
+        "prefecture",
+        "campus",
+        "confidence",
+        "needs_review",
+        "warnings_json",
+        "raw_llm_json",
+        "field_confidence",
+        "field_evidence",
+        "risk_level",
+        "manual_modified_fields",
+        "is_reviewed",
+        "reviewed_at",
+    ]
     values: list[Any] = [doc_id, page_number]
-    for f in fields[2:]:
-        v = record.get(f, "")
-        if f == "warnings_json" and isinstance(v, list): v = json.dumps(v, ensure_ascii=False)
-        if f == "raw_llm_json" and isinstance(v, dict):  v = json.dumps(v, ensure_ascii=False)
-        values.append(v)
+    for field in fields[2:]:
+        values.append(_encode_json_field(field, record.get(field, [] if field in JSON_LIST_FIELDS else {} if field in JSON_DICT_FIELDS else "")))
+
     sql = f"INSERT INTO admission_records_staging ({','.join(fields)}) VALUES ({_phn(len(fields))})"
-    if _pg(): sql += " RETURNING id"
+    if _pg():
+        sql += " RETURNING id"
     conn = get_conn()
     cur = _execute(conn, sql, values)
     row_id = _lastrowid(cur)
-    conn.commit(); conn.close()
+    conn.commit()
+    conn.close()
     return row_id
 
+
 def get_staging_records(doc_id) -> list[dict]:
-    ph = _ph()
     conn = get_conn()
-    rows = _fetchall(conn, f"SELECT * FROM admission_records_staging WHERE document_id={ph} ORDER BY id", (doc_id,))
-    conn.close(); return rows
+    rows = _fetchall(
+        conn,
+        f"SELECT * FROM admission_records_staging WHERE document_id={_ph()} ORDER BY id",
+        (doc_id,),
+    )
+    conn.close()
+    return [_decode_staging_row(row) for row in rows]
+
 
 def get_staging_record(staging_id) -> dict | None:
-    ph = _ph()
     conn = get_conn()
-    row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={ph}", (staging_id,))
-    conn.close(); return row
+    row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
+    conn.close()
+    return _decode_staging_row(row)
+
 
 def update_staging_record(staging_id, data) -> dict | None:
-    if not data: return get_staging_record(staging_id)
-    allowed = {"document_id","page_number","university","admission_year","admission_period",
-               "faculty","department","application_period","deadline_rule",
-               "eju_session","eju_japanese","eju_general","eju_math",
-               "eju_physics","eju_chemistry","eju_biology","english_requirement",
-               "screening_method","screening_schedule","result_date","enrollment_period",
-               "prefecture","campus","confidence","needs_review","warnings_json",
-               "raw_llm_json","is_confirmed"}
-    fields = {k: v for k, v in data.items() if k in allowed}
-    if not fields: return get_staging_record(staging_id)
-    if isinstance(fields.get("warnings_json"), list):
-        fields["warnings_json"] = json.dumps(fields["warnings_json"], ensure_ascii=False)
-    if isinstance(fields.get("raw_llm_json"), dict):
-        fields["raw_llm_json"] = json.dumps(fields["raw_llm_json"], ensure_ascii=False)
-    fields["updated_at"] = _now()
-    ph = _ph()
-    sets = ", ".join(f"{k}={ph}" for k in fields)
+    if not data:
+        return get_staging_record(staging_id)
+
+    allowed = {
+        "document_id",
+        "page_number",
+        "university",
+        "admission_year",
+        "admission_period",
+        "faculty",
+        "department",
+        "application_period",
+        "deadline_rule",
+        "eju_session",
+        "eju_japanese",
+        "eju_general",
+        "eju_math",
+        "eju_physics",
+        "eju_chemistry",
+        "eju_biology",
+        "english_requirement",
+        "screening_method",
+        "screening_schedule",
+        "result_date",
+        "enrollment_period",
+        "prefecture",
+        "campus",
+        "confidence",
+        "needs_review",
+        "warnings_json",
+        "raw_llm_json",
+        "is_confirmed",
+        "field_confidence",
+        "field_evidence",
+        "risk_level",
+        "manual_modified_fields",
+        "is_reviewed",
+        "reviewed_at",
+    }
+    patch = {key: value for key, value in data.items() if key in allowed}
+    if not patch:
+        return get_staging_record(staging_id)
+
+    existing = get_staging_record(staging_id)
+    if not existing:
+        return None
+
+    manual_modified = normalize_manual_modified_fields(
+        patch.get("manual_modified_fields", existing.get("manual_modified_fields"))
+    )
+
+    trackable_fields = {
+        "application_period",
+        "deadline_rule",
+        "eju_session",
+        "eju_japanese",
+        "eju_general",
+        "eju_math",
+        "eju_physics",
+        "eju_chemistry",
+        "eju_biology",
+        "english_requirement",
+        "screening_method",
+        "screening_schedule",
+        "result_date",
+        "enrollment_period",
+        "faculty",
+        "department",
+        "campus",
+        "prefecture",
+    }
+    for field in trackable_fields:
+        if field in patch and str(existing.get(field) or "") != str(patch.get(field) or ""):
+            manual_modified.append(field)
+
+    merged = dict(existing)
+    merged.update(patch)
+    merged["manual_modified_fields"] = list(dict.fromkeys(manual_modified))
+
+    field_confidence = dict(existing.get("field_confidence") or {})
+    field_evidence = dict(existing.get("field_evidence") or {})
+    for field in trackable_fields:
+        if field in patch and str(existing.get(field) or "") != str(patch.get(field) or ""):
+            field_confidence[field] = 1.0
+            field_evidence[field] = {
+                "text": str(patch.get(field) or ""),
+                "page": existing.get("page_number"),
+            }
+    merged["field_confidence"] = field_confidence
+    merged["field_evidence"] = field_evidence
+
+    if merged.get("is_reviewed") and not merged.get("reviewed_at"):
+        merged["reviewed_at"] = _now()
+    merged["updated_at"] = _now()
+    merged = validate(merged)
+
+    fields = {key: _encode_json_field(key, value) for key, value in merged.items() if key in allowed or key in {"updated_at"}}
+    sets = ", ".join(f"{key}={_ph()}" for key in fields)
     conn = get_conn()
-    _execute(conn, f"UPDATE admission_records_staging SET {sets} WHERE id={ph}", (*fields.values(), staging_id))
+    _execute(conn, f"UPDATE admission_records_staging SET {sets} WHERE id={_ph()}", (*fields.values(), staging_id))
     conn.commit()
-    row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={ph}", (staging_id,))
-    conn.close(); return row
+    row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
+    conn.close()
+    return _decode_staging_row(row)
+
 
 def delete_staging_record(staging_id) -> bool:
-    ph = _ph()
     conn = get_conn()
-    _execute(conn, f"DELETE FROM admission_records_staging WHERE id={ph}", (staging_id,))
-    conn.commit(); conn.close(); return True
+    _execute(conn, f"DELETE FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
+    conn.commit()
+    conn.close()
+    return True
 
-def _confirm_row(conn, r: dict, pdf_url="") -> int:
-    doc = _fetchone(conn, f"SELECT pdf_url FROM source_documents WHERE id={_ph()}", (r["document_id"],))
+
+def _confirm_row(conn, row: dict, pdf_url="") -> int:
+    doc = _fetchone(conn, f"SELECT pdf_url FROM source_documents WHERE id={_ph()}", (row["document_id"],))
     doc_url = pdf_url or (doc["pdf_url"] if doc else "")
-    ph24 = _phn(24)
-    sql = f"""INSERT INTO admission_records (
-        source_staging_id,document_id,university,pdf_url,admission_year,admission_period,
-        faculty,department,application_period,deadline_rule,
-        eju_session,eju_japanese,eju_general,eju_math,eju_physics,eju_chemistry,eju_biology,
-        english_requirement,screening_method,screening_schedule,
-        result_date,enrollment_period,prefecture,campus) VALUES ({ph24})"""
-    if _pg(): sql += " RETURNING id"
-    cur = _execute(conn, sql, (
-        r["id"],r["document_id"],r["university"],doc_url,r["admission_year"],r["admission_period"],
-        r["faculty"],r["department"],r["application_period"],r["deadline_rule"],
-        r["eju_session"],r["eju_japanese"],r["eju_general"],r["eju_math"],
-        r["eju_physics"],r["eju_chemistry"],r["eju_biology"],
-        r["english_requirement"],r["screening_method"],r["screening_schedule"],
-        r["result_date"],r["enrollment_period"],r["prefecture"],r["campus"]))
+    sql = (
+        "INSERT INTO admission_records ("
+        "source_staging_id,document_id,university,pdf_url,admission_year,admission_period,"
+        "faculty,department,application_period,deadline_rule,"
+        "eju_session,eju_japanese,eju_general,eju_math,eju_physics,eju_chemistry,eju_biology,"
+        "english_requirement,screening_method,screening_schedule,"
+        "result_date,enrollment_period,prefecture,campus"
+        f") VALUES ({_phn(24)})"
+    )
+    if _pg():
+        sql += " RETURNING id"
+    cur = _execute(
+        conn,
+        sql,
+        (
+            row["id"],
+            row["document_id"],
+            row["university"],
+            doc_url,
+            row["admission_year"],
+            row["admission_period"],
+            row["faculty"],
+            row["department"],
+            row["application_period"],
+            row["deadline_rule"],
+            row["eju_session"],
+            row["eju_japanese"],
+            row["eju_general"],
+            row["eju_math"],
+            row["eju_physics"],
+            row["eju_chemistry"],
+            row["eju_biology"],
+            row["english_requirement"],
+            row["screening_method"],
+            row["screening_schedule"],
+            row["result_date"],
+            row["enrollment_period"],
+            row["prefecture"],
+            row["campus"],
+        ),
+    )
     return _lastrowid(cur)
 
+
 def confirm_staging_record(staging_id, pdf_url="") -> int:
-    ph = _ph()
     conn = get_conn()
-    row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={ph}", (staging_id,))
-    if not row: conn.close(); return 0
+    row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
+    if not row:
+        conn.close()
+        return 0
+    row = _decode_staging_row(row)
+    if row.get("risk_level") == "high" and not row.get("is_reviewed"):
+        conn.close()
+        return 0
     new_id = _confirm_row(conn, row, pdf_url)
-    _execute(conn, f"UPDATE admission_records_staging SET is_confirmed=1,updated_at={ph} WHERE id={ph}", (_now(), staging_id))
-    conn.commit(); conn.close(); return new_id
+    _execute(
+        conn,
+        f"UPDATE admission_records_staging SET is_confirmed=1, is_reviewed=1, reviewed_at={_ph()}, updated_at={_ph()} WHERE id={_ph()}",
+        (_now(), _now(), staging_id),
+    )
+    conn.commit()
+    conn.close()
+    return new_id
+
 
 def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
-    ph = _ph()
     conn = get_conn()
-    rows = _fetchall(conn,
-        f"SELECT * FROM admission_records_staging WHERE document_id={ph} ORDER BY COALESCE(confidence,0) DESC, id DESC",
-        (doc_id,))
-    if not rows: conn.close(); return {"processed":0,"written":0,"skipped":0}
+    rows = _fetchall(
+        conn,
+        f"SELECT * FROM admission_records_staging WHERE document_id={_ph()} ORDER BY "
+        "CASE COALESCE(risk_level,'medium') WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, "
+        "COALESCE(confidence,0) DESC, id DESC",
+        (doc_id,),
+    )
+    if not rows:
+        conn.close()
+        return {"processed": 0, "written": 0, "skipped": 0}
+
+    decoded_rows = [_decode_staging_row(row) for row in rows]
     best: dict[tuple, dict] = {}
-    for r in rows:
-        key = ((r.get("university") or "").strip(),(r.get("admission_year") or "").strip(),
-               (r.get("faculty") or "").strip(),(r.get("department") or "").strip())
-        if key not in best or float(r.get("confidence") or 0) > float(best[key].get("confidence") or 0):
-            best[key] = r
+    for row in decoded_rows:
+        key = (
+            (row.get("university") or "").strip(),
+            (row.get("admission_year") or "").strip(),
+            (row.get("faculty") or "").strip(),
+            (row.get("department") or "").strip(),
+        )
+        if key not in best or float(row.get("confidence") or 0) > float(best[key].get("confidence") or 0):
+            best[key] = row
+
+    existing = _fetchall(
+        conn,
+        f"SELECT university,admission_year,faculty,department FROM admission_records WHERE document_id={_ph()}",
+        (doc_id,),
+    )
+    existing_keys = {
+        (
+            (row["university"] or "").strip(),
+            (row["admission_year"] or "").strip(),
+            (row["faculty"] or "").strip(),
+            (row["department"] or "").strip(),
+        )
+        for row in existing
+    }
+
+    written = 0
+    skipped = 0
     now = _now()
-    for r in rows:
-        _execute(conn, f"UPDATE admission_records_staging SET is_confirmed=1,updated_at={ph} WHERE id={ph}", (now, r["id"]))
-    existing = _fetchall(conn,
-        f"SELECT university,admission_year,faculty,department FROM admission_records WHERE document_id={ph}", (doc_id,))
-    existing_keys = {((r["university"] or "").strip(),(r["admission_year"] or "").strip(),
-                      (r["faculty"] or "").strip(),(r["department"] or "").strip()) for r in existing}
-    written = skipped = 0
+
     for key, row in best.items():
-        if key in existing_keys: skipped += 1; continue
-        _confirm_row(conn, row, pdf_url); written += 1
-    conn.commit(); conn.close()
-    return {"processed":len(rows),"written":written,"skipped":skipped}
+        if row.get("risk_level") == "high" and not row.get("is_reviewed"):
+            skipped += 1
+            continue
+        if key in existing_keys:
+            skipped += 1
+            continue
+        _confirm_row(conn, row, pdf_url)
+        written += 1
+
+    for row in decoded_rows:
+        if row.get("risk_level") == "high" and not row.get("is_reviewed"):
+            continue
+        _execute(
+            conn,
+            f"UPDATE admission_records_staging SET is_confirmed=1, updated_at={_ph()} WHERE id={_ph()}",
+            (now, row["id"]),
+        )
+
+    conn.commit()
+    conn.close()
+    return {"processed": len(decoded_rows), "written": written, "skipped": skipped}
+
 
 def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -> list[dict]:
-    clauses, params = [], []
-    ph = _ph()
+    clauses: list[str] = []
+    params: list[Any] = []
     like = "ILIKE" if _pg() else "LIKE"
-    if university: clauses.append(f"university {like} {ph}"); params.append(f"%{university}%")
-    if year is not None: clauses.append(f"admission_year = {ph}"); params.append(str(year))
-    if faculty: clauses.append(f"faculty {like} {ph}"); params.append(f"%{faculty}%")
+    if university:
+        clauses.append(f"university {like} {_ph()}")
+        params.append(f"%{university}%")
+    if year is not None:
+        clauses.append(f"admission_year = {_ph()}")
+        params.append(str(year))
+    if faculty:
+        clauses.append(f"faculty {like} {_ph()}")
+        params.append(f"%{faculty}%")
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     params.extend([limit, offset])
-    sql = f"""SELECT id,university,admission_year,faculty,department,
-              admission_period,application_period,english_requirement,
-              screening_method,result_date,prefecture,campus
-              FROM admission_records {where} ORDER BY id DESC LIMIT {ph} OFFSET {ph}"""
+    sql = (
+        "SELECT id,university,admission_year,faculty,department,"
+        "admission_period,application_period,english_requirement,"
+        "screening_method,result_date,prefecture,campus "
+        f"FROM admission_records {where} ORDER BY id DESC LIMIT {_ph()} OFFSET {_ph()}"
+    )
     conn = get_conn()
     rows = _fetchall(conn, sql, params)
-    conn.close(); return rows
+    conn.close()
+    return rows
+
 
 def get_stats() -> dict:
     conn = get_conn()
-    total   = (_fetchone(conn,"SELECT COUNT(*) AS c FROM admission_records") or {}).get("c",0)
-    staging = (_fetchone(conn,"SELECT COUNT(*) AS c FROM admission_records_staging") or {}).get("c",0)
-    univs   = (_fetchone(conn,"SELECT COUNT(DISTINCT university) AS c FROM admission_records WHERE TRIM(COALESCE(university,''))<>''") or {}).get("c",0)
+    total = (_fetchone(conn, "SELECT COUNT(*) AS c FROM admission_records") or {}).get("c", 0)
+    staging = (_fetchone(conn, "SELECT COUNT(*) AS c FROM admission_records_staging") or {}).get("c", 0)
+    univs = (
+        _fetchone(
+            conn,
+            "SELECT COUNT(DISTINCT university) AS c FROM admission_records WHERE TRIM(COALESCE(university,''))<>''",
+        )
+        or {}
+    ).get("c", 0)
     if _pg():
-        avg = (_fetchone(conn,"SELECT ROUND(AVG(confidence)::numeric,2) AS c FROM admission_records_staging") or {}).get("c",0)
+        avg = (_fetchone(conn, "SELECT ROUND(AVG(confidence)::numeric,2) AS c FROM admission_records_staging") or {}).get("c", 0)
     else:
-        avg = (_fetchone(conn,"SELECT ROUND(AVG(confidence),2) AS c FROM admission_records_staging") or {}).get("c",0)
+        avg = (_fetchone(conn, "SELECT ROUND(AVG(confidence),2) AS c FROM admission_records_staging") or {}).get("c", 0)
     conn.close()
-    return {"total_records":int(total or 0),"staging_records":int(staging or 0),
-            "universities":int(univs or 0),"avg_confidence":float(avg or 0)}
+    return {
+        "total_records": int(total or 0),
+        "staging_records": int(staging or 0),
+        "universities": int(univs or 0),
+        "avg_confidence": float(avg or 0),
+    }
+
 
 def get_documents(query: str | None = None, year: str | None = None, limit: int = 100, offset: int = 0) -> list[dict]:
-    clauses, params = [], []
-    ph = _ph()
+    clauses: list[str] = []
+    params: list[Any] = []
     like = "ILIKE" if _pg() else "LIKE"
     if query:
-        clauses.append(
-            f"(sd.university {like} {ph} OR sd.file_name {like} {ph} OR COALESCE(sd.pdf_url,'') {like} {ph})"
-        )
         q = f"%{query}%"
+        clauses.append(
+            f"(sd.university {like} {_ph()} OR sd.file_name {like} {_ph()} OR COALESCE(sd.pdf_url,'') {like} {_ph()})"
+        )
         params.extend([q, q, q])
     if year:
-        clauses.append(f"sd.admission_year = {ph}")
+        clauses.append(f"sd.admission_year = {_ph()}")
         params.append(str(year))
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     params.extend([limit, offset])
@@ -392,15 +811,15 @@ def get_documents(query: str | None = None, year: str | None = None, limit: int 
         ) cf ON cf.document_id = sd.id
         {where}
         ORDER BY sd.id DESC
-        LIMIT {ph} OFFSET {ph}
+        LIMIT {_ph()} OFFSET {_ph()}
     """
     conn = get_conn()
     rows = _fetchall(conn, sql, params)
     conn.close()
     return rows
 
+
 def get_document_summary(doc_id: int) -> dict | None:
-    ph = _ph()
     sql = f"""
         SELECT
             sd.id AS doc_id,
@@ -429,7 +848,7 @@ def get_document_summary(doc_id: int) -> dict | None:
             FROM admission_records
             GROUP BY document_id
         ) cf ON cf.document_id = sd.id
-        WHERE sd.id = {ph}
+        WHERE sd.id = {_ph()}
     """
     conn = get_conn()
     row = _fetchone(conn, sql, (doc_id,))
@@ -437,6 +856,7 @@ def get_document_summary(doc_id: int) -> dict | None:
     if row and row.get("avg_confidence") is not None:
         row["avg_confidence"] = float(row["avg_confidence"] or 0)
     return row
+
 
 if __name__ == "__main__":
     init_db()

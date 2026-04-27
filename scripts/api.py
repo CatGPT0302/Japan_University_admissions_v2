@@ -221,6 +221,8 @@ def list_staging(doc_id: int) -> list[dict[str, Any]]:
         "english_requirement", "screening_method", "screening_schedule",
         "result_date", "enrollment_period", "prefecture", "campus",
         "confidence", "needs_review", "is_confirmed", "updated_at",
+        "field_confidence", "field_evidence", "risk_level",
+        "manual_modified_fields", "is_reviewed", "reviewed_at", "warnings_json",
     ]
     return [{k: rec.get(k) for k in fields} for rec in records]
 

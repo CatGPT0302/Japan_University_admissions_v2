@@ -55,6 +55,13 @@ export interface ConfirmResponse {
   skipped: number;
 }
 
+export interface FieldEvidenceItem {
+  text: string;
+  page: number | null;
+}
+
+export type RiskLevel = "low" | "medium" | "high";
+
 export interface StagingRecord {
   id: number;
   document_id?: number;
@@ -83,6 +90,13 @@ export interface StagingRecord {
   confidence?: number;
   needs_review?: number | boolean;
   is_confirmed?: number | boolean;
+  field_confidence?: Record<string, number>;
+  field_evidence?: Record<string, FieldEvidenceItem>;
+  risk_level?: RiskLevel;
+  manual_modified_fields?: string[];
+  is_reviewed?: number | boolean;
+  reviewed_at?: string | null;
+  warnings_json?: string[];
   updated_at?: string;
 }
 

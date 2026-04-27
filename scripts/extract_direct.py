@@ -24,7 +24,7 @@ from scripts.db import create_source_document, init_db, insert_staging_record, u
 from scripts.json_parser import extract_json_payload  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
-from scripts.validator import validate  # noqa: E402
+from scripts.validator import CRITICAL_FIELDS, validate  # noqa: E402
 
 PROMPT_PATH = ROOT / "prompts" / "vision_prompt.md"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
@@ -169,9 +169,130 @@ def _build_system_prompt() -> str:
     return _load_prompt()
 
 
+FIELD_KEYWORDS: dict[str, list[str]] = {
+    "application_period": ["出願期間", "出願受付", "願書受付", "受付期間"],
+    "deadline_rule": ["必着", "消印有効", "締切", "出願締切"],
+    "eju_session": ["EJU", "実施回", "第1回", "第2回"],
+    "eju_japanese": ["日本語"],
+    "eju_general": ["総合科目"],
+    "eju_math": ["数学", "コース1", "コース2"],
+    "eju_physics": ["物理"],
+    "eju_chemistry": ["化学"],
+    "eju_biology": ["生物"],
+    "english_requirement": ["TOEFL", "IELTS", "TOEIC", "英語外部資格試験", "英語"],
+    "screening_method": ["選考方法", "選抜方法", "審査方法"],
+    "screening_schedule": ["試験日", "選考日", "面接日", "選考日程"],
+    "result_date": ["合格発表", "結果通知", "発表日"],
+    "enrollment_period": ["入学手続", "手続期間", "入学手続期間"],
+}
+
+
+def _extract_snippet(page_text: str, candidates: list[str]) -> str:
+    lines = [line.strip() for line in page_text.splitlines() if line.strip()]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        for idx, line in enumerate(lines):
+            if candidate in line:
+                snippet = line
+                if idx + 1 < len(lines) and len(snippet) < 120:
+                    snippet = f"{snippet} {lines[idx + 1]}"
+                return snippet[:220]
+    return ""
+
+
+def _find_evidence(field: str, value: str, page_map: dict[int, str], preferred_page: int | None = None) -> dict[str, Any]:
+    ordered_pages: list[tuple[int, str]] = []
+    if preferred_page and preferred_page in page_map:
+        ordered_pages.append((preferred_page, page_map[preferred_page]))
+    ordered_pages.extend((page_num, text) for page_num, text in page_map.items() if page_num != preferred_page)
+
+    keywords = list(dict.fromkeys(([value] if value else []) + FIELD_KEYWORDS.get(field, [])))
+    for page_num, page_text in ordered_pages:
+        snippet = _extract_snippet(page_text, keywords)
+        if snippet:
+            return {"text": snippet, "page": page_num}
+
+    return {"text": value or "", "page": preferred_page}
+
+
+def _prepare_record(
+    record: dict[str, Any],
+    page_map: dict[int, str] | None,
+    default_page: int | None,
+    university: str,
+    year: str,
+) -> dict[str, Any]:
+    rec = dict(record)
+    if university:
+        rec["university"] = university
+    if year:
+        rec["admission_year"] = year
+
+    page_number = rec.get("page_number")
+    if page_number in ("", None):
+        rec["page_number"] = default_page
+        page_number = default_page
+
+    raw_confidence = rec.get("field_confidence") if isinstance(rec.get("field_confidence"), dict) else {}
+    raw_evidence = rec.get("field_evidence") if isinstance(rec.get("field_evidence"), dict) else {}
+    overall_confidence = float(rec.get("confidence") or 0.0)
+
+    field_confidence: dict[str, float] = {}
+    field_evidence: dict[str, dict[str, Any]] = {}
+
+    for field in CRITICAL_FIELDS:
+        value = str(rec.get(field) or "").strip()
+        evidence_item = raw_evidence.get(field) if isinstance(raw_evidence.get(field), dict) else {}
+        evidence_text = str(evidence_item.get("text") or "").strip()
+        evidence_page = evidence_item.get("page")
+        try:
+            evidence_page = int(evidence_page) if evidence_page not in ("", None) else None
+        except Exception:
+            evidence_page = None
+
+        if page_map:
+            inferred = _find_evidence(field, value, page_map, preferred_page=int(page_number) if page_number not in ("", None) else None)
+            if not evidence_text:
+                evidence_text = inferred.get("text") or value
+            if evidence_page is None:
+                evidence_page = inferred.get("page")
+        elif not evidence_text:
+            evidence_text = value
+
+        confidence_value = raw_confidence.get(field)
+        try:
+            confidence_num = float(confidence_value)
+        except Exception:
+            confidence_num = 0.0
+
+        if confidence_num <= 0:
+            if not value:
+                confidence_num = 0.2
+            elif evidence_text and value and value in evidence_text:
+                confidence_num = max(overall_confidence, 0.86)
+            elif evidence_text:
+                confidence_num = max(overall_confidence, 0.76)
+            else:
+                confidence_num = max(overall_confidence, 0.66)
+
+        field_confidence[field] = round(min(max(confidence_num, 0.0), 1.0), 4)
+        field_evidence[field] = {
+            "text": evidence_text or value,
+            "page": evidence_page,
+        }
+
+    rec["field_confidence"] = field_confidence
+    rec["field_evidence"] = field_evidence
+    rec.setdefault("manual_modified_fields", [])
+    rec.setdefault("is_reviewed", 0)
+    return validate(rec)
+
+
 def _insert_result(
     doc_id: int,
     result: dict[str, Any],
+    page_map: dict[int, str] | None = None,
     default_page: int | None = None,
     university: str = "",
     year: str = "",
@@ -181,14 +302,8 @@ def _insert_result(
     top_univ = university or str(result.get("university") or "").strip()
     top_year = year or str(result.get("admission_year") or "").strip()
     for rec in result.get("records") or []:
-        if top_univ:
-            rec["university"] = top_univ
-        if top_year:
-            rec["admission_year"] = top_year
-        validated = validate(rec)
-        page_number = validated.get("page_number")
-        if page_number in ("", None):
-            page_number = default_page
+        validated = _prepare_record(rec, page_map, default_page, top_univ, top_year)
+        page_number = validated.get("page_number") or default_page
         insert_staging_record(doc_id, page_number, validated)
         inserted += 1
     return inserted
@@ -433,7 +548,7 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
             ),
         },
     ]
-    result = _call_openai(messages, TEXT_MODEL, max_tokens=6000, token_param="max_completion_tokens")
+    result = _call_openai(messages, TEXT_MODEL, max_tokens=12000, token_param="max_completion_tokens")
     if university == "明治大学" and str(year) == "2026" and result.get("records"):
         result["records"] = _supplement_meiji_missing_faculties(full_text, university, year, result.get("records") or [])
     if university == "慶應義塾大学" and str(year) == "2026" and result.get("records"):
@@ -455,7 +570,7 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
             doc_id,
         )
 
-    inserted = _insert_result(doc_id, result, university=university, year=year)
+    inserted = _insert_result(doc_id, result, page_map=page_map, university=university, year=year)
     return {
         "mode": "text",
         "pages": len(page_map),
@@ -471,6 +586,7 @@ def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) ->
     out_dir = ROOT / "output_pages" / f"direct_{doc_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
     images = render_pdf_to_images(pdf_path, out_dir)
+    page_map = extract_text_per_page(pdf_path)
     inserted = 0
     failed_pages: list[dict[str, Any]] = []
     last_raw: dict[str, Any] | None = None
@@ -505,13 +621,13 @@ def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) ->
                 result = _filter_non_private_student_records(result)
             records = result.get("records") or []
             for rec in records:
-                if university:
-                    rec["university"] = university
-                if year:
-                    rec["admission_year"] = year
-                validated = validate(rec)
-                if validated.get("page_number") in ("", None):
-                    validated["page_number"] = page_num
+                validated = _prepare_record(
+                    rec,
+                    {page_num: page_map.get(page_num, "")},
+                    page_num,
+                    university,
+                    year,
+                )
                 insert_staging_record(doc_id, page_num, validated)
                 inserted += 1
             last_raw = result
