@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -53,6 +54,10 @@ def _looks_relevant(text: str) -> bool:
 
 def _sanitize_filename(name: str) -> str:
     return re.sub(r'[\\/:*?"<>|]+', "_", name)
+
+
+def _normalize_name(value: str) -> str:
+    return unicodedata.normalize("NFKC", (value or "")).strip()
 
 
 def _discover_pdf_links(page_url: str, html: str) -> list[str]:
@@ -147,6 +152,39 @@ def fetch_target(target: Target, year: int) -> dict:
         "saved_path": str(save_path),
         "source_url": pdf_url,
     }
+
+
+def list_targets() -> list[dict[str, str]]:
+    return [{"name": target.name, "url": target.url} for target in TARGETS]
+
+
+def get_target_by_name(name: str) -> Target | None:
+    normalized = _normalize_name(name)
+    for target in TARGETS:
+        if _normalize_name(target.name) == normalized:
+            return target
+    return None
+
+
+def fetch_single(university: str, year: int, page_url: str = "") -> dict:
+    university = (university or "").strip()
+    page_url = (page_url or "").strip()
+
+    if not university:
+        raise ValueError("University is required.")
+
+    if page_url:
+        target = Target(university, page_url)
+    else:
+        target = get_target_by_name(university)
+        if target is None:
+            raise ValueError("No preset source found for this university. Please provide a source page URL.")
+
+    result = fetch_target(target, year)
+    result["page_url"] = target.url
+    if result.get("saved_path"):
+        result["file_name"] = Path(result["saved_path"]).name
+    return result
 
 
 def build_parser() -> argparse.ArgumentParser:

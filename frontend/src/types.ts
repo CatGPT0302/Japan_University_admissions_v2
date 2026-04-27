@@ -1,5 +1,19 @@
 export type NavPage = "run" | "review" | "records";
 
+export interface FetchPdfTarget {
+  name: string;
+  url: string;
+}
+
+export interface FetchPdfResponse {
+  university: string;
+  status: string;
+  saved_path: string;
+  source_url: string;
+  page_url?: string;
+  file_name: string;
+}
+
 export interface DocumentListItem {
   doc_id: number;
   university_name: string;

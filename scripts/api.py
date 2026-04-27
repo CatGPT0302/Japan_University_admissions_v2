@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from scripts import extract_direct as extract_direct  # noqa: E402
+from scripts import fetch_pdfs as fetch_pdfs  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     delete_staging_record,
@@ -75,6 +76,12 @@ class ExtractRequest(BaseModel):
 
 class PatchRequest(BaseModel):
     data: dict[str, Any]
+
+
+class FetchPdfRequest(BaseModel):
+    university: str
+    year: str = "2026"
+    page_url: str | None = ""
 
 
 class RecordsQuery(BaseModel):
@@ -152,6 +159,36 @@ def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
         "records": result.get("records"),
         "failed_pages": result.get("failed_pages", []),
     }
+
+
+@app.get("/fetch-pdf/targets")
+def fetch_pdf_targets() -> list[dict[str, str]]:
+    return fetch_pdfs.list_targets()
+
+
+@app.post("/fetch-pdf")
+def fetch_pdf(payload: FetchPdfRequest) -> dict[str, Any]:
+    try:
+        result = fetch_pdfs.fetch_single(
+            university=payload.university,
+            year=int(payload.year or "2026"),
+            page_url=payload.page_url or "",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "fetch_pdf failed",
+                "message": str(exc),
+            },
+        )
+
+    if result.get("status") != "downloaded":
+        raise HTTPException(status_code=404, detail=result)
+
+    return result
 
 
 @app.get("/documents")

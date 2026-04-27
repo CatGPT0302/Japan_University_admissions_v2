@@ -19,13 +19,13 @@ export default function App() {
                 : <RecordsPage />;
 
   return (
-    <div style={{ display:"flex", minHeight:"100vh", background:"var(--bg)", color:"var(--ink)", fontFamily:"'DM Sans',sans-serif", fontSize:14 }}>
+    <div style={{ display:"flex", minHeight:"100vh", background:"var(--bg)", color:"var(--ink)", fontFamily:"inherit", fontSize:14 }}>
 
       {/* Sidebar */}
       <aside style={{ width:200, background:"var(--surface)", borderRight:"1px solid var(--border)", display:"flex", flexDirection:"column", flexShrink:0 }}>
         {/* Logo */}
         <div style={{ padding:"28px 22px 24px", borderBottom:"1px solid var(--border)" }}>
-          <div style={{ fontFamily:"Georgia,serif", fontSize:18, lineHeight:1.15, letterSpacing:-0.3 }}>
+          <div style={{ fontSize:18, lineHeight:1.15, letterSpacing:-0.3, fontWeight:700 }}>
             留学生<br/><em style={{ color:"var(--red)", fontStyle:"italic" }}>招生系统</em>
           </div>
           <div style={{ marginTop:8, fontSize:10, letterSpacing:"0.14em", color:"var(--ink3)", textTransform:"uppercase" }}>admissions_v2</div>
