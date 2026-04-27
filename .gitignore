@@ -15,6 +15,7 @@ frontend/node_modules/
 dist/
 build/
 frontend/dist/
+*.tsbuildinfo
 .cache/
 .tmp/
 tmp/

@@ -20,7 +20,7 @@ const FIELDS = [
 
 function val(r: StagingRecord | undefined, k: string): string {
   if (!r) return "";
-  return String((r as Record<string,unknown>)[k] ?? "");
+  return String((r as unknown as Record<string,unknown>)[k] ?? "");
 }
 
 function StatusBadge({ row }: { row: StagingRecord }) {

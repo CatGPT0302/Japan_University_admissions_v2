@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -16,8 +17,10 @@ sys.path.insert(0, str(ROOT))
 from scripts import extract_direct as extract_direct  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
-    get_conn,
+    delete_staging_record,
     get_records,
+    get_stats as db_get_stats,
+    get_staging_record,
     get_staging_records,
     init_db,
     insert_staging_record,
@@ -28,10 +31,31 @@ from scripts.validator import validate  # noqa: E402
 INPUT_DIR = ROOT / "input_pdfs"
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def _cors_origins() -> list[str]:
+    raw = os.environ.get("CORS_ORIGINS", "")
+    origins = {
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    }
+    for value in raw.split(","):
+        value = value.strip().rstrip("/")
+        if value:
+            origins.add(value)
+    for name in ("FRONTEND_URL", "VITE_APP_URL"):
+        value = os.environ.get(name, "").strip().rstrip("/")
+        if value:
+            origins.add(value)
+    vercel_url = os.environ.get("VERCEL_URL", "").strip()
+    if vercel_url:
+        origins.add(f"https://{vercel_url.rstrip('/')}")
+    return sorted(origins)
+
 app = FastAPI(title="admissions_v2 API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=_cors_origins(),
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -137,17 +161,10 @@ def patch_staging(staging_id: int, payload: PatchRequest) -> dict[str, Any]:
 
 @app.delete("/staging/{staging_id}")
 def delete_staging(staging_id: int) -> dict[str, Any]:
-    conn = get_conn()
-    row = conn.execute(
-        "SELECT id FROM admission_records_staging WHERE id=?",
-        (staging_id,),
-    ).fetchone()
+    row = get_staging_record(staging_id)
     if not row:
-        conn.close()
         raise HTTPException(status_code=404, detail="not found")
-    conn.execute("DELETE FROM admission_records_staging WHERE id=?", (staging_id,))
-    conn.commit()
-    conn.close()
+    delete_staging_record(staging_id)
     return {"status": "deleted", "id": staging_id}
 
 
@@ -188,33 +205,7 @@ def list_records(
 
 @app.get("/stats")
 def get_stats() -> dict[str, Any]:
-    conn = get_conn()
-    total_records = int(
-        conn.execute("SELECT COUNT(*) AS c FROM admission_records").fetchone()["c"] or 0
-    )
-    staging_records = int(
-        conn.execute("SELECT COUNT(*) AS c FROM admission_records_staging").fetchone()["c"] or 0
-    )
-    universities = int(
-        conn.execute(
-            """
-            SELECT COUNT(DISTINCT university) AS c
-            FROM admission_records
-            WHERE university IS NOT NULL AND TRIM(university) <> ''
-            """
-        ).fetchone()["c"]
-        or 0
-    )
-    avg_confidence = conn.execute(
-        "SELECT ROUND(AVG(confidence), 2) AS c FROM admission_records_staging"
-    ).fetchone()["c"]
-    conn.close()
-    return {
-        "total_records": total_records,
-        "staging_records": staging_records,
-        "universities": universities,
-        "avg_confidence": float(avg_confidence or 0),
-    }
+    return db_get_stats()
 
 
 @app.get("/export/excel")

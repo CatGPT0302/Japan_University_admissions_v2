@@ -31,7 +31,7 @@ admissions_v2/
 
 - **使用 Anthropic API**，模型：`claude-sonnet-4-6`
 - API URL：`https://api.anthropic.com/v1/messages`
-- Key：`.env` 中 `ANTHROPIC_API_KEY=sk-ant-...`（已验证可用）
+- Key：`.env` 中 `ANTHROPIC_API_KEY=<your_key>`（本包不包含实际密钥）
 
 ## 已修复的 Bug（本次会话）
 
