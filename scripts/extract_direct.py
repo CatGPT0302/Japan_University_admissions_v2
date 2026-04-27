@@ -177,13 +177,13 @@ def _insert_result(
     year: str = "",
 ) -> int:
     inserted = 0
-    # Inherit top-level university/year into each record if missing
+    # Prefer caller-provided university/year over noisy model output.
     top_univ = university or str(result.get("university") or "").strip()
     top_year = year or str(result.get("admission_year") or "").strip()
     for rec in result.get("records") or []:
-        if not str(rec.get("university") or "").strip():
+        if top_univ:
             rec["university"] = top_univ
-        if not str(rec.get("admission_year") or "").strip():
+        if top_year:
             rec["admission_year"] = top_year
         validated = validate(rec)
         page_number = validated.get("page_number")
@@ -505,9 +505,9 @@ def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) ->
                 result = _filter_non_private_student_records(result)
             records = result.get("records") or []
             for rec in records:
-                if not str(rec.get("university") or "").strip():
+                if university:
                     rec["university"] = university
-                if not str(rec.get("admission_year") or "").strip():
+                if year:
                     rec["admission_year"] = year
                 validated = validate(rec)
                 if validated.get("page_number") in ("", None):
