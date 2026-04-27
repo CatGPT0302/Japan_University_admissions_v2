@@ -18,6 +18,8 @@ from scripts import extract_direct as extract_direct  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     delete_staging_record,
+    get_documents as db_get_documents,
+    get_document_summary as db_get_document_summary,
     get_records,
     get_stats as db_get_stats,
     get_staging_record,
@@ -88,6 +90,13 @@ class ManualRecord(BaseModel):
     data: dict[str, Any]
 
 
+class DocumentsQuery(BaseModel):
+    q: str | None = None
+    year: str | None = None
+    limit: int = 100
+    offset: int = 0
+
+
 def _run_extract_direct(file_name: str, university: str, year: str, url: str = "") -> dict[str, Any]:
     pdf_path = INPUT_DIR / file_name
     if not pdf_path.exists():
@@ -143,6 +152,24 @@ def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
         "records": result.get("records"),
         "failed_pages": result.get("failed_pages", []),
     }
+
+
+@app.get("/documents")
+def list_documents(
+    q: str | None = None,
+    year: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    return db_get_documents(query=q, year=year, limit=limit, offset=offset)
+
+
+@app.get("/documents/{doc_id}/summary")
+def get_document_summary(doc_id: int) -> dict[str, Any]:
+    row = db_get_document_summary(doc_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="document not found")
+    return row
 
 
 @app.get("/staging/{doc_id}")

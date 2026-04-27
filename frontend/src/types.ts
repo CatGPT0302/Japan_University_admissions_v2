@@ -1,5 +1,22 @@
 export type NavPage = "run" | "review" | "records";
 
+export interface DocumentListItem {
+  doc_id: number;
+  university_name: string;
+  admission_year: string;
+  source_url?: string;
+  filename: string;
+  created_at?: string;
+  staging_count: number;
+  confirmed_count: number;
+  status?: string;
+}
+
+export interface DocumentSummary extends DocumentListItem {
+  review_count?: number;
+  avg_confidence?: number;
+}
+
 export interface StatsResponse {
   total_records: number;
   staging_records: number;

@@ -12,9 +12,10 @@ const NAV = [
 
 export default function App() {
   const [page, setPage] = useState<NavPage>("run");
+  const [activeDocId, setActiveDocId] = useState<number | null>(null);
 
-  const content = page === "run" ? <RunPage onDone={() => setPage("review")} />
-                : page === "review" ? <ReviewPage onDone={() => setPage("records")} />
+  const content = page === "run" ? <RunPage onDone={(docId) => { setActiveDocId(docId); setPage("review"); }} />
+                : page === "review" ? <ReviewPage defaultDocId={activeDocId} onDone={() => setPage("records")} />
                 : <RecordsPage />;
 
   return (

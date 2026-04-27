@@ -353,5 +353,90 @@ def get_stats() -> dict:
     return {"total_records":int(total or 0),"staging_records":int(staging or 0),
             "universities":int(univs or 0),"avg_confidence":float(avg or 0)}
 
+def get_documents(query: str | None = None, year: str | None = None, limit: int = 100, offset: int = 0) -> list[dict]:
+    clauses, params = [], []
+    ph = _ph()
+    like = "ILIKE" if _pg() else "LIKE"
+    if query:
+        clauses.append(
+            f"(sd.university {like} {ph} OR sd.file_name {like} {ph} OR COALESCE(sd.pdf_url,'') {like} {ph})"
+        )
+        q = f"%{query}%"
+        params.extend([q, q, q])
+    if year:
+        clauses.append(f"sd.admission_year = {ph}")
+        params.append(str(year))
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    params.extend([limit, offset])
+    sql = f"""
+        SELECT
+            sd.id AS doc_id,
+            sd.university AS university_name,
+            sd.admission_year,
+            sd.pdf_url AS source_url,
+            sd.file_name AS filename,
+            sd.status,
+            sd.created_at,
+            COALESCE(st.staging_count, 0) AS staging_count,
+            COALESCE(cf.confirmed_count, 0) AS confirmed_count
+        FROM source_documents sd
+        LEFT JOIN (
+            SELECT document_id, COUNT(*) AS staging_count
+            FROM admission_records_staging
+            GROUP BY document_id
+        ) st ON st.document_id = sd.id
+        LEFT JOIN (
+            SELECT document_id, COUNT(*) AS confirmed_count
+            FROM admission_records
+            GROUP BY document_id
+        ) cf ON cf.document_id = sd.id
+        {where}
+        ORDER BY sd.id DESC
+        LIMIT {ph} OFFSET {ph}
+    """
+    conn = get_conn()
+    rows = _fetchall(conn, sql, params)
+    conn.close()
+    return rows
+
+def get_document_summary(doc_id: int) -> dict | None:
+    ph = _ph()
+    sql = f"""
+        SELECT
+            sd.id AS doc_id,
+            sd.university AS university_name,
+            sd.admission_year,
+            sd.pdf_url AS source_url,
+            sd.file_name AS filename,
+            sd.status,
+            sd.created_at,
+            COALESCE(st.staging_count, 0) AS staging_count,
+            COALESCE(st.review_count, 0) AS review_count,
+            COALESCE(cf.confirmed_count, 0) AS confirmed_count,
+            COALESCE(st.avg_confidence, 0) AS avg_confidence
+        FROM source_documents sd
+        LEFT JOIN (
+            SELECT
+                document_id,
+                COUNT(*) AS staging_count,
+                SUM(CASE WHEN COALESCE(needs_review, 0) <> 0 THEN 1 ELSE 0 END) AS review_count,
+                AVG(confidence) AS avg_confidence
+            FROM admission_records_staging
+            GROUP BY document_id
+        ) st ON st.document_id = sd.id
+        LEFT JOIN (
+            SELECT document_id, COUNT(*) AS confirmed_count
+            FROM admission_records
+            GROUP BY document_id
+        ) cf ON cf.document_id = sd.id
+        WHERE sd.id = {ph}
+    """
+    conn = get_conn()
+    row = _fetchone(conn, sql, (doc_id,))
+    conn.close()
+    if row and row.get("avg_confidence") is not None:
+        row["avg_confidence"] = float(row["avg_confidence"] or 0)
+    return row
+
 if __name__ == "__main__":
     init_db()

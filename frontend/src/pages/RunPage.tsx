@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { uploadPdf, extractPdf, toErrorMessage } from "../api/client";
 
-interface Props { onDone: () => void; }
+interface Props { onDone: (docId: number) => void; }
 
 type Step = "idle" | "uploading" | "extracting" | "done" | "error";
 
@@ -138,7 +138,7 @@ export default function RunPage({ onDone }: Props) {
             提取记录：<strong style={{ color:"var(--ink)" }}>{result.records} 条</strong>　
             {result.failed > 0 && <span style={{ color:"var(--red)" }}>失败页：{result.failed}</span>}
           </div>
-          <button onClick={onDone}
+          <button onClick={() => onDone(result.doc_id)}
             style={{ height:38, padding:"0 20px", background:"var(--green)", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
             前往复查 →
           </button>

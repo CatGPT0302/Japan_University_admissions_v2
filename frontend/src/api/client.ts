@@ -2,13 +2,16 @@ import axios from "axios";
 import type {
   ConfirmResponse,
   ConfirmedRecord,
+  DocumentListItem,
+  DocumentSummary,
   ExtractResponse,
   StagingRecord,
   StatsResponse,
   UploadResponse,
 } from "../types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const envBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
+const BASE_URL = envBaseUrl || "";
 
 const client = axios.create({
   baseURL: BASE_URL,
@@ -41,6 +44,21 @@ export async function extractPdf(payload: {
   url?: string;
 }): Promise<ExtractResponse> {
   const { data } = await client.post<ExtractResponse>("/extract", payload);
+  return data;
+}
+
+export async function getDocuments(params?: {
+  q?: string;
+  year?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<DocumentListItem[]> {
+  const { data } = await client.get<DocumentListItem[]>("/documents", { params });
+  return data;
+}
+
+export async function getDocumentSummary(docId: number): Promise<DocumentSummary> {
+  const { data } = await client.get<DocumentSummary>(`/documents/${docId}/summary`);
   return data;
 }
 
