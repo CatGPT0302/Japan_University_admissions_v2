@@ -124,6 +124,16 @@ async def upload_pdf(file: UploadFile = File(...)) -> dict[str, str]:
     }
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"status": "ok", "service": "admissions_v2"}
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "healthy"}
+
+
 @app.post("/extract")
 def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
     result = _run_extract_direct(payload.file_name, payload.university, payload.year, payload.url or "")
