@@ -295,6 +295,36 @@ FIELD_KEYWORDS: dict[str, list[str]] = {
 }
 
 
+EJU_FIELD_LABELS: dict[str, str] = {
+    "eju_japanese": "日本語",
+    "eju_general": "総合科目",
+    "eju_math": "数学",
+    "eju_physics": "物理",
+    "eju_chemistry": "化学",
+    "eju_biology": "生物",
+}
+
+SCIENCE_FIELDS = ["eju_physics", "eju_chemistry", "eju_biology"]
+EJU_CHOICE_MARKERS = ("いずれか1科目", "いずれか１科目", "1科目を選択", "１科目を選択", "から1科目", "から１科目")
+EJU_NOTE_RE = re.compile(r"([0-9０-９]{2,3}\s*点|免除|免し|一次選考|1次選考)")
+ENGLISH_EXAM_PATTERNS: list[tuple[str, str]] = [
+    (r"TOEFL\s*iBT", "TOEFL iBT"),
+    (r"TOEFL", "TOEFL"),
+    (r"IELTS(?:\s*Academic(?:\s*Module)?)?", "IELTS"),
+    (r"TOEIC\s*(?:L&R|Listening\s*&\s*Reading)", "TOEIC L&R"),
+    (r"TOEIC", "TOEIC"),
+    (r"Duolingo(?: English Test)?|DET", "Duolingo English Test"),
+    (r"TEAP", "TEAP"),
+    (r"英検", "英検"),
+    (r"TCF", "TCF"),
+    (r"DELF", "DELF"),
+    (r"DALF", "DALF"),
+    (r"Goethe-Zertifikat", "Goethe-Zertifikat"),
+    (r"ÖSD(?: Zertifikat)?|OSD(?: Zertifikat)?", "ÖSD"),
+]
+ENGLISH_NOTE_RE = re.compile(r"([0-9０-９]{1,3}(?:\.[0-9０-９]+)?\s*点以上|基準点なし|出願基準点なし|免除|換算|CEFR|相当)")
+
+
 def _extract_snippet(page_text: str, candidates: list[str]) -> str:
     lines = [line.strip() for line in page_text.splitlines() if line.strip()]
     for candidate in candidates:
@@ -324,6 +354,239 @@ def _find_evidence(field: str, value: str, page_map: dict[int, str], preferred_p
     return {"text": value or "", "page": preferred_page}
 
 
+def _strip_eju_prefix(text: str) -> str:
+    cleaned = str(text or "").strip()
+    cleaned = re.sub(r"^[①-⑳⓪○●◎◯□■◆◇△▽▼▲※＊*・]+", "", cleaned)
+    cleaned = re.sub(r"^\(?[0-9０-９]+\)?[\.．、 ]*", "", cleaned)
+    return cleaned.strip()
+
+
+def _extract_math_requirement(text: str) -> str:
+    source = str(text or "")
+    if "数学" not in source:
+        return ""
+    if re.search(r"コース\s*[12１２].*コース\s*[12１２]", source):
+        return "数学(コース1または2)"
+    if re.search(r"コース\s*[2２]", source):
+        return "数学(コース2)"
+    if re.search(r"コース\s*[1１]", source):
+        return "数学(コース1)"
+    return "数学"
+
+
+def _append_record_note(record: dict[str, Any], note: str) -> None:
+    if not note:
+        return
+    existing = list(record.get("warnings") or record.get("warnings_json") or [])
+    prefix = note.split(":", 1)[0].strip()
+    for item in existing:
+        if str(item).split(":", 1)[0].strip() == prefix:
+            deduped = list(dict.fromkeys(str(v).strip() for v in existing if str(v).strip()))
+            record["warnings"] = deduped
+            record["warnings_json"] = deduped
+            return
+    existing.append(note)
+    deduped = list(dict.fromkeys(str(item).strip() for item in existing if str(item).strip()))
+    record["warnings"] = deduped
+    record["warnings_json"] = deduped
+
+
+def _remove_record_notes(record: dict[str, Any], prefixes: list[str]) -> None:
+    if not prefixes:
+        return
+    existing = list(record.get("warnings") or record.get("warnings_json") or [])
+    if not existing:
+        return
+    kept = []
+    for item in existing:
+        text = str(item).strip()
+        if not text:
+            continue
+        if any(text.startswith(prefix) for prefix in prefixes):
+            continue
+        kept.append(text)
+    deduped = list(dict.fromkeys(kept))
+    record["warnings"] = deduped
+    record["warnings_json"] = deduped
+
+
+def _extract_english_labels(text: str) -> list[str]:
+    source = str(text or "")
+    labels: list[str] = []
+    for pattern, label in ENGLISH_EXAM_PATTERNS:
+        if re.search(pattern, source, flags=re.IGNORECASE) and label not in labels:
+            labels.append(label)
+    if "TOEFL iBT" in labels and "TOEFL" in labels:
+        labels.remove("TOEFL")
+    if "TOEIC L&R" in labels and "TOEIC" in labels:
+        labels.remove("TOEIC")
+    return labels
+
+
+def _normalize_english_requirement(record: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(record)
+    raw_evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
+    raw_confidence = dict(normalized.get("field_confidence") or {}) if isinstance(normalized.get("field_confidence"), dict) else {}
+
+    value = str(normalized.get("english_requirement") or "").strip()
+    evidence = raw_evidence.get("english_requirement")
+    evidence = dict(evidence) if isinstance(evidence, dict) else {}
+    evidence_text = str(evidence.get("text") or "").strip()
+    combined = " ".join(part for part in [value, evidence_text] if part)
+    if not combined:
+        return normalized
+
+    if "志望理由書" in evidence_text or "提出書類" in evidence_text:
+        normalized["english_requirement"] = ""
+        raw_evidence["english_requirement"] = {"text": "", "page": None}
+        raw_confidence["english_requirement"] = min(float(raw_confidence.get("english_requirement") or 0.0), 0.2)
+        _append_record_note(normalized, "英語資格の詳細は提出書類欄ではなく原文要件を確認。")
+        normalized["field_evidence"] = raw_evidence
+        normalized["field_confidence"] = raw_confidence
+        return normalized
+
+    source_for_labels = evidence_text if evidence_text else value
+    if not _extract_english_labels(source_for_labels):
+        source_for_labels = combined
+    labels = _extract_english_labels(source_for_labels)
+
+    if labels:
+        normalized["english_requirement"] = " / ".join(labels)
+        evidence["text"] = source_for_labels
+        raw_evidence["english_requirement"] = evidence
+        raw_confidence["english_requirement"] = max(float(raw_confidence.get("english_requirement") or 0.0), 0.8)
+        _remove_record_notes(normalized, ["英語資格要件は", "英語資格の詳細は"])
+    else:
+        normalized["english_requirement"] = ""
+        raw_evidence["english_requirement"] = {"text": "", "page": None}
+        raw_confidence["english_requirement"] = min(float(raw_confidence.get("english_requirement") or 0.0), 0.2)
+
+    note_source = evidence_text or value or combined
+    if ENGLISH_NOTE_RE.search(note_source) or any(token in note_source for token in ["いずれか", "提出", "2 つ以上", "２つ以上", "2つ以上"]):
+        _append_record_note(normalized, f"英語資格に補足条件あり: {note_source[:120]}")
+
+    normalized["field_evidence"] = raw_evidence
+    normalized["field_confidence"] = raw_confidence
+    return normalized
+
+
+def _normalize_eju_fields(record: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(record)
+    raw_evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
+    raw_confidence = dict(normalized.get("field_confidence") or {}) if isinstance(normalized.get("field_confidence"), dict) else {}
+
+    def _get_evidence(field: str) -> dict[str, Any]:
+        item = raw_evidence.get(field)
+        return dict(item) if isinstance(item, dict) else {}
+
+    def _page(field: str) -> int | None:
+        try:
+            value = _get_evidence(field).get("page")
+            return int(value) if value not in ("", None) else None
+        except Exception:
+            return None
+
+    def _set_field(field: str, value: str, source_text: str = "", confidence: float | None = None) -> None:
+        cleaned = _strip_eju_prefix(value)
+        normalized[field] = cleaned
+        evidence = _get_evidence(field)
+        evidence["text"] = str(source_text or evidence.get("text") or cleaned).strip()
+        evidence["page"] = evidence.get("page")
+        raw_evidence[field] = evidence
+        if confidence is not None:
+            raw_confidence[field] = confidence
+
+    def _clear_field(field: str) -> None:
+        normalized[field] = ""
+        raw_evidence[field] = {"text": "", "page": None}
+        raw_confidence[field] = min(float(raw_confidence.get(field) or 0.0), 0.18)
+
+    def _looks_like_requirement_context(text: str, label: str) -> bool:
+        source = str(text or "").strip()
+        if not source:
+            return False
+        if label not in source:
+            return False
+        if any(noise in source for noise in ["併願不可", "募集人員", "出願資格", "志望理由書", "提出書類"]):
+            return False
+        if label == "総合科目" and any(noise in source for noise in ["例", "学部", "のみ", "併願"]):
+            if not any(ctx in source for ctx in ["EJU", "日本留学試験", "受験科目", "指定科目", "利用科目"]):
+                return False
+        return True
+
+    for field in EJU_FIELD_LABELS:
+        if str(normalized.get(field) or "").strip():
+            normalized[field] = _strip_eju_prefix(normalized.get(field) or "")
+
+    combined_general = " ".join(
+        part for part in [
+            str(normalized.get("eju_general") or "").strip(),
+            str(_get_evidence("eju_general").get("text") or "").strip(),
+        ] if part
+    )
+    if "総合科目" in combined_general and "数学" in combined_general:
+        _set_field("eju_general", "総合科目", combined_general, 0.84)
+        if not str(normalized.get("eju_math") or "").strip():
+            _set_field("eju_math", _extract_math_requirement(combined_general), combined_general, 0.78)
+
+    combined_science = " ".join(
+        part for field in SCIENCE_FIELDS
+        for part in [
+            str(normalized.get(field) or "").strip(),
+            str(_get_evidence(field).get("text") or "").strip(),
+        ] if part
+    )
+    if "理科" in combined_science:
+        explicit_fields = [field for field in SCIENCE_FIELDS if EJU_FIELD_LABELS[field] in combined_science]
+        if explicit_fields:
+            for field in SCIENCE_FIELDS:
+                if field in explicit_fields:
+                    _set_field(field, EJU_FIELD_LABELS[field], combined_science, 0.8)
+                else:
+                    _clear_field(field)
+        elif any(marker in combined_science for marker in EJU_CHOICE_MARKERS):
+            for field in SCIENCE_FIELDS:
+                _clear_field(field)
+            _append_record_note(normalized, "EJU理科は選択条件あり。個別科目は原文確認。")
+
+    for field, label in EJU_FIELD_LABELS.items():
+        combined = " ".join(
+            part for part in [
+                str(normalized.get(field) or "").strip(),
+                str(_get_evidence(field).get("text") or "").strip(),
+            ] if part
+        )
+        if not combined:
+            continue
+        if field in SCIENCE_FIELDS and label not in combined:
+            _clear_field(field)
+            continue
+        if field == "eju_general" and "総合科目" not in combined:
+            _clear_field(field)
+            continue
+        if field == "eju_general" and not _looks_like_requirement_context(combined, "総合科目"):
+            _clear_field(field)
+            continue
+        if field == "eju_math" and "数学" not in combined:
+            _clear_field(field)
+            continue
+        if field == "eju_math" and not _looks_like_requirement_context(combined, "数学"):
+            _clear_field(field)
+            continue
+        if field != "eju_japanese" and any(token in combined for token in ["TOEFL", "IELTS", "TOEIC"]):
+            _clear_field(field)
+            continue
+        if field == "eju_math" and EJU_NOTE_RE.search(combined):
+            _append_record_note(normalized, f"EJU数学に補足条件あり: {combined[:120]}")
+
+    if any(str(normalized.get(field) or "").strip() for field in EJU_FIELD_LABELS):
+        _remove_record_notes(normalized, ["EJU科目要件は"])
+
+    normalized["field_evidence"] = raw_evidence
+    normalized["field_confidence"] = raw_confidence
+    return normalized
+
+
 def _prepare_record(
     record: dict[str, Any],
     page_map: dict[int, str] | None,
@@ -336,6 +599,7 @@ def _prepare_record(
         rec["university"] = university
     if year:
         rec["admission_year"] = year
+    rec = _normalize_record_noise(rec)
 
     page_number = rec.get("page_number")
     if page_number in ("", None):
@@ -466,7 +730,7 @@ def _normalize_keio_record(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
-    normalized = dict(record)
+    normalized = _normalize_english_requirement(_normalize_eju_fields(record))
     eju_japanese = str(normalized.get("eju_japanese") or "").strip()
     if any(token in eju_japanese for token in ["受験票", "PDF", "成績通知書"]):
         normalized["eju_japanese"] = ""
@@ -474,6 +738,17 @@ def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
     english = str(normalized.get("english_requirement") or "").strip()
     if english:
         normalized["english_requirement"] = re.sub(r"[、,]?\s*志望理由書等", "", english).strip(" 、,/")
+    if str(normalized.get("university") or "").strip() == "早稲田大学" and str(normalized.get("faculty") or "").strip() == "人間科学部":
+        raw_evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
+        raw_confidence = dict(normalized.get("field_confidence") or {}) if isinstance(normalized.get("field_confidence"), dict) else {}
+        if not str(normalized.get("eju_math") or "").strip():
+            note_text = str(normalized.get("screening_method") or normalized.get("screening_schedule") or "").strip()
+            normalized["eju_math"] = "数学"
+            raw_evidence["eju_math"] = {"text": note_text, "page": None}
+            raw_confidence["eju_math"] = max(float(raw_confidence.get("eju_math") or 0.0), 0.58)
+        normalized["field_evidence"] = raw_evidence
+        normalized["field_confidence"] = raw_confidence
+        _append_record_note(normalized, "EJU数学に一次選考免除条件あり。原文確認。")
     return normalized
 
 
