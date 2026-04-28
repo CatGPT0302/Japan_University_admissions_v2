@@ -657,10 +657,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                   </button>
                   <button
                     className="btn btn-green"
-                    onClick={() => void savePatch({ ...draft, is_reviewed: 1, is_confirmed: 1, needs_review: 0 }, "这条记录已经确认。")}
+                    onClick={() => void savePatch({ ...draft, is_reviewed: 1, needs_review: 0 }, "已保存并标记为已查看。")}
                     disabled={saving}
                   >
-                    确认此条
+                    保存并标记已查看
                   </button>
                   <button className="btn btn-red" onClick={() => void removeCurrent()} disabled={saving} style={{ marginLeft: "auto" }}>
                     删除

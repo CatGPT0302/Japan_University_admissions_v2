@@ -3,13 +3,17 @@ import { getRecords, getStats, downloadExcel, toErrorMessage } from "../api/clie
 import type { ConfirmedRecord, StatsResponse } from "../types";
 
 const COLS: Array<{ key: keyof ConfirmedRecord; label: string; w?: number }> = [
-  { key:"university",          label:"大学",     w:140 },
-  { key:"faculty",             label:"学部",     w:130 },
-  { key:"department",          label:"学科",     w:150 },
-  { key:"english_requirement", label:"英语要求", w:180 },
-  { key:"screening_method",    label:"选拔方式", w:130 },
-  { key:"result_date",         label:"结果日期", w:110 },
-  { key:"admission_year",      label:"年度",     w:70  },
+  { key:"university",          label:"大学",       w:140 },
+  { key:"faculty",             label:"学部",       w:120 },
+  { key:"department",          label:"学科",       w:130 },
+  { key:"admission_year",      label:"年度",       w:60  },
+  { key:"application_period",  label:"出愿期间",   w:160 },
+  { key:"deadline_rule",       label:"必着/消印",  w:90  },
+  { key:"eju_session",         label:"EJU实施回",  w:90  },
+  { key:"eju_japanese",        label:"EJU日本语",  w:90  },
+  { key:"english_requirement", label:"英语要求",   w:160 },
+  { key:"screening_method",    label:"选拔方式",   w:120 },
+  { key:"result_date",         label:"结果日期",   w:100 },
 ];
 
 export default function RecordsPage() {

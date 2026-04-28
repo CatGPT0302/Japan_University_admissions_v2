@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import RunPage    from "./pages/RunPage";
 import ReviewPage from "./pages/ReviewPage";
 import RecordsPage from "./pages/RecordsPage";
+import { checkHealth } from "./api/client";
 import type { NavPage } from "./types";
 
 const NAV = [
@@ -13,9 +14,14 @@ const NAV = [
 export default function App() {
   const [page, setPage] = useState<NavPage>("run");
   const [activeDocId, setActiveDocId] = useState<number | null>(null);
+  const [backendOk, setBackendOk] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void checkHealth().then(setBackendOk);
+  }, []);
 
   const content = page === "run" ? <RunPage onDone={(docId) => { setActiveDocId(docId); setPage("review"); }} />
-                : page === "review" ? <ReviewPage defaultDocId={activeDocId} onDone={() => setPage("records")} />
+                : page === "review" ? <ReviewPage defaultDocId={activeDocId} onDone={() => { setActiveDocId(null); setPage("records"); }} />
                 : <RecordsPage />;
 
   return (
@@ -59,8 +65,8 @@ export default function App() {
         {/* Status */}
         <div style={{ padding:"16px 22px", borderTop:"1px solid var(--border)" }}>
           <div style={{ fontSize:11, color:"var(--ink3)", display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:"#22c55e", flexShrink:0 }}/>
-            后端已连接
+            <span style={{ width:6, height:6, borderRadius:"50%", background: backendOk === false ? "#ef4444" : "#22c55e", flexShrink:0 }}/>
+            {backendOk === false ? "后端未连接" : "后端已连接"}
           </div>
         </div>
       </aside>

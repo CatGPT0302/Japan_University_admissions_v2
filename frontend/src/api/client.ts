@@ -154,4 +154,13 @@ export function downloadExcel(params?: { university?: string; year?: number; fac
   window.open(url, "_blank");
 }
 
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const { data } = await client.get<{ status: string }>("/health");
+    return data?.status === "healthy";
+  } catch {
+    return false;
+  }
+}
+
 export { toErrorMessage };

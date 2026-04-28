@@ -130,6 +130,9 @@ export interface ConfirmedRecord {
   department: string;
   admission_period?: string;
   application_period?: string;
+  deadline_rule?: string;
+  eju_session?: string;
+  eju_japanese?: string;
   english_requirement?: string;
   screening_method?: string;
   result_date?: string;
