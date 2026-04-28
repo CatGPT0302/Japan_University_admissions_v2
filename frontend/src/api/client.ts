@@ -2,12 +2,15 @@ import axios from "axios";
 import type {
   ConfirmResponse,
   ConfirmedRecord,
+  CorrectionEvent,
   DocumentListItem,
   DocumentSummary,
   ExtractResponse,
   FetchPdfResponse,
   FetchPdfSearchResponse,
+  FetchPdfProbeResponse,
   FetchPdfTarget,
+  QualityMetricsResponse,
   StagingRecord,
   StatsResponse,
   UploadResponse,
@@ -71,6 +74,13 @@ export async function fetchPdf(payload: {
   pdf_url?: string;
 }): Promise<FetchPdfResponse> {
   const { data } = await client.post<FetchPdfResponse>("/fetch-pdf", payload);
+  return data;
+}
+
+export async function probeFetchSources(year: number): Promise<FetchPdfProbeResponse> {
+  const { data } = await client.get<FetchPdfProbeResponse>("/fetch-pdf/probe", {
+    params: { year },
+  });
   return data;
 }
 
@@ -141,6 +151,23 @@ export async function getRecords(params?: {
 
 export async function getStats(): Promise<StatsResponse> {
   const { data } = await client.get<StatsResponse>("/stats");
+  return data;
+}
+
+export async function getQualityMetrics(docId?: number): Promise<QualityMetricsResponse> {
+  const { data } = await client.get<QualityMetricsResponse>("/metrics/quality", {
+    params: docId ? { doc_id: docId } : undefined,
+  });
+  return data;
+}
+
+export async function getCorrectionEvents(params?: {
+  doc_id?: number;
+  limit?: number;
+}): Promise<CorrectionEvent[]> {
+  const { data } = await client.get<CorrectionEvent[]>("/metrics/corrections", {
+    params,
+  });
   return data;
 }
 

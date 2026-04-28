@@ -20,9 +20,11 @@ from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     delete_document,
     delete_staging_record,
+    get_correction_events as db_get_correction_events,
     get_db_runtime,
     get_documents as db_get_documents,
     get_document_summary as db_get_document_summary,
+    get_quality_metrics as db_get_quality_metrics,
     get_records,
     get_stats as db_get_stats,
     get_staging_record,
@@ -203,6 +205,20 @@ def search_pdf(payload: SearchPdfRequest) -> dict[str, Any]:
         )
 
 
+@app.get("/fetch-pdf/probe")
+def probe_pdf_sources(year: int = 2026) -> dict[str, Any]:
+    try:
+        return fetch_pdfs.probe_targets(year=year)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "probe_pdf_sources failed",
+                "message": str(exc),
+            },
+        )
+
+
 @app.post("/fetch-pdf")
 def fetch_pdf(payload: FetchPdfRequest) -> dict[str, Any]:
     try:
@@ -338,6 +354,16 @@ def get_stats() -> dict[str, Any]:
         }
     )
     return stats
+
+
+@app.get("/metrics/quality")
+def quality_metrics(doc_id: int | None = None) -> dict[str, Any]:
+    return db_get_quality_metrics(doc_id=doc_id)
+
+
+@app.get("/metrics/corrections")
+def correction_events(doc_id: int | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    return db_get_correction_events(doc_id=doc_id, limit=limit)
 
 
 @app.get("/export/excel")

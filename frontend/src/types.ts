@@ -35,6 +35,29 @@ export interface FetchPdfResponse {
   file_name: string;
 }
 
+export interface FetchPdfProbeItem {
+  university: string;
+  seed_url: string;
+  query: string;
+  status: string;
+  candidate_count: number;
+  top_candidate_pdf: string;
+  top_candidate_page: string;
+  registry_count: number;
+  registry_has_top_candidate: boolean;
+  is_new_pdf_candidate: boolean;
+  error?: string;
+}
+
+export interface FetchPdfProbeResponse {
+  checked_at: string;
+  year: number;
+  target_count: number;
+  new_candidate_count: number;
+  error_count: number;
+  probes: FetchPdfProbeItem[];
+}
+
 export interface DocumentListItem {
   doc_id: number;
   university_name: string;
@@ -57,6 +80,49 @@ export interface StatsResponse {
   staging_records: number;
   universities: number;
   avg_confidence: number;
+}
+
+export interface QualityFieldCoverage {
+  field: string;
+  filled: number;
+  fill_rate: number;
+  modified: number;
+  modified_rate: number;
+}
+
+export interface ConfidenceCalibrationBin {
+  bucket: string;
+  total: number;
+  corrected: number;
+  corrected_rate: number;
+}
+
+export interface QualityMetricsResponse {
+  doc_id?: number | null;
+  total_staging_records: number;
+  risk_distribution: {
+    high: number;
+    medium: number;
+    low: number;
+    [key: string]: number;
+  };
+  field_coverage: QualityFieldCoverage[];
+  confidence_calibration: ConfidenceCalibrationBin[];
+  top_modified_fields: Array<{ field: string; count: number }>;
+}
+
+export interface CorrectionEvent {
+  id: number;
+  staging_id: number;
+  document_id: number;
+  university: string;
+  admission_year: string;
+  field_name: string;
+  old_value: string;
+  new_value: string;
+  page_number?: number | null;
+  editor: string;
+  created_at: string;
 }
 
 export interface UploadResponse {

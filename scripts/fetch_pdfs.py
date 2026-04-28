@@ -4,6 +4,7 @@ import argparse
 import csv
 import re
 import unicodedata
+from datetime import datetime
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -384,6 +385,72 @@ def _registry_candidates(university: str, year: int, query: str) -> list[dict[st
 
 def list_targets() -> list[dict[str, str]]:
     return [{"name": target.name, "url": target.url} for target in TARGETS]
+
+
+def _registry_pdf_urls(university: str, year: int) -> set[str]:
+    rows = [row for row in _load_registry_rows() if _registry_matches(row, university, year)]
+    urls: set[str] = set()
+    for row in rows:
+        pdf_url = _registry_value(row, "pdf_url", "pdf")
+        if pdf_url and _is_pdf_url(pdf_url):
+            urls.add(pdf_url.strip())
+    return urls
+
+
+def probe_targets(year: int = 2026) -> dict[str, object]:
+    checked_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    probes: list[dict[str, object]] = []
+    for target in TARGETS:
+        query = _build_search_query(target.name, year)
+        registry_urls = _registry_pdf_urls(target.name, year)
+        try:
+            candidates = _discover_from_page(target.url, query, target.name)
+            top = candidates[0] if candidates else None
+            top_pdf = str(top.get("pdf_url") or "") if top else ""
+            is_new = bool(top_pdf and top_pdf not in registry_urls)
+            status = "ok" if candidates else "no_candidate"
+            if is_new:
+                status = "new_candidate_detected"
+            probes.append(
+                {
+                    "university": target.name,
+                    "seed_url": target.url,
+                    "query": query,
+                    "status": status,
+                    "candidate_count": len(candidates),
+                    "top_candidate_pdf": top_pdf,
+                    "top_candidate_page": str(top.get("page_url") or "") if top else "",
+                    "registry_count": len(registry_urls),
+                    "registry_has_top_candidate": bool(top_pdf and top_pdf in registry_urls),
+                    "is_new_pdf_candidate": is_new,
+                }
+            )
+        except Exception as exc:
+            probes.append(
+                {
+                    "university": target.name,
+                    "seed_url": target.url,
+                    "query": query,
+                    "status": "error",
+                    "candidate_count": 0,
+                    "top_candidate_pdf": "",
+                    "top_candidate_page": "",
+                    "registry_count": len(registry_urls),
+                    "registry_has_top_candidate": False,
+                    "is_new_pdf_candidate": False,
+                    "error": str(exc),
+                }
+            )
+    new_count = sum(1 for item in probes if item.get("is_new_pdf_candidate"))
+    error_count = sum(1 for item in probes if item.get("status") == "error")
+    return {
+        "checked_at": checked_at,
+        "year": int(year),
+        "target_count": len(TARGETS),
+        "new_candidate_count": int(new_count),
+        "error_count": int(error_count),
+        "probes": probes,
+    }
 
 
 def get_target_by_name(name: str) -> Target | None:

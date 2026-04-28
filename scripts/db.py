@@ -19,6 +19,43 @@ from scripts.validator import normalize_manual_modified_fields, validate
 JSON_LIST_FIELDS = {"warnings_json", "manual_modified_fields"}
 JSON_DICT_FIELDS = {"field_confidence", "field_evidence", "raw_llm_json"}
 STAGING_JSON_FIELDS = JSON_LIST_FIELDS | JSON_DICT_FIELDS
+TRACKABLE_FIELDS = {
+    "university",
+    "application_period",
+    "deadline_rule",
+    "eju_session",
+    "eju_japanese",
+    "eju_general",
+    "eju_math",
+    "eju_physics",
+    "eju_chemistry",
+    "eju_biology",
+    "english_requirement",
+    "screening_method",
+    "screening_schedule",
+    "result_date",
+    "enrollment_period",
+    "faculty",
+    "department",
+    "campus",
+    "prefecture",
+}
+QUALITY_FIELDS = [
+    "application_period",
+    "deadline_rule",
+    "eju_session",
+    "eju_japanese",
+    "eju_general",
+    "eju_math",
+    "eju_physics",
+    "eju_chemistry",
+    "eju_biology",
+    "english_requirement",
+    "screening_method",
+    "screening_schedule",
+    "result_date",
+    "enrollment_period",
+]
 
 
 @dataclass(frozen=True)
@@ -299,10 +336,25 @@ CREATE TABLE IF NOT EXISTS admission_records (
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
     updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
 );
+CREATE TABLE IF NOT EXISTS correction_events (
+    id SERIAL PRIMARY KEY,
+    staging_id INTEGER REFERENCES admission_records_staging(id),
+    document_id INTEGER REFERENCES source_documents(id),
+    university TEXT,
+    admission_year TEXT,
+    field_name TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    page_number INTEGER,
+    editor TEXT DEFAULT 'human_review',
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
 CREATE INDEX IF NOT EXISTS idx_stg_rev ON admission_records_staging(needs_review);
 CREATE INDEX IF NOT EXISTS idx_rec_univ ON admission_records(university);
 CREATE INDEX IF NOT EXISTS idx_rec_fac ON admission_records(faculty);
+CREATE INDEX IF NOT EXISTS idx_corr_doc ON correction_events(document_id);
+CREATE INDEX IF NOT EXISTS idx_corr_field ON correction_events(field_name);
 """
 
 _SCHEMA_SQLITE = """
@@ -390,10 +442,25 @@ CREATE TABLE IF NOT EXISTS admission_records (
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))
 );
+CREATE TABLE IF NOT EXISTS correction_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    staging_id INTEGER REFERENCES admission_records_staging(id),
+    document_id INTEGER REFERENCES source_documents(id),
+    university TEXT,
+    admission_year TEXT,
+    field_name TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    page_number INTEGER,
+    editor TEXT DEFAULT 'human_review',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
 CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
 CREATE INDEX IF NOT EXISTS idx_stg_rev ON admission_records_staging(needs_review);
 CREATE INDEX IF NOT EXISTS idx_rec_univ ON admission_records(university);
 CREATE INDEX IF NOT EXISTS idx_rec_fac ON admission_records(faculty);
+CREATE INDEX IF NOT EXISTS idx_corr_doc ON correction_events(document_id);
+CREATE INDEX IF NOT EXISTS idx_corr_field ON correction_events(field_name);
 """
 
 _STAGING_MIGRATION_COLUMNS = {
@@ -572,6 +639,51 @@ def get_staging_record(staging_id) -> dict | None:
     return _decode_staging_row(row)
 
 
+def _stringify_event_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value)
+
+
+def _insert_correction_events(
+    conn,
+    *,
+    staging_id: int,
+    document_id: int | None,
+    university: str,
+    admission_year: str,
+    page_number: int | None,
+    changed_fields: list[tuple[str, Any, Any]],
+) -> None:
+    if not changed_fields:
+        return
+    sql = (
+        "INSERT INTO correction_events "
+        "(staging_id,document_id,university,admission_year,field_name,old_value,new_value,page_number,editor,created_at) "
+        f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()})"
+    )
+    now = _now()
+    for field, old_value, new_value in changed_fields:
+        _execute(
+            conn,
+            sql,
+            (
+                staging_id,
+                document_id,
+                university,
+                admission_year,
+                field,
+                _stringify_event_value(old_value),
+                _stringify_event_value(new_value),
+                page_number,
+                "human_review",
+                now,
+            ),
+        )
+
+
 def update_staging_record(staging_id, data) -> dict | None:
     if not data:
         return get_staging_record(staging_id)
@@ -624,30 +736,11 @@ def update_staging_record(staging_id, data) -> dict | None:
         patch.get("manual_modified_fields", existing.get("manual_modified_fields"))
     )
 
-    trackable_fields = {
-        "university",
-        "application_period",
-        "deadline_rule",
-        "eju_session",
-        "eju_japanese",
-        "eju_general",
-        "eju_math",
-        "eju_physics",
-        "eju_chemistry",
-        "eju_biology",
-        "english_requirement",
-        "screening_method",
-        "screening_schedule",
-        "result_date",
-        "enrollment_period",
-        "faculty",
-        "department",
-        "campus",
-        "prefecture",
-    }
-    for field in trackable_fields:
+    changed_fields: list[tuple[str, Any, Any]] = []
+    for field in TRACKABLE_FIELDS:
         if field in patch and str(existing.get(field) or "") != str(patch.get(field) or ""):
             manual_modified.append(field)
+            changed_fields.append((field, existing.get(field), patch.get(field)))
 
     merged = dict(existing)
     merged.update(patch)
@@ -655,7 +748,7 @@ def update_staging_record(staging_id, data) -> dict | None:
 
     field_confidence = dict(existing.get("field_confidence") or {})
     field_evidence = dict(existing.get("field_evidence") or {})
-    for field in trackable_fields:
+    for field in TRACKABLE_FIELDS:
         if field in patch and str(existing.get(field) or "") != str(patch.get(field) or ""):
             field_confidence[field] = 1.0
             field_evidence[field] = {
@@ -680,6 +773,15 @@ def update_staging_record(staging_id, data) -> dict | None:
             f"UPDATE source_documents SET university={_ph()}, updated_at={_ph()} WHERE id={_ph()}",
             (str(merged.get("university") or "").strip(), merged["updated_at"], merged["document_id"]),
         )
+    _insert_correction_events(
+        conn,
+        staging_id=staging_id,
+        document_id=merged.get("document_id"),
+        university=str(merged.get("university") or ""),
+        admission_year=str(merged.get("admission_year") or ""),
+        page_number=merged.get("page_number"),
+        changed_fields=changed_fields,
+    )
     conn.commit()
     row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
     conn.close()
@@ -927,7 +1029,7 @@ def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -
     params.extend([limit, offset])
     sql = (
         "SELECT id,university,admission_year,faculty,department,"
-        "admission_period,application_period,english_requirement,"
+        "admission_period,application_period,deadline_rule,eju_session,eju_japanese,english_requirement,"
         "screening_method,result_date,prefecture,campus "
         f"FROM admission_records {where} ORDER BY id DESC LIMIT {_ph()} OFFSET {_ph()}"
     )
@@ -959,6 +1061,184 @@ def get_stats() -> dict:
         "universities": int(univs or 0),
         "avg_confidence": float(avg or 0),
     }
+
+
+def _confidence_bucket(value: float | int | None) -> str:
+    if value is None:
+        return "unknown"
+    score = float(value)
+    if score < 0.60:
+        return "<0.60"
+    if score < 0.70:
+        return "0.60-0.69"
+    if score < 0.80:
+        return "0.70-0.79"
+    if score < 0.90:
+        return "0.80-0.89"
+    if score < 0.95:
+        return "0.90-0.94"
+    return "0.95+"
+
+
+def get_quality_metrics(doc_id: int | None = None) -> dict[str, Any]:
+    conn = get_conn()
+    params: list[Any] = []
+    where = ""
+    if doc_id is not None:
+        where = f"WHERE s.document_id={_ph()}"
+        params.append(int(doc_id))
+
+    total_row = _fetchone(
+        conn,
+        f"SELECT COUNT(*) AS c FROM admission_records_staging s {where}",
+        tuple(params),
+    ) or {}
+    total_records = int(total_row.get("c") or 0)
+
+    risk_rows = _fetchall(
+        conn,
+        f"""
+        SELECT COALESCE(NULLIF(TRIM(COALESCE(s.risk_level,'')),''),'medium') AS risk_level, COUNT(*) AS c
+        FROM admission_records_staging s
+        {where}
+        GROUP BY COALESCE(NULLIF(TRIM(COALESCE(s.risk_level,'')),''),'medium')
+        """,
+        tuple(params),
+    )
+    risk_distribution = {"high": 0, "medium": 0, "low": 0}
+    for row in risk_rows:
+        key = str(row.get("risk_level") or "medium")
+        risk_distribution[key] = int(row.get("c") or 0)
+
+    coverage: list[dict[str, Any]] = []
+    ce_doc_filter = ""
+    ce_doc_params: tuple[Any, ...] = tuple()
+    if doc_id is not None:
+        ce_doc_filter = f"AND ce.document_id={_ph()}"
+        ce_doc_params = (int(doc_id),)
+
+    for field in QUALITY_FIELDS:
+        filled_row = _fetchone(
+            conn,
+            f"""
+            SELECT COUNT(*) AS c
+            FROM admission_records_staging s
+            {where} {'AND' if where else 'WHERE'} TRIM(COALESCE(s.{field},''))<>''
+            """,
+            tuple(params),
+        ) or {}
+        modified_row = _fetchone(
+            conn,
+            f"""
+            SELECT COUNT(DISTINCT ce.staging_id) AS c
+            FROM correction_events ce
+            WHERE ce.field_name={_ph()} {ce_doc_filter}
+            """,
+            (field, *ce_doc_params),
+        ) or {}
+        filled = int(filled_row.get("c") or 0)
+        modified = int(modified_row.get("c") or 0)
+        coverage.append(
+            {
+                "field": field,
+                "filled": filled,
+                "fill_rate": round((filled / total_records) if total_records else 0.0, 4),
+                "modified": modified,
+                "modified_rate": round((modified / total_records) if total_records else 0.0, 4),
+            }
+        )
+
+    correction_where = ""
+    correction_params: tuple[Any, ...] = ()
+    if doc_id is not None:
+        correction_where = f"WHERE ce.document_id={_ph()}"
+        correction_params = (int(doc_id),)
+    top_modified = _fetchall(
+        conn,
+        f"""
+        SELECT ce.field_name, COUNT(*) AS c
+        FROM correction_events ce
+        {correction_where}
+        GROUP BY ce.field_name
+        ORDER BY c DESC
+        LIMIT 10
+        """,
+        correction_params,
+    )
+
+    rows = _fetchall(
+        conn,
+        f"""
+        SELECT s.id, COALESCE(s.confidence,0) AS confidence,
+               CASE WHEN ce.staging_id IS NULL THEN 0 ELSE 1 END AS corrected
+        FROM admission_records_staging s
+        LEFT JOIN (
+            SELECT DISTINCT staging_id
+            FROM correction_events
+        ) ce ON ce.staging_id = s.id
+        {where}
+        """,
+        tuple(params),
+    )
+    bucket_counts: dict[str, dict[str, int]] = {}
+    for row in rows:
+        bucket = _confidence_bucket(row.get("confidence"))
+        payload = bucket_counts.setdefault(bucket, {"total": 0, "corrected": 0})
+        payload["total"] += 1
+        payload["corrected"] += int(row.get("corrected") or 0)
+
+    bucket_order = ["<0.60", "0.60-0.69", "0.70-0.79", "0.80-0.89", "0.90-0.94", "0.95+", "unknown"]
+    calibration = []
+    for bucket in bucket_order:
+        info = bucket_counts.get(bucket)
+        if not info:
+            continue
+        total = info["total"]
+        corrected = info["corrected"]
+        calibration.append(
+            {
+                "bucket": bucket,
+                "total": total,
+                "corrected": corrected,
+                "corrected_rate": round((corrected / total) if total else 0.0, 4),
+            }
+        )
+
+    conn.close()
+    return {
+        "doc_id": doc_id,
+        "total_staging_records": total_records,
+        "risk_distribution": risk_distribution,
+        "field_coverage": coverage,
+        "confidence_calibration": calibration,
+        "top_modified_fields": [
+            {"field": str(row.get("field_name") or ""), "count": int(row.get("c") or 0)}
+            for row in top_modified
+        ],
+    }
+
+
+def get_correction_events(doc_id: int | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    conn = get_conn()
+    params: list[Any] = []
+    where = ""
+    if doc_id is not None:
+        where = f"WHERE document_id={_ph()}"
+        params.append(int(doc_id))
+    params.append(max(1, min(int(limit or 100), 1000)))
+    rows = _fetchall(
+        conn,
+        f"""
+        SELECT id,staging_id,document_id,university,admission_year,field_name,old_value,new_value,page_number,editor,created_at
+        FROM correction_events
+        {where}
+        ORDER BY id DESC
+        LIMIT {_ph()}
+        """,
+        tuple(params),
+    )
+    conn.close()
+    return rows
 
 
 def get_documents(query: str | None = None, year: str | None = None, limit: int = 100, offset: int = 0) -> list[dict]:
