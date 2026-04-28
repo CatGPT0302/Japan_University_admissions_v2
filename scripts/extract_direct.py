@@ -1418,15 +1418,17 @@ def _vision_patch_records(
         pr = _match_patch_record(rec, patch_by_key)
         if pr:
             page_num = int(pr.get("_vision_page") or pr.get("page_number") or pr.get("page") or candidate_pages[0])
-            evidence_text = str((pr.get("field_evidence") or {}).get("eju_japanese", {}).get("text") if isinstance(pr.get("field_evidence"), dict) else "") or f"vision table page {page_num}"
+            pr_field_evidence = pr.get("field_evidence") if isinstance(pr.get("field_evidence"), dict) else {}
             for field in VISION_PATCH_FIELDS:
                 patch_value = str(pr.get(field) or "").strip()
                 if not patch_value:
                     continue
                 current_value = str(rec.get(field) or "").strip()
                 if not current_value:
+                    field_ev = pr_field_evidence.get(field) if isinstance(pr_field_evidence.get(field), dict) else {}
+                    field_ev_text = str(field_ev.get("text") or "").strip() or patch_value
                     rec[field] = patch_value
-                    _merge_field_metadata(rec, field, patch_value, page_num, evidence_text)
+                    _merge_field_metadata(rec, field, patch_value, page_num, field_ev_text)
                     print(f"[direct] patched {rec.get('faculty')}.{field} = {patch_value!r}")
             warnings = list(rec.get("warnings") or rec.get("warnings_json") or [])
             for warning in pr.get("warnings") or []:
