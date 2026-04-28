@@ -3,18 +3,30 @@ import {
   extractPdf,
   fetchPdf,
   getFetchTargets,
+  probeFetchSources,
   searchFetchPdf,
   toErrorMessage,
   uploadPdf,
 } from "../api/client";
-import type { FetchPdfCandidate, FetchPdfTarget } from "../types";
+import type {
+  FetchPdfCandidate,
+  FetchPdfProbeResponse,
+  FetchPdfTarget,
+} from "../types";
 
 interface Props {
   onDone: (docId: number) => void;
 }
 
 type SourceMode = "upload" | "search" | "direct";
-type Step = "idle" | "searching" | "downloading" | "uploading" | "extracting" | "done" | "error";
+type Step =
+  | "idle"
+  | "searching"
+  | "downloading"
+  | "uploading"
+  | "extracting"
+  | "done"
+  | "error";
 
 interface RunResult {
   doc_id: number;
@@ -39,7 +51,7 @@ function stepLabel(step: Step, mode: SourceMode): string {
   if (step === "done") return "抽取完成";
   if (step === "error") return "处理遇到问题";
   if (mode === "search") return "先搜索候选，再由你确认";
-  if (mode === "direct") return "用你给的 PDF 链接直接处理";
+  if (mode === "direct") return "按你给的 PDF 链接直接处理";
   return "准备上传并抽取";
 }
 
@@ -51,9 +63,9 @@ function candidateKindLabel(candidate: FetchPdfCandidate): string {
 }
 
 function candidateTrustLabel(candidate: FetchPdfCandidate): string {
-  if (candidate.source_origin === "maintained_registry") return "人工维护来源";
-  if (candidate.is_official) return "更像官网来源";
-  return "需要人工确认";
+  if (candidate.source_origin === "maintained_registry") return "维护来源";
+  if (candidate.is_official) return "疑似官网";
+  return "需人工确认";
 }
 
 export default function RunPage({ onDone }: Props) {
@@ -72,6 +84,8 @@ export default function RunPage({ onDone }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [candidates, setCandidates] = useState<FetchPdfCandidate[]>([]);
   const [selectedCandidateUrl, setSelectedCandidateUrl] = useState("");
+  const [probeResult, setProbeResult] = useState<FetchPdfProbeResponse | null>(null);
+  const [probeLoading, setProbeLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -149,12 +163,25 @@ export default function RunPage({ onDone }: Props) {
         setSelectedCandidateUrl(searched.candidates[0].pdf_url);
         setStep("idle");
       } else {
-        setError("这次没有找到可用的募集要项 PDF。你可以改学校名、补来源页，或者直接走手动 PDF 链接。");
+        setError("本次没有找到可用募集要项 PDF。可改学校名、补来源页，或改走手动 PDF 链接。");
         setStep("error");
       }
     } catch (nextError) {
       setError(toErrorMessage(nextError));
       setStep("error");
+    }
+  }
+
+  async function runProbe() {
+    setProbeLoading(true);
+    setError("");
+    try {
+      const probe = await probeFetchSources(Number(year) || 2026);
+      setProbeResult(probe);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setProbeLoading(false);
     }
   }
 
@@ -225,10 +252,15 @@ export default function RunPage({ onDone }: Props) {
     }
   }
 
-  const busy = step === "searching" || step === "downloading" || step === "uploading" || step === "extracting";
+  const busy =
+    step === "searching" ||
+    step === "downloading" ||
+    step === "uploading" ||
+    step === "extracting";
   const readyToUpload = Boolean(file && !busy);
   const readyToSearch = Boolean(university && !busy);
-  const selectedCandidate = candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
+  const selectedCandidate =
+    candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
   const readyToConfirmCandidate = Boolean(selectedCandidate && !busy);
   const readyToDirectRun = Boolean(university && pdfUrl && !busy);
 
@@ -236,46 +268,46 @@ export default function RunPage({ onDone }: Props) {
     if (step === "done" && result) {
       return {
         tone: "success" as const,
-        title: `已经整理出 ${result.records} 条记录`,
+        title: `已整理出 ${result.records} 条记录`,
         description:
           result.failed > 0
-            ? `系统先识别到的大学是 ${result.university || "待人工确认"}。其中有 ${result.failed} 页没有顺利处理，进入复查后建议优先留意。`
-            : `系统先识别到的大学是 ${result.university || "待人工确认"}。你进入复查后再做人工确认即可。`,
+            ? `系统识别到大学 ${result.university || "待人工确认"}。有 ${result.failed} 页未顺利处理，建议复查时优先关注。`
+            : `系统识别到大学 ${result.university || "待人工确认"}。可以进入复查继续确认。`,
       };
     }
     if (step === "error") {
       return {
         tone: "danger" as const,
         title: "这一步卡住了",
-        description: "通常是来源页、PDF 链接或文件本身的问题。你可以换入口继续，不会影响别的流程。",
+        description: "通常是来源页、PDF 链接或文件本身问题。可以切换入口继续处理。",
       };
     }
     if (step === "searching") {
       return {
         tone: "info" as const,
-        title: "我正在帮你找候选 PDF",
-        description: "这一步只负责找候选，不会直接入库。你确认之后我才会继续处理。",
+        title: "正在搜索候选 PDF",
+        description: "搜索阶段不会入库，仍由你人工确认候选后再处理。",
       };
     }
     if (step === "downloading") {
       return {
         tone: "info" as const,
-        title: "我正在获取你确认的 PDF",
-        description: "拿到文件后会继续进入抽取。",
+        title: "正在获取 PDF",
+        description: "拿到文件后会自动进入抽取。",
       };
     }
     if (step === "uploading") {
       return {
         tone: "info" as const,
         title: "PDF 已接收",
-        description: "正在把文件送进系统准备抽取。",
+        description: "正在上传并准备抽取。",
       };
     }
     if (step === "extracting") {
       return {
         tone: "info" as const,
-        title: "AI 正在读这份募集要项",
-        description: "系统会把内容整理成可复查的 staging 记录。",
+        title: "AI 正在抽取内容",
+        description: "系统会把内容整理成可复查记录。",
       };
     }
     return {
@@ -285,8 +317,8 @@ export default function RunPage({ onDone }: Props) {
         sourceMode === "upload"
           ? "适合你已经拿到 PDF 的情况。"
           : sourceMode === "direct"
-            ? "适合你已经拿到直接 PDF 链接，不想再让系统搜索。"
-            : "系统会先参考你维护的来源表；如果没有命中，再用固定检索词搜索，例如：明治大学 外国人留学生募集要項 2026。",
+            ? "适合你已经有准确 PDF 链接，不想再搜索。"
+            : "系统优先走维护来源，未命中再用固定检索词搜索。",
     };
   }, [result, sourceMode, step]);
 
@@ -300,21 +332,9 @@ export default function RunPage({ onDone }: Props) {
           : { background: "#ffffff", border: "1px solid #e5e7eb", accent: "#111827" };
 
   const modeCards: Array<{ key: SourceMode; title: string; desc: string }> = [
-    {
-      key: "upload",
-      title: "本地上传 PDF",
-      desc: "你已经拿到文件时，用这条最快。",
-    },
-    {
-      key: "search",
-      title: "自动搜索募集要项",
-      desc: "系统先搜候选 PDF，你看过再决定处理哪一份。",
-    },
-    {
-      key: "direct",
-      title: "手动填写 PDF 链接",
-      desc: "你已经知道准确的 PDF 链接时，用这条最稳。",
-    },
+    { key: "upload", title: "本地上传 PDF", desc: "你已经有文件时，这条最快。" },
+    { key: "search", title: "自动搜索募集要项", desc: "系统先找候选 PDF，你确认后再处理。" },
+    { key: "direct", title: "手动填写 PDF 链接", desc: "你已知准确 PDF 链接时最稳。" },
   ];
 
   return (
@@ -325,20 +345,11 @@ export default function RunPage({ onDone }: Props) {
         </div>
         <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.15, margin: "0 0 10px" }}>跑数据</h1>
         <p style={{ fontSize: 14, color: "var(--ink2)", lineHeight: 1.75, margin: 0 }}>
-          这里负责把 PDF 送进系统。你可以直接上传文件、让系统先搜索候选募集要项，或者自己贴准确的 PDF 链接。
+          这里负责把 PDF 送进系统。你可以上传文件、先搜索候选，再确认处理。
         </p>
       </div>
 
-      <div
-        style={{
-          background: statusStyle.background,
-          border: statusStyle.border,
-          borderRadius: 18,
-          padding: "18px 20px",
-          boxShadow: "0 10px 28px rgba(15, 23, 42, 0.05)",
-          marginBottom: 18,
-        }}
-      >
+      <div style={{ background: statusStyle.background, border: statusStyle.border, borderRadius: 18, padding: "18px 20px", boxShadow: "0 10px 28px rgba(15, 23, 42, 0.05)", marginBottom: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: statusStyle.accent, marginBottom: 6 }}>{statusBlock.title}</div>
@@ -346,7 +357,7 @@ export default function RunPage({ onDone }: Props) {
           </div>
           <div style={{ display: "grid", gap: 6, minWidth: 220 }}>
             <div className="badge badge-gray">模式：{modeTitle(sourceMode)}</div>
-            <div className="badge badge-gray">大学：{sourceMode === "upload" ? (result?.university || "将从 PDF 自动识别") : (university || "还没填写")}</div>
+            <div className="badge badge-gray">大学：{sourceMode === "upload" ? result?.university || "将从 PDF 自动识别" : university || "未填写"}</div>
             <div className="badge badge-gray">年度：{year || "未设置"}</div>
             <div className="badge badge-gray">状态：{stepLabel(step, sourceMode)}</div>
           </div>
@@ -384,47 +395,20 @@ export default function RunPage({ onDone }: Props) {
       <div className="card" style={{ padding: 22, borderRadius: 22, marginBottom: 18 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: "12px 14px" }}>
           {sourceMode === "upload" ? (
-            <div
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 16,
-                padding: "12px 14px",
-                background: "#fafaf9",
-              }}
-            >
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 16, padding: "12px 14px", background: "#fafaf9" }}>
               <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
               <div style={{ fontSize: 13, color: "var(--ink)", fontWeight: 600, marginBottom: 4 }}>将从 PDF 自动识别</div>
-              <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
-                上传模式里不需要手填大学名。系统会先从募集要项里识别，后面仍然需要你在复查页人工确认。
-              </div>
+              <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>上传模式不需要手填大学名。系统会先识别，后续仍需人工复查确认。</div>
             </div>
           ) : (
             <label>
               <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
-              <input
-                value={university}
-                onChange={(event) => {
-                  setUniversity(event.target.value);
-                  resetRunState();
-                }}
-                placeholder="例如：明治大学"
-                className="field"
-                style={{ width: "100%" }}
-              />
+              <input value={university} onChange={(event) => { setUniversity(event.target.value); resetRunState(); }} placeholder="例如：明治大学" className="field" style={{ width: "100%" }} />
             </label>
           )}
           <label>
             <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>年度</div>
-            <input
-              value={year}
-              onChange={(event) => {
-                setYear(event.target.value);
-                resetRunState();
-              }}
-              placeholder="2026"
-              className="field"
-              style={{ width: "100%" }}
-            />
+            <input value={year} onChange={(event) => { setYear(event.target.value); resetRunState(); }} placeholder="2026" className="field" style={{ width: "100%" }} />
           </label>
 
           {sourceMode === "search" && (
@@ -446,24 +430,13 @@ export default function RunPage({ onDone }: Props) {
                 >
                   <option value="">可选，不填也行</option>
                   {targets.map((target) => (
-                    <option key={target.name} value={target.name}>
-                      {target.name}
-                    </option>
+                    <option key={target.name} value={target.name}>{target.name}</option>
                   ))}
                 </select>
               </label>
               <label>
                 <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>募集页 URL</div>
-                <input
-                  value={pageUrl}
-                  onChange={(event) => {
-                    setPageUrl(event.target.value);
-                    resetRunState();
-                  }}
-                  placeholder="可选，补充官网招生页会更稳"
-                  className="field"
-                  style={{ width: "100%" }}
-                />
+                <input value={pageUrl} onChange={(event) => { setPageUrl(event.target.value); resetRunState(); }} placeholder="可选，补充官网招生页会更稳" className="field" style={{ width: "100%" }} />
               </label>
             </>
           )}
@@ -472,29 +445,11 @@ export default function RunPage({ onDone }: Props) {
             <>
               <label style={{ gridColumn: "span 2" }}>
                 <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>PDF 直链</div>
-                <input
-                  value={pdfUrl}
-                  onChange={(event) => {
-                    setPdfUrl(event.target.value);
-                    resetRunState();
-                  }}
-                  placeholder="https://.../guideline.pdf"
-                  className="field"
-                  style={{ width: "100%" }}
-                />
+                <input value={pdfUrl} onChange={(event) => { setPdfUrl(event.target.value); resetRunState(); }} placeholder="https://.../guideline.pdf" className="field" style={{ width: "100%" }} />
               </label>
               <label style={{ gridColumn: "span 2" }}>
-                <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>来源页 URL（选填）</div>
-                <input
-                  value={pageUrl}
-                  onChange={(event) => {
-                    setPageUrl(event.target.value);
-                    resetRunState();
-                  }}
-                  placeholder="可选，记录这份 PDF 是从哪个招生页来的"
-                  className="field"
-                  style={{ width: "100%" }}
-                />
+                <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>来源页 URL（可选）</div>
+                <input value={pageUrl} onChange={(event) => { setPageUrl(event.target.value); resetRunState(); }} placeholder="可选，记录这份 PDF 的来源页" className="field" style={{ width: "100%" }} />
               </label>
             </>
           )}
@@ -505,16 +460,9 @@ export default function RunPage({ onDone }: Props) {
         <>
           <div
             onClick={() => inputRef.current?.click()}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
+            onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setDragging(false);
-              handleFile(event.dataTransfer.files[0]);
-            }}
+            onDrop={(event) => { event.preventDefault(); setDragging(false); handleFile(event.dataTransfer.files[0]); }}
             style={{
               border: `2px dashed ${dragging ? "#93c5fd" : file ? "#86efac" : "#d6d3d1"}`,
               borderRadius: 22,
@@ -527,23 +475,17 @@ export default function RunPage({ onDone }: Props) {
               boxShadow: "0 10px 22px rgba(15, 23, 42, 0.04)",
             }}
           >
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".pdf"
-              style={{ display: "none" }}
-              onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
-            />
-            <div style={{ fontSize: 28, marginBottom: 10 }}>{file ? "已选中" : "PDF"}</div>
+            <input ref={inputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(event) => handleFile(event.target.files?.[0] ?? null)} />
+            <div style={{ fontSize: 28, marginBottom: 10 }}>{file ? "已就绪" : "PDF"}</div>
             {file ? (
               <>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>{file.name}</div>
-                <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink2)" }}>文件已经选好。下一步点下面按钮，才会正式上传并开始抽取。</div>
+                <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink2)" }}>文件已选好。点下面按钮才会正式开始处理。</div>
               </>
             ) : (
               <>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>把 PDF 拖到这里</div>
-                <div style={{ fontSize: 13, color: "var(--ink3)" }}>或者点一下，从本地挑一个文件</div>
+                <div style={{ fontSize: 13, color: "var(--ink3)" }}>或者点一下，从本地选择文件</div>
               </>
             )}
           </div>
@@ -553,9 +495,7 @@ export default function RunPage({ onDone }: Props) {
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>本地 PDF 处理</div>
                 <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
-                  {file
-                    ? `当前会用 ${file.name} 进入抽取，大学名会从 PDF 正文里自动识别。`
-                    : "先选一份 PDF，再从这里正式开始处理。"}
+                  {file ? `将使用 ${file.name} 抽取，大学名会由系统自动识别。` : "先选一份 PDF，再从这里开始处理。"}
                 </div>
               </div>
               <button className="btn btn-primary" disabled={!readyToUpload} onClick={() => void runUpload()}>
@@ -572,13 +512,43 @@ export default function RunPage({ onDone }: Props) {
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>自动搜索候选 PDF</div>
               <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
-                系统会先参考维护来源；如果没有命中，再用固定检索词搜索：<strong>{university || "大学名"} 外国人留学生募集要項 {year || "年份"}</strong>
+                固定检索词：<strong>{university || "大学名"} 外国人留学生募集要项 {year || "年份"}</strong>
               </div>
             </div>
             <button className="btn btn-primary" disabled={!readyToSearch} onClick={() => void runSearch()}>
               {step === "searching" ? "正在搜索..." : "先搜索候选"}
             </button>
           </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
+              来源巡检会提醒你“目标官网里出现了疑似新 PDF 链接”，便于及时更新维护注册表。
+            </div>
+            <button className="btn" disabled={probeLoading || busy} onClick={() => void runProbe()}>
+              {probeLoading ? "检查中..." : "检查来源更新"}
+            </button>
+          </div>
+
+          {probeResult && (
+            <div style={{ marginBottom: 12, padding: "12px 14px", border: "1px solid #e5e7eb", borderRadius: 12, background: "#fafaf9" }}>
+              <div style={{ fontSize: 12, color: "var(--ink2)", marginBottom: 6 }}>
+                巡检时间：{probeResult.checked_at} · 目标 {probeResult.target_count} · 新候选 {probeResult.new_candidate_count} · 错误 {probeResult.error_count}
+              </div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {probeResult.probes
+                  .filter((item) => item.is_new_pdf_candidate || item.status === "error")
+                  .slice(0, 8)
+                  .map((item) => (
+                    <div key={`${item.university}-${item.seed_url}`} style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.6, wordBreak: "break-all" }}>
+                      [{item.university}] {item.status} {item.top_candidate_pdf ? `- ${item.top_candidate_pdf}` : ""}
+                    </div>
+                  ))}
+                {probeResult.probes.every((item) => !item.is_new_pdf_candidate && item.status !== "error") && (
+                  <div style={{ fontSize: 12, color: "var(--ink3)" }}>本次未发现明显新链接。</div>
+                )}
+              </div>
+            </div>
+          )}
 
           {searchQuery && (
             <div style={{ marginBottom: 12, fontSize: 12, color: "var(--ink2)" }}>
@@ -603,13 +573,7 @@ export default function RunPage({ onDone }: Props) {
                     }}
                   >
                     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <input
-                        type="radio"
-                        name="pdf-candidate"
-                        checked={active}
-                        onChange={() => setSelectedCandidateUrl(candidate.pdf_url)}
-                        style={{ marginTop: 3 }}
-                      />
+                      <input type="radio" name="pdf-candidate" checked={active} onChange={() => setSelectedCandidateUrl(candidate.pdf_url)} style={{ marginTop: 3 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
                           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
@@ -621,44 +585,16 @@ export default function RunPage({ onDone }: Props) {
                             <div className="badge badge-gray">匹配分：{candidate.score}</div>
                           </div>
                         </div>
-                        {candidate.host && (
-                          <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, marginBottom: 4 }}>
-                            域名：{candidate.host}
-                          </div>
-                        )}
-                        <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, wordBreak: "break-all" }}>
-                          PDF：{candidate.pdf_url}
-                        </div>
-                        {candidate.page_url && candidate.page_url !== candidate.pdf_url && (
-                          <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, wordBreak: "break-all", marginTop: 4 }}>
-                            来源页：{candidate.page_url}
-                          </div>
-                        )}
-                        {candidate.registry_note && (
-                          <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, marginTop: 4 }}>
-                            维护说明：{candidate.registry_note}
-                          </div>
-                        )}
+                        {candidate.host && <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, marginBottom: 4 }}>域名：{candidate.host}</div>}
+                        <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, wordBreak: "break-all" }}>PDF：{candidate.pdf_url}</div>
+                        {candidate.page_url && candidate.page_url !== candidate.pdf_url && <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, wordBreak: "break-all", marginTop: 4 }}>来源页：{candidate.page_url}</div>}
+                        {candidate.registry_note && <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, marginTop: 4 }}>维护说明：{candidate.registry_note}</div>}
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                          <a
-                            href={candidate.pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn"
-                            style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
-                            onClick={(event) => event.stopPropagation()}
-                          >
+                          <a href={candidate.pdf_url} target="_blank" rel="noreferrer" className="btn" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }} onClick={(event) => event.stopPropagation()}>
                             预览 PDF
                           </a>
                           {candidate.page_url && candidate.page_url !== candidate.pdf_url && (
-                            <a
-                              href={candidate.page_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="btn"
-                              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
-                              onClick={(event) => event.stopPropagation()}
-                            >
+                            <a href={candidate.page_url} target="_blank" rel="noreferrer" className="btn" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }} onClick={(event) => event.stopPropagation()}>
                               查看来源页
                             </a>
                           )}
@@ -669,25 +605,11 @@ export default function RunPage({ onDone }: Props) {
                 );
               })}
 
-              <div
-                style={{
-                  marginTop: 4,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  paddingTop: 8,
-                }}
-              >
+              <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", paddingTop: 8 }}>
                 <div style={{ fontSize: 12, color: "var(--ink2)" }}>
-                  先由你确认候选，再继续下载和抽取；不会因为自动搜索直接把结果写进去。
+                  必须先由你确认候选，系统才会继续下载和抽取，不会自动入库。
                 </div>
-                <button
-                  className="btn btn-primary"
-                  disabled={!readyToConfirmCandidate}
-                  onClick={() => selectedCandidate && void processPdfCandidate(selectedCandidate)}
-                >
+                <button className="btn btn-primary" disabled={!readyToConfirmCandidate} onClick={() => selectedCandidate && void processPdfCandidate(selectedCandidate)}>
                   {step === "downloading" || step === "extracting" ? "正在处理..." : "确认这份并开始处理"}
                 </button>
               </div>
@@ -700,7 +622,7 @@ export default function RunPage({ onDone }: Props) {
         <div className="card" style={{ padding: 22, borderRadius: 22, marginBottom: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>手动 PDF 处理通道</div>
           <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, marginBottom: 14 }}>
-            如果你已经知道准确的 PDF 链接，这条最稳，也能绕开自动搜索不准的问题。
+            当你手里已有准确 PDF 链接时，优先走这条，最稳。
           </div>
           <button className="btn btn-primary" disabled={!readyToDirectRun} onClick={() => void runDirectPdf()}>
             {step === "downloading" || step === "extracting" ? "正在处理..." : "用这份 PDF 直接处理"}
@@ -709,34 +631,18 @@ export default function RunPage({ onDone }: Props) {
       )}
 
       {step === "done" && result && (
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #d1fae5",
-            borderRadius: 22,
-            padding: "22px 24px",
-            boxShadow: "0 12px 26px rgba(16, 185, 129, 0.08)",
-          }}
-        >
-          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", marginBottom: 8 }}>这份结果已经可以开始复查了</div>
+        <div style={{ background: "#ffffff", border: "1px solid #d1fae5", borderRadius: 22, padding: "22px 24px", boxShadow: "0 12px 26px rgba(16, 185, 129, 0.08)" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", marginBottom: 8 }}>结果已可进入复查</div>
           <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.8, marginBottom: 16 }}>
-            这次一共整理出 <strong style={{ color: "var(--ink)" }}>{result.records}</strong> 条记录。
-            {result.university ? ` 系统识别到的大学是 ${result.university}。` : " 系统还没稳定识别出大学名，进入复查后请人工确认。"}
-            {result.failed > 0 ? ` 其中有 ${result.failed} 页需要你额外留意。` : " 目前没有明显失败页。"}
-            {result.file_name ? ` 文件名是 ${result.file_name}。` : ""}
+            共整理出 <strong style={{ color: "var(--ink)" }}>{result.records}</strong> 条记录。
+            {result.university ? ` 系统识别大学为 ${result.university}。` : " 大学名需你在复查页人工确认。"}
+            {result.failed > 0 ? ` 其中有 ${result.failed} 页需要额外留意。` : " 当前没有明显失败页。"}
+            {result.file_name ? ` 文件：${result.file_name}。` : ""}
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="btn btn-green" onClick={() => onDone(result.doc_id)}>
-              前往复查
-            </button>
+            <button className="btn btn-green" onClick={() => onDone(result.doc_id)}>前往复查</button>
             {result.source_url && (
-              <a
-                href={result.source_url}
-                target="_blank"
-                rel="noreferrer"
-                className="btn"
-                style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
-              >
+              <a href={result.source_url} target="_blank" rel="noreferrer" className="btn" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
                 查看来源
               </a>
             )}
@@ -745,23 +651,13 @@ export default function RunPage({ onDone }: Props) {
       )}
 
       {step === "error" && (
-        <div
-          style={{
-            background: "#fff7f7",
-            border: "1px solid #fecaca",
-            borderRadius: 20,
-            padding: "16px 18px",
-            fontSize: 13,
-            color: "var(--red)",
-            lineHeight: 1.7,
-          }}
-        >
-          {error || "这次处理没有成功，请检查输入后再试一次。"}
+        <div style={{ background: "#fff7f7", border: "1px solid #fecaca", borderRadius: 20, padding: "16px 18px", fontSize: 13, color: "var(--red)", lineHeight: 1.7 }}>
+          {error || "本次处理未成功，请检查输入后重试。"}
         </div>
       )}
 
       <div style={{ marginTop: 18, fontSize: 12, color: "var(--ink3)", lineHeight: 1.8 }}>
-        建议顺序：如果你手头已经有 PDF，就直接上传；如果没有，就先用“自动搜索募集要项”找候选，再确认；如果你已经知道准确 PDF 链接，就直接走手动通道。
+        建议顺序：已有 PDF 就直接上传；没有就先搜索候选再确认；已知准确链接就走手动通道。
       </div>
     </div>
   );
