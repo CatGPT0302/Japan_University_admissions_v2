@@ -8,6 +8,7 @@ __pycache__/
 **/__pycache__/
 *.pyc
 *.log
+.logs/
 database/*.db-shm
 database/*.db-wal
 node_modules/
