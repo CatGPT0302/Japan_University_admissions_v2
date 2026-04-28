@@ -94,6 +94,14 @@ Optional:
 - `OPENAI_TEXT_MODEL`
 - `OPENAI_VISION_MODEL`
 
+## PDF Source Registry
+
+For stable PDF retrieval, you can maintain your own source registry at `private_data/pdf_source_registry.csv`.
+
+The repository includes `data/sample_pdf_source_registry.csv` only as a replaceable demonstration sample.
+
+When a registry entry matches a university and year, the system will prefer that maintained source before falling back to open-web search.
+
 ## Documentation
 
 - `docs/handoff.md`

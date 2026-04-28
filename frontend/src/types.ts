@@ -14,6 +14,8 @@ export interface FetchPdfCandidate {
   host?: string;
   is_official?: boolean;
   source_kind?: string;
+  source_origin?: string;
+  registry_note?: string;
   university?: string;
 }
 

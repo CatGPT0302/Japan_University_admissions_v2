@@ -43,11 +43,14 @@ function stepLabel(step: Step, mode: SourceMode): string {
 }
 
 function candidateKindLabel(candidate: FetchPdfCandidate): string {
+  if (candidate.source_kind === "registry_pdf") return "维护表直链";
+  if (candidate.source_kind === "registry_page_pdf") return "维护表来源页";
   if (candidate.source_kind === "direct_pdf") return "直链 PDF";
   return "来源页发现";
 }
 
 function candidateTrustLabel(candidate: FetchPdfCandidate): string {
+  if (candidate.source_origin === "maintained_registry") return "人工维护来源";
   if (candidate.is_official) return "更像官网来源";
   return "需要人工确认";
 }
@@ -287,7 +290,7 @@ export default function RunPage({ onDone }: Props) {
           ? "适合你已经拿到 PDF 的情况。"
           : sourceMode === "direct"
             ? "适合你已经拿到直接 PDF 链接，不想再让系统搜索。"
-            : "系统会优先用固定检索词搜索，例如：明治大学 外国人留学生募集要項 2026。",
+            : "系统会先参考你维护的来源表；如果没有命中，再用固定检索词搜索，例如：明治大学 外国人留学生募集要項 2026。",
     };
   }, [result, sourceMode, step]);
 
@@ -538,7 +541,7 @@ export default function RunPage({ onDone }: Props) {
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>自动搜索候选 PDF</div>
               <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
-                系统会优先用固定检索词搜索：<strong>{university || "大学名"} 外国人留学生募集要項 {year || "年份"}</strong>
+                系统会先参考维护来源；如果没有命中，再用固定检索词搜索：<strong>{university || "大学名"} 外国人留学生募集要項 {year || "年份"}</strong>
               </div>
             </div>
             <button className="btn btn-primary" disabled={!readyToSearch} onClick={() => void runSearch()}>
@@ -598,6 +601,11 @@ export default function RunPage({ onDone }: Props) {
                         {candidate.page_url && candidate.page_url !== candidate.pdf_url && (
                           <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, wordBreak: "break-all", marginTop: 4 }}>
                             来源页：{candidate.page_url}
+                          </div>
+                        )}
+                        {candidate.registry_note && (
+                          <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, marginTop: 4 }}>
+                            维护说明：{candidate.registry_note}
                           </div>
                         )}
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>

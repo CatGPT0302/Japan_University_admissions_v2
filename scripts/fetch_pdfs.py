@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import re
 import unicodedata
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlparse
 
@@ -13,6 +15,9 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = ROOT / "input_pdfs"
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+PRIVATE_REGISTRY = ROOT / "private_data" / "pdf_source_registry.csv"
+SAMPLE_REGISTRY = ROOT / "data" / "sample_pdf_source_registry.csv"
 
 
 @dataclass(frozen=True)
@@ -81,7 +86,7 @@ def _host_score(host: str) -> int:
     return 0
 
 
-def _guess_source_kind(page_url: str, pdf_url: str) -> str:
+def _default_source_kind(page_url: str, pdf_url: str) -> str:
     if page_url and page_url == pdf_url:
         return "direct_pdf"
     return "source_page_pdf"
@@ -119,7 +124,7 @@ def _score_text(university: str, text: str, href: str) -> int:
         score += 5
     if "pdf" in combined:
         score += 2
-    if "入試要項" in combined or "入学試験要項" in combined:
+    if "入試要項" in combined or "入学者選抜要項" in combined:
         score += 3
     if _normalize_name(university) and _normalize_name(university).lower() in combined:
         score += 4
@@ -138,6 +143,9 @@ def _candidate(
     page_url: str,
     query: str,
     score: int,
+    source_kind: str | None = None,
+    source_origin: str = "auto_search",
+    registry_note: str = "",
 ) -> dict[str, str | int | bool]:
     host = _host(pdf_url)
     return {
@@ -148,7 +156,9 @@ def _candidate(
         "score": score,
         "host": host,
         "is_official": _is_official_host(host),
-        "source_kind": _guess_source_kind(page_url, pdf_url),
+        "source_kind": source_kind or _default_source_kind(page_url, pdf_url),
+        "source_origin": source_origin,
+        "registry_note": registry_note,
         "university": university,
     }
 
@@ -288,6 +298,90 @@ def _download_pdf(url: str, save_path: Path) -> None:
     save_path.write_bytes(resp.content)
 
 
+def _registry_paths() -> list[Path]:
+    return [PRIVATE_REGISTRY, SAMPLE_REGISTRY]
+
+
+@lru_cache(maxsize=1)
+def _load_registry_rows() -> tuple[dict[str, str], ...]:
+    rows: list[dict[str, str]] = []
+    for path in _registry_paths():
+        if not path.exists():
+            continue
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for raw_row in reader:
+                row = {str(key or "").strip(): str(value or "").strip() for key, value in raw_row.items()}
+                row["_source_file"] = str(path)
+                rows.append(row)
+    return tuple(rows)
+
+
+def _registry_value(row: dict[str, str], *keys: str) -> str:
+    for key in keys:
+        value = row.get(key, "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _registry_matches(row: dict[str, str], university: str, year: int) -> bool:
+    row_name = _normalize_name(_registry_value(row, "university", "name"))
+    if not row_name or row_name != _normalize_name(university):
+        return False
+    row_year = _registry_value(row, "year", "admission_year")
+    return not row_year or row_year == str(year)
+
+
+def _registry_candidates(university: str, year: int, query: str) -> list[dict[str, str | int | bool]]:
+    rows = [row for row in _load_registry_rows() if _registry_matches(row, university, year)]
+    candidates: list[dict[str, str | int | bool]] = []
+    for index, row in enumerate(rows):
+        score_boost = 100 - index
+        title = _registry_value(row, "title") or f"{university} 外国人留学生募集要項 {year}"
+        pdf_url = _registry_value(row, "pdf_url", "pdf")
+        page_url = _registry_value(row, "page_url", "source_page_url", "url")
+        note = _registry_value(row, "note", "memo")
+
+        if pdf_url and _is_pdf_url(pdf_url):
+            candidates.append(
+                _candidate(
+                    title=title,
+                    university=university,
+                    pdf_url=pdf_url,
+                    page_url=page_url or pdf_url,
+                    query=query,
+                    score=score_boost,
+                    source_kind="registry_pdf",
+                    source_origin="maintained_registry",
+                    registry_note=note,
+                )
+            )
+            continue
+
+        if page_url:
+            try:
+                discovered = _discover_from_page(page_url, query, university)
+            except Exception:
+                continue
+            for discovered_index, item in enumerate(discovered[:4]):
+                row_score = score_boost - discovered_index
+                candidates.append(
+                    _candidate(
+                        title=str(item.get("title") or title),
+                        university=university,
+                        pdf_url=str(item.get("pdf_url") or ""),
+                        page_url=page_url,
+                        query=query,
+                        score=row_score,
+                        source_kind="registry_page_pdf",
+                        source_origin="maintained_registry",
+                        registry_note=note,
+                    )
+                )
+    return _dedupe_candidates(candidates)
+
+
 def list_targets() -> list[dict[str, str]]:
     return [{"name": target.name, "url": target.url} for target in TARGETS]
 
@@ -308,6 +402,7 @@ def search_single(university: str, year: int, page_url: str = "") -> dict[str, o
 
     query = _build_search_query(university, year)
     candidates: list[dict[str, str | int | bool]] = []
+    candidates.extend(_registry_candidates(university, year, query))
 
     seed_pages: list[str] = []
     if page_url:
@@ -323,7 +418,7 @@ def search_single(university: str, year: int, page_url: str = "") -> dict[str, o
         except Exception:
             continue
 
-    if not candidates:
+    if len(_dedupe_candidates(candidates)) < 8:
         for result in _search_result_pages(query):
             result_url = result["url"]
             title = result["title"]
