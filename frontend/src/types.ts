@@ -67,6 +67,7 @@ export interface UploadResponse {
 export interface ExtractResponse {
   doc_id: number;
   status: string;
+  university?: string;
   records: number;
   failed_pages: Array<{ page: number; error: string }>;
 }

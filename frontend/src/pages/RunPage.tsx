@@ -20,6 +20,7 @@ interface RunResult {
   doc_id: number;
   records: number;
   failed: number;
+  university?: string;
   file_name?: string;
   source_url?: string;
 }
@@ -100,18 +101,10 @@ export default function RunPage({ onDone }: Props) {
     if (!nextFile || !nextFile.name.toLowerCase().endsWith(".pdf")) return;
     setFile(nextFile);
     resetRunState();
-    if (!university) {
-      const inferredName = nextFile.name
-        .replace(/[_-]/g, " ")
-        .replace(/\.pdf$/i, "")
-        .replace(/\d{4}/g, "")
-        .trim();
-      if (inferredName) setUniversity(inferredName);
-    }
   }
 
   async function runUpload() {
-    if (!file || !university) return;
+    if (!file) return;
     setError("");
     setResult(null);
     try {
@@ -120,13 +113,14 @@ export default function RunPage({ onDone }: Props) {
       setStep("extracting");
       const extracted = await extractPdf({
         file_name: uploaded.file_name,
-        university,
+        university: "",
         year,
       });
       setResult({
         doc_id: extracted.doc_id,
         records: extracted.records,
         failed: extracted.failed_pages?.length ?? 0,
+        university: extracted.university || "",
         file_name: uploaded.file_name,
       });
       setStep("done");
@@ -186,6 +180,7 @@ export default function RunPage({ onDone }: Props) {
         doc_id: extracted.doc_id,
         records: extracted.records,
         failed: extracted.failed_pages?.length ?? 0,
+        university: extracted.university || university,
         file_name: fetched.file_name,
         source_url: fetched.source_url || candidate.pdf_url,
       });
@@ -219,6 +214,7 @@ export default function RunPage({ onDone }: Props) {
         doc_id: extracted.doc_id,
         records: extracted.records,
         failed: extracted.failed_pages?.length ?? 0,
+        university: extracted.university || university,
         file_name: fetched.file_name,
         source_url: fetched.source_url || pdfUrl,
       });
@@ -230,7 +226,7 @@ export default function RunPage({ onDone }: Props) {
   }
 
   const busy = step === "searching" || step === "downloading" || step === "uploading" || step === "extracting";
-  const readyToUpload = Boolean(file && university && !busy);
+  const readyToUpload = Boolean(file && !busy);
   const readyToSearch = Boolean(university && !busy);
   const selectedCandidate = candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
   const readyToConfirmCandidate = Boolean(selectedCandidate && !busy);
@@ -243,8 +239,8 @@ export default function RunPage({ onDone }: Props) {
         title: `已经整理出 ${result.records} 条记录`,
         description:
           result.failed > 0
-            ? `其中有 ${result.failed} 页没有顺利处理，进入复查后建议优先留意。`
-            : "抽取已经完成，可以直接进入复查。",
+            ? `系统先识别到的大学是 ${result.university || "待人工确认"}。其中有 ${result.failed} 页没有顺利处理，进入复查后建议优先留意。`
+            : `系统先识别到的大学是 ${result.university || "待人工确认"}。你进入复查后再做人工确认即可。`,
       };
     }
     if (step === "error") {
@@ -350,7 +346,7 @@ export default function RunPage({ onDone }: Props) {
           </div>
           <div style={{ display: "grid", gap: 6, minWidth: 220 }}>
             <div className="badge badge-gray">模式：{modeTitle(sourceMode)}</div>
-            <div className="badge badge-gray">大学：{university || "还没填写"}</div>
+            <div className="badge badge-gray">大学：{sourceMode === "upload" ? (result?.university || "将从 PDF 自动识别") : (university || "还没填写")}</div>
             <div className="badge badge-gray">年度：{year || "未设置"}</div>
             <div className="badge badge-gray">状态：{stepLabel(step, sourceMode)}</div>
           </div>
@@ -387,19 +383,36 @@ export default function RunPage({ onDone }: Props) {
 
       <div className="card" style={{ padding: 22, borderRadius: 22, marginBottom: 18 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: "12px 14px" }}>
-          <label>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
-            <input
-              value={university}
-              onChange={(event) => {
-                setUniversity(event.target.value);
-                resetRunState();
+          {sourceMode === "upload" ? (
+            <div
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 16,
+                padding: "12px 14px",
+                background: "#fafaf9",
               }}
-              placeholder="例如：明治大学"
-              className="field"
-              style={{ width: "100%" }}
-            />
-          </label>
+            >
+              <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
+              <div style={{ fontSize: 13, color: "var(--ink)", fontWeight: 600, marginBottom: 4 }}>将从 PDF 自动识别</div>
+              <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
+                上传模式里不需要手填大学名。系统会先从募集要项里识别，后面仍然需要你在复查页人工确认。
+              </div>
+            </div>
+          ) : (
+            <label>
+              <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
+              <input
+                value={university}
+                onChange={(event) => {
+                  setUniversity(event.target.value);
+                  resetRunState();
+                }}
+                placeholder="例如：明治大学"
+                className="field"
+                style={{ width: "100%" }}
+              />
+            </label>
+          )}
           <label>
             <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>年度</div>
             <input
@@ -541,7 +554,7 @@ export default function RunPage({ onDone }: Props) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>本地 PDF 处理</div>
                 <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
                   {file
-                    ? `当前会用 ${file.name} 进入抽取。`
+                    ? `当前会用 ${file.name} 进入抽取，大学名会从 PDF 正文里自动识别。`
                     : "先选一份 PDF，再从这里正式开始处理。"}
                 </div>
               </div>
@@ -708,6 +721,7 @@ export default function RunPage({ onDone }: Props) {
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", marginBottom: 8 }}>这份结果已经可以开始复查了</div>
           <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.8, marginBottom: 16 }}>
             这次一共整理出 <strong style={{ color: "var(--ink)" }}>{result.records}</strong> 条记录。
+            {result.university ? ` 系统识别到的大学是 ${result.university}。` : " 系统还没稳定识别出大学名，进入复查后请人工确认。"}
             {result.failed > 0 ? ` 其中有 ${result.failed} 页需要你额外留意。` : " 目前没有明显失败页。"}
             {result.file_name ? ` 文件名是 ${result.file_name}。` : ""}
           </div>

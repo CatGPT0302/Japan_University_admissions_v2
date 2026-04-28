@@ -30,6 +30,16 @@ PROMPT_PATH = ROOT / "prompts" / "vision_prompt.md"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 DEFAULT_TEXT_MODEL = "gpt-5.4-mini"
 DEFAULT_VISION_MODEL = "gpt-4o-mini"
+AUTO_UNIVERSITY_PLACEHOLDER = "待识别"
+UNIVERSITY_PATTERN = re.compile(r"([一-龥ぁ-んァ-ヴーA-Za-z・･ー\-\s]{2,40}大学)")
+UNIVERSITY_CONTEXT_KEYWORDS = (
+    "外国人留学生",
+    "留学生",
+    "募集要項",
+    "学生募集要項",
+    "入学試験",
+    "私費外国人留学生",
+)
 MEIJI_REQUIRED_FACULTIES = [
     "法学部",
     "商学部",
@@ -87,6 +97,89 @@ def _read_pdf_text(pdf_path: Path) -> tuple[str, dict[int, str]]:
     page_map = extract_text_per_page(pdf_path)
     texts = [f"=== PAGE {idx} ===\\n{text}" for idx, text in sorted(page_map.items()) if text]
     return "\\n\\n".join(texts), page_map
+
+
+def _clean_university_name(value: str) -> str:
+    cleaned = re.sub(r"\s+", "", str(value or "").strip())
+    if not cleaned.endswith("大学"):
+        return ""
+    if len(cleaned) < 3:
+        return ""
+    return cleaned
+
+
+def _infer_university_with_llm(full_text: str, file_name: str, url: str = "") -> str:
+    snippet = full_text[:18000]
+    if not snippet.strip():
+        return ""
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Identify the university name from the admissions guideline text. "
+                "Return JSON only in the form {\"university\":\"...\"}. "
+                "If unclear, return an empty string."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"[file_name]\\n{file_name}\\n\\n"
+                f"[source_url]\\n{url or ''}\\n\\n"
+                "[pdf_text]\\n"
+                + snippet
+            ),
+        },
+    ]
+    try:
+        result = _call_openai(messages, TEXT_MODEL, max_tokens=200, token_param="max_completion_tokens")
+    except Exception:
+        return ""
+    return _clean_university_name(result.get("university") or "")
+
+
+def _infer_university_from_pdf(pdf_path: Path, full_text: str, url: str = "") -> str:
+    probe_text = "\\n".join(filter(None, [pdf_path.stem, url, full_text[:50000]]))
+    scores: dict[str, int] = {}
+
+    for match in UNIVERSITY_PATTERN.finditer(probe_text):
+        name = _clean_university_name(match.group(1))
+        if not name:
+            continue
+        score = 1
+        context = probe_text[max(0, match.start() - 80): min(len(probe_text), match.end() + 80)]
+        for keyword in UNIVERSITY_CONTEXT_KEYWORDS:
+            if keyword in context:
+                score += 3
+        if name in pdf_path.stem:
+            score += 8
+        if url and name in url:
+            score += 4
+        scores[name] = scores.get(name, 0) + score
+
+    if scores:
+        ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        best_name, best_score = ranked[0]
+        second_score = ranked[1][1] if len(ranked) > 1 else 0
+        if best_score >= 6 and best_score - second_score >= 2:
+            return best_name
+
+    return _infer_university_with_llm(full_text, pdf_path.name, url)
+
+
+def _pick_final_university(raw_result: dict[str, Any] | None, fallback: str) -> str:
+    fallback = _clean_university_name(fallback)
+    if fallback and fallback != AUTO_UNIVERSITY_PLACEHOLDER:
+        return fallback
+    if raw_result:
+        top_level = _clean_university_name(str(raw_result.get("university") or ""))
+        if top_level:
+            return top_level
+        for record in raw_result.get("records") or []:
+            candidate = _clean_university_name(str(record.get("university") or ""))
+            if candidate:
+                return candidate
+    return fallback or AUTO_UNIVERSITY_PLACEHOLDER
 
 
 def _data_url_from_image(image_path: Path) -> str:
@@ -659,8 +752,13 @@ def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") ->
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
     init_db()
+    provided_university = _clean_university_name(university)
+    preview_text, _ = _read_pdf_text(pdf_path)
+    inferred_university = provided_university or _infer_university_from_pdf(pdf_path, preview_text, url)
+    stored_university = inferred_university or AUTO_UNIVERSITY_PLACEHOLDER
+    working_university = inferred_university or ""
     doc_id = create_source_document(
-        university=university,
+        university=stored_university,
         file_name=pdf_path.name,
         file_path=str(pdf_path),
         pdf_url=url,
@@ -668,23 +766,25 @@ def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") ->
     )
     print(f"[direct] source_document id={doc_id}")
 
-    full_text, _ = _read_pdf_text(pdf_path)
+    full_text = preview_text
     if len(full_text.strip()) > 500:
         try:
-            report = _run_text_path(doc_id, pdf_path, university, year)
+            report = _run_text_path(doc_id, pdf_path, working_university, year)
             status = "text_completed"
         except Exception as e:
             print(f"[direct] text_path_failed: {e}")
-            report = _run_vision_path(doc_id, pdf_path, university, year)
+            report = _run_vision_path(doc_id, pdf_path, working_university, year)
             status = "vision_completed"
     else:
-        report = _run_vision_path(doc_id, pdf_path, university, year)
+        report = _run_vision_path(doc_id, pdf_path, working_university, year)
         status = "vision_completed"
 
-    update_source_document(doc_id, status=status)
+    final_university = _pick_final_university(report.get("raw"), stored_university)
+    update_source_document(doc_id, status=status, university=final_university)
     return {
         "doc_id": doc_id,
         "status": status,
+        "university": final_university,
         "mode": report["mode"],
         "pages": report.get("pages"),
         "records": report.get("records"),

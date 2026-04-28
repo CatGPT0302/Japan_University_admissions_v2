@@ -69,7 +69,7 @@ init_db()
 
 class ExtractRequest(BaseModel):
     file_name: str
-    university: str
+    university: str = ""
     year: str
     url: str | None = ""
 
@@ -163,6 +163,7 @@ def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
     return {
         "doc_id": result.get("doc_id"),
         "status": result.get("status"),
+        "university": result.get("university", ""),
         "records": result.get("records"),
         "failed_pages": result.get("failed_pages", []),
     }
