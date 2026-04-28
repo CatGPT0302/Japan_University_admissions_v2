@@ -42,6 +42,16 @@ function stepLabel(step: Step, mode: SourceMode): string {
   return "准备上传并抽取";
 }
 
+function candidateKindLabel(candidate: FetchPdfCandidate): string {
+  if (candidate.source_kind === "direct_pdf") return "直链 PDF";
+  return "来源页发现";
+}
+
+function candidateTrustLabel(candidate: FetchPdfCandidate): string {
+  if (candidate.is_official) return "更像官网来源";
+  return "需要人工确认";
+}
+
 export default function RunPage({ onDone }: Props) {
   const [sourceMode, setSourceMode] = useState<SourceMode>("upload");
   const [targets, setTargets] = useState<FetchPdfTarget[]>([]);
@@ -571,8 +581,17 @@ export default function RunPage({ onDone }: Props) {
                           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
                             候选 {index + 1}：{candidate.title || candidate.pdf_url}
                           </div>
-                          <div className="badge badge-gray">匹配分：{candidate.score}</div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <div className={candidate.is_official ? "badge badge-green" : "badge badge-amber"}>{candidateTrustLabel(candidate)}</div>
+                            <div className="badge badge-gray">{candidateKindLabel(candidate)}</div>
+                            <div className="badge badge-gray">匹配分：{candidate.score}</div>
+                          </div>
                         </div>
+                        {candidate.host && (
+                          <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, marginBottom: 4 }}>
+                            域名：{candidate.host}
+                          </div>
+                        )}
                         <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, wordBreak: "break-all" }}>
                           PDF：{candidate.pdf_url}
                         </div>
@@ -581,6 +600,30 @@ export default function RunPage({ onDone }: Props) {
                             来源页：{candidate.page_url}
                           </div>
                         )}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                          <a
+                            href={candidate.pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn"
+                            style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            预览 PDF
+                          </a>
+                          {candidate.page_url && candidate.page_url !== candidate.pdf_url && (
+                            <a
+                              href={candidate.page_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn"
+                              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              查看来源页
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </label>

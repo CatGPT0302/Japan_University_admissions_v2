@@ -11,6 +11,10 @@ export interface FetchPdfCandidate {
   page_url: string;
   query: string;
   score: number;
+  host?: string;
+  is_official?: boolean;
+  source_kind?: string;
+  university?: string;
 }
 
 export interface FetchPdfSearchResponse {

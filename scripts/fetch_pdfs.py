@@ -53,14 +53,38 @@ def _sanitize_filename(name: str) -> str:
     return re.sub(r'[\\/:*?"<>|]+', "_", name)
 
 
-def _build_search_query(university: str, year: int) -> str:
-    return f"{(university or '').strip()} 外国人留学生募集要項 {year}"
-
-
 def _headers() -> dict[str, str]:
     return {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) admissions_v2/1.0",
     }
+
+
+def _build_search_query(university: str, year: int) -> str:
+    return f"{(university or '').strip()} 外国人留学生募集要項 {year}"
+
+
+def _host(url: str) -> str:
+    return urlparse(url or "").netloc.lower()
+
+
+def _is_official_host(host: str) -> bool:
+    return host.endswith(".ac.jp") or host.endswith(".edu") or host.endswith(".jp")
+
+
+def _host_score(host: str) -> int:
+    if host.endswith(".ac.jp"):
+        return 5
+    if host.endswith(".jp"):
+        return 3
+    if host.endswith(".edu"):
+        return 3
+    return 0
+
+
+def _guess_source_kind(page_url: str, pdf_url: str) -> str:
+    if page_url and page_url == pdf_url:
+        return "direct_pdf"
+    return "source_page_pdf"
 
 
 def _fetch(url: str) -> str:
@@ -85,16 +109,21 @@ def _resolve_result_url(href: str) -> str:
     return href
 
 
-def _score_text(text: str, href: str) -> int:
+def _score_text(university: str, text: str, href: str) -> int:
     combined = f"{text} {href}".lower().replace(" ", "")
     score = 0
     for token in KEYWORDS:
         if token in combined:
             score += 3
+    if "外国人留学生募集要項" in combined:
+        score += 5
     if "pdf" in combined:
         score += 2
     if "入試要項" in combined or "入学試験要項" in combined:
         score += 3
+    if _normalize_name(university) and _normalize_name(university).lower() in combined:
+        score += 4
+    score += _host_score(_host(href))
     for token in NEGATIVE_KEYWORDS:
         if token in combined:
             score -= 4
@@ -104,23 +133,29 @@ def _score_text(text: str, href: str) -> int:
 def _candidate(
     *,
     title: str,
+    university: str,
     pdf_url: str,
     page_url: str,
     query: str,
     score: int,
-) -> dict[str, str | int]:
+) -> dict[str, str | int | bool]:
+    host = _host(pdf_url)
     return {
         "title": title.strip() or pdf_url,
         "pdf_url": pdf_url,
         "page_url": page_url,
         "query": query,
         "score": score,
+        "host": host,
+        "is_official": _is_official_host(host),
+        "source_kind": _guess_source_kind(page_url, pdf_url),
+        "university": university,
     }
 
 
-def _dedupe_candidates(candidates: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
+def _dedupe_candidates(candidates: list[dict[str, str | int | bool]]) -> list[dict[str, str | int | bool]]:
     seen: set[str] = set()
-    ordered: list[dict[str, str | int]] = []
+    ordered: list[dict[str, str | int | bool]] = []
     for item in sorted(candidates, key=lambda row: int(row.get("score", 0)), reverse=True):
         pdf_url = str(item.get("pdf_url") or "").strip()
         if not pdf_url or pdf_url in seen:
@@ -130,9 +165,9 @@ def _dedupe_candidates(candidates: list[dict[str, str | int]]) -> list[dict[str,
     return ordered
 
 
-def _discover_pdf_links(page_url: str, html: str, query: str) -> list[dict[str, str | int]]:
+def _discover_pdf_links(page_url: str, html: str, query: str, university: str) -> list[dict[str, str | int | bool]]:
     soup = BeautifulSoup(html, "html.parser")
-    matches: list[dict[str, str | int]] = []
+    matches: list[dict[str, str | int | bool]] = []
     for anchor in soup.find_all("a", href=True):
         href = anchor["href"].strip()
         full_url = urljoin(page_url, href)
@@ -146,12 +181,13 @@ def _discover_pdf_links(page_url: str, html: str, query: str) -> list[dict[str, 
             anchor.find_parent().get_text(" ", strip=True) if anchor.find_parent() else "",
         ]
         text = " ".join(piece for piece in pieces if piece)
-        score = _score_text(text, full_url)
+        score = _score_text(university, text, full_url)
         if score < 3:
             continue
         matches.append(
             _candidate(
                 title=text,
+                university=university,
                 pdf_url=full_url,
                 page_url=page_url,
                 query=query,
@@ -161,15 +197,15 @@ def _discover_pdf_links(page_url: str, html: str, query: str) -> list[dict[str, 
     return _dedupe_candidates(matches)
 
 
-def _discover_candidate_pages(page_url: str, html: str) -> list[str]:
+def _discover_candidate_pages(page_url: str, html: str, university: str) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
     candidates: list[tuple[int, str]] = []
-    base_host = urlparse(page_url).netloc
+    base_host = _host(page_url)
     for anchor in soup.find_all("a", href=True):
         href = anchor["href"].strip()
         full_url = urljoin(page_url, href)
-        parsed = urlparse(full_url)
-        if parsed.netloc and parsed.netloc != base_host:
+        parsed_host = _host(full_url)
+        if parsed_host and parsed_host != base_host:
             continue
         text = " ".join(
             part
@@ -180,7 +216,7 @@ def _discover_candidate_pages(page_url: str, html: str) -> list[str]:
             ]
             if part
         )
-        score = _score_text(text, full_url)
+        score = _score_text(university, text, full_url)
         if score >= 4 and not _is_pdf_url(full_url):
             candidates.append((score, full_url))
     seen: set[str] = set()
@@ -192,21 +228,27 @@ def _discover_candidate_pages(page_url: str, html: str) -> list[str]:
     return ordered[:6]
 
 
-def _discover_from_page(page_url: str, query: str, depth: int = 0, visited: set[str] | None = None) -> list[dict[str, str | int]]:
+def _discover_from_page(
+    page_url: str,
+    query: str,
+    university: str,
+    depth: int = 0,
+    visited: set[str] | None = None,
+) -> list[dict[str, str | int | bool]]:
     visited = visited or set()
     if page_url in visited or depth > 1:
         return []
     visited.add(page_url)
 
     html = _fetch(page_url)
-    candidates = _discover_pdf_links(page_url, html, query)
+    candidates = _discover_pdf_links(page_url, html, query, university)
     if candidates:
         return candidates
 
-    nested_matches: list[dict[str, str | int]] = []
-    for candidate_page in _discover_candidate_pages(page_url, html):
+    nested_matches: list[dict[str, str | int | bool]] = []
+    for candidate_page in _discover_candidate_pages(page_url, html, university):
         try:
-            nested_matches.extend(_discover_from_page(candidate_page, query, depth + 1, visited))
+            nested_matches.extend(_discover_from_page(candidate_page, query, university, depth + 1, visited))
         except Exception:
             continue
     return _dedupe_candidates(nested_matches)
@@ -234,7 +276,7 @@ def _search_result_pages(query: str) -> list[dict[str, str]]:
         title = anchor.get_text(" ", strip=True)
         if not href or not title:
             continue
-        if "duckduckgo.com" in urlparse(href).netloc:
+        if "duckduckgo.com" in _host(href):
             continue
         results.append({"title": title, "url": href})
     return results[:8]
@@ -265,7 +307,7 @@ def search_single(university: str, year: int, page_url: str = "") -> dict[str, o
         raise ValueError("University is required.")
 
     query = _build_search_query(university, year)
-    candidates: list[dict[str, str | int]] = []
+    candidates: list[dict[str, str | int | bool]] = []
 
     seed_pages: list[str] = []
     if page_url:
@@ -277,7 +319,7 @@ def search_single(university: str, year: int, page_url: str = "") -> dict[str, o
 
     for seed_page in seed_pages:
         try:
-            candidates.extend(_discover_from_page(seed_page, query))
+            candidates.extend(_discover_from_page(seed_page, query, university))
         except Exception:
             continue
 
@@ -286,11 +328,12 @@ def search_single(university: str, year: int, page_url: str = "") -> dict[str, o
             result_url = result["url"]
             title = result["title"]
             if _is_pdf_url(result_url):
-                score = _score_text(title, result_url)
+                score = _score_text(university, title, result_url)
                 if score >= 3:
                     candidates.append(
                         _candidate(
                             title=title,
+                            university=university,
                             pdf_url=result_url,
                             page_url=result_url,
                             query=query,
@@ -299,7 +342,7 @@ def search_single(university: str, year: int, page_url: str = "") -> dict[str, o
                     )
                 continue
             try:
-                candidates.extend(_discover_from_page(result_url, query))
+                candidates.extend(_discover_from_page(result_url, query, university))
             except Exception:
                 continue
 
