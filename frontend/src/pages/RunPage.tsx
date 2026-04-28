@@ -3,27 +3,43 @@ import {
   extractPdf,
   fetchPdf,
   getFetchTargets,
+  searchFetchPdf,
   toErrorMessage,
   uploadPdf,
 } from "../api/client";
-import type { FetchPdfTarget } from "../types";
+import type { FetchPdfCandidate, FetchPdfTarget } from "../types";
 
 interface Props {
   onDone: (docId: number) => void;
 }
 
-type SourceMode = "upload" | "crawl";
-type Step = "idle" | "fetching" | "uploading" | "extracting" | "done" | "error";
+type SourceMode = "upload" | "search" | "direct";
+type Step = "idle" | "searching" | "downloading" | "uploading" | "extracting" | "done" | "error";
 
-function stepDescription(step: Step, sourceMode: SourceMode): string {
-  if (step === "fetching") return "我正在帮你从招生页里寻找 PDF，找到后会直接继续抽取。";
-  if (step === "uploading") return "文件已经接收，正在把 PDF 送进系统。";
-  if (step === "extracting") return "AI 正在读取 PDF 内容并整理成可复查记录。";
-  if (step === "done") return "抽取已经完成，可以直接进入复查。";
-  if (step === "error") return "这次处理没有成功，建议先看报错，再重新运行。";
-  return sourceMode === "crawl"
-    ? "你可以先让我自动去找 PDF，也可以手动指定招生页地址。"
-    : "你可以直接上传现成 PDF，系统会自动完成抽取。";
+interface RunResult {
+  doc_id: number;
+  records: number;
+  failed: number;
+  file_name?: string;
+  source_url?: string;
+}
+
+function modeTitle(mode: SourceMode): string {
+  if (mode === "upload") return "本地上传 PDF";
+  if (mode === "search") return "自动搜索募集要项";
+  return "手动填写 PDF 链接";
+}
+
+function stepLabel(step: Step, mode: SourceMode): string {
+  if (step === "searching") return "正在搜索候选 PDF";
+  if (step === "downloading") return "正在获取 PDF";
+  if (step === "uploading") return "正在上传文件";
+  if (step === "extracting") return "正在抽取内容";
+  if (step === "done") return "抽取完成";
+  if (step === "error") return "处理遇到问题";
+  if (mode === "search") return "先搜索候选，再由你确认";
+  if (mode === "direct") return "用你给的 PDF 链接直接处理";
+  return "准备上传并抽取";
 }
 
 export default function RunPage({ onDone }: Props) {
@@ -31,19 +47,17 @@ export default function RunPage({ onDone }: Props) {
   const [targets, setTargets] = useState<FetchPdfTarget[]>([]);
   const [selectedTarget, setSelectedTarget] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [univ, setUniv] = useState("");
+  const [university, setUniversity] = useState("");
   const [year, setYear] = useState("2026");
-  const [url, setUrl] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
+  const [pdfUrl, setPdfUrl] = useState("");
   const [step, setStep] = useState<Step>("idle");
-  const [result, setResult] = useState<{
-    doc_id: number;
-    records: number;
-    failed: number;
-    file_name?: string;
-    source_url?: string;
-  } | null>(null);
+  const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [candidates, setCandidates] = useState<FetchPdfCandidate[]>([]);
+  const [selectedCandidateUrl, setSelectedCandidateUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -52,159 +66,257 @@ export default function RunPage({ onDone }: Props) {
 
   async function loadTargets() {
     try {
-      const data = await getFetchTargets();
-      setTargets(data);
+      setTargets(await getFetchTargets());
     } catch {
       setTargets([]);
     }
   }
 
-  function resetStatus() {
+  function resetRunState(options?: { keepCandidates?: boolean }) {
     setStep("idle");
     setResult(null);
     setError("");
+    if (!options?.keepCandidates) {
+      setCandidates([]);
+      setSelectedCandidateUrl("");
+      setSearchQuery("");
+    }
   }
 
   function handleFile(nextFile: File | null) {
     if (!nextFile || !nextFile.name.toLowerCase().endsWith(".pdf")) return;
     setFile(nextFile);
-    resetStatus();
-    if (!univ) {
-      const name = nextFile.name
-        .replace(/[_\-]/g, " ")
+    resetRunState();
+    if (!university) {
+      const inferredName = nextFile.name
+        .replace(/[_-]/g, " ")
         .replace(/\.pdf$/i, "")
         .replace(/\d{4}/g, "")
         .trim();
-      if (name) setUniv(name);
+      if (inferredName) setUniversity(inferredName);
     }
   }
 
   async function runUpload() {
-    if (!file || !univ) return;
+    if (!file || !university) return;
     setError("");
     setResult(null);
     try {
       setStep("uploading");
-      const up = await uploadPdf(file);
+      const uploaded = await uploadPdf(file);
       setStep("extracting");
-      const ex = await extractPdf({
-        file_name: up.file_name,
-        university: univ,
+      const extracted = await extractPdf({
+        file_name: uploaded.file_name,
+        university,
         year,
-        url: url || undefined,
       });
       setResult({
-        doc_id: ex.doc_id,
-        records: ex.records,
-        failed: ex.failed_pages?.length ?? 0,
-        file_name: up.file_name,
-        source_url: url || undefined,
+        doc_id: extracted.doc_id,
+        records: extracted.records,
+        failed: extracted.failed_pages?.length ?? 0,
+        file_name: uploaded.file_name,
       });
       setStep("done");
-    } catch (e) {
-      setError(toErrorMessage(e));
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
       setStep("error");
     }
   }
 
-  async function runCrawl() {
-    if (!univ) return;
+  async function runSearch() {
+    if (!university) return;
+    setError("");
+    setResult(null);
+    setCandidates([]);
+    setSelectedCandidateUrl("");
+    try {
+      setStep("searching");
+      const searched = await searchFetchPdf({
+        university,
+        year,
+        page_url: pageUrl || undefined,
+      });
+      setSearchQuery(searched.query);
+      setCandidates(searched.candidates || []);
+      if (searched.candidates?.length) {
+        setSelectedCandidateUrl(searched.candidates[0].pdf_url);
+        setStep("idle");
+      } else {
+        setError("这次没有找到可用的募集要项 PDF。你可以改学校名、补来源页，或者直接走手动 PDF 链接。");
+        setStep("error");
+      }
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+      setStep("error");
+    }
+  }
+
+  async function processPdfCandidate(candidate: FetchPdfCandidate) {
     setError("");
     setResult(null);
     try {
-      setStep("fetching");
+      setStep("downloading");
       const fetched = await fetchPdf({
-        university: univ,
+        university,
         year,
-        page_url: url || undefined,
+        page_url: candidate.page_url || pageUrl || undefined,
+        pdf_url: candidate.pdf_url,
       });
       setStep("extracting");
-      const ex = await extractPdf({
+      const extracted = await extractPdf({
         file_name: fetched.file_name,
-        university: univ,
+        university,
         year,
-        url: fetched.source_url || url || undefined,
+        url: fetched.source_url || candidate.pdf_url,
       });
       setResult({
-        doc_id: ex.doc_id,
-        records: ex.records,
-        failed: ex.failed_pages?.length ?? 0,
+        doc_id: extracted.doc_id,
+        records: extracted.records,
+        failed: extracted.failed_pages?.length ?? 0,
         file_name: fetched.file_name,
-        source_url: fetched.source_url || fetched.page_url,
+        source_url: fetched.source_url || candidate.pdf_url,
       });
-      setUrl(fetched.page_url || fetched.source_url || url);
       setStep("done");
-    } catch (e) {
-      setError(toErrorMessage(e));
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
       setStep("error");
     }
   }
 
-  const busy = step === "fetching" || step === "uploading" || step === "extracting";
-  const ready = sourceMode === "upload" ? Boolean(file && univ && !busy) : Boolean(univ && !busy);
+  async function runDirectPdf() {
+    if (!university || !pdfUrl) return;
+    setError("");
+    setResult(null);
+    try {
+      setStep("downloading");
+      const fetched = await fetchPdf({
+        university,
+        year,
+        page_url: pageUrl || undefined,
+        pdf_url: pdfUrl,
+      });
+      setStep("extracting");
+      const extracted = await extractPdf({
+        file_name: fetched.file_name,
+        university,
+        year,
+        url: fetched.source_url || pdfUrl,
+      });
+      setResult({
+        doc_id: extracted.doc_id,
+        records: extracted.records,
+        failed: extracted.failed_pages?.length ?? 0,
+        file_name: fetched.file_name,
+        source_url: fetched.source_url || pdfUrl,
+      });
+      setStep("done");
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+      setStep("error");
+    }
+  }
 
-  const primaryActionLabel =
-    step === "fetching"
-      ? "正在寻找 PDF…"
-      : step === "uploading"
-        ? "正在上传…"
-        : step === "extracting"
-          ? "正在抽取…"
-          : step === "done"
-            ? "抽取完成"
-            : sourceMode === "crawl"
-              ? "自动抓取并抽取"
-              : "开始抽取";
+  const busy = step === "searching" || step === "downloading" || step === "uploading" || step === "extracting";
+  const readyToUpload = Boolean(file && university && !busy);
+  const readyToSearch = Boolean(university && !busy);
+  const selectedCandidate = candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
+  const readyToConfirmCandidate = Boolean(selectedCandidate && !busy);
+  const readyToDirectRun = Boolean(university && pdfUrl && !busy);
 
-  const topStatus = useMemo(() => {
+  const statusBlock = useMemo(() => {
     if (step === "done" && result) {
       return {
-        tone: "success",
+        tone: "success" as const,
         title: `已经整理出 ${result.records} 条记录`,
-        description: result.failed > 0
-          ? `其中有 ${result.failed} 页没有顺利处理，建议在复查时优先留意。`
-          : "抽取过程很顺，下一步直接去复查就可以了。",
+        description:
+          result.failed > 0
+            ? `其中有 ${result.failed} 页没有顺利处理，进入复查后建议优先留意。`
+            : "抽取已经完成，可以直接进入复查。",
       };
     }
     if (step === "error") {
       return {
-        tone: "danger",
+        tone: "danger" as const,
         title: "这一步卡住了",
-        description: "别担心，通常是来源页或文件格式问题，改一下后重新跑就行。",
+        description: "通常是来源页、PDF 链接或文件本身的问题。你可以换入口继续，不会影响别的流程。",
       };
     }
-    if (busy) {
+    if (step === "searching") {
       return {
-        tone: "info",
-        title: "系统正在处理",
-        description: stepDescription(step, sourceMode),
+        tone: "info" as const,
+        title: "我正在帮你找候选 PDF",
+        description: "这一步只负责找候选，不会直接入库。你确认之后我才会继续处理。",
+      };
+    }
+    if (step === "downloading") {
+      return {
+        tone: "info" as const,
+        title: "我正在获取你确认的 PDF",
+        description: "拿到文件后会继续进入抽取。",
+      };
+    }
+    if (step === "uploading") {
+      return {
+        tone: "info" as const,
+        title: "PDF 已接收",
+        description: "正在把文件送进系统准备抽取。",
+      };
+    }
+    if (step === "extracting") {
+      return {
+        tone: "info" as const,
+        title: "AI 正在读这份募集要项",
+        description: "系统会把内容整理成可复查的 staging 记录。",
       };
     }
     return {
-      tone: "neutral",
-      title: sourceMode === "crawl" ? "可以先帮你找 PDF" : "可以直接开始抽取",
-      description: stepDescription(step, sourceMode),
+      tone: "neutral" as const,
+      title: sourceMode === "search" ? "先找候选，再由你决定处理哪一份" : "准备开始",
+      description:
+        sourceMode === "upload"
+          ? "适合你已经拿到 PDF 的情况。"
+          : sourceMode === "direct"
+            ? "适合你已经拿到直接 PDF 链接，不想再让系统搜索。"
+            : "系统会优先用固定检索词搜索，例如：明治大学 外国人留学生募集要項 2026。",
     };
   }, [result, sourceMode, step]);
 
   const statusStyle =
-    topStatus.tone === "success"
+    statusBlock.tone === "success"
       ? { background: "#f0fdf4", border: "1px solid #bbf7d0", accent: "#166534" }
-      : topStatus.tone === "danger"
+      : statusBlock.tone === "danger"
         ? { background: "#fef2f2", border: "1px solid #fecaca", accent: "#b91c1c" }
-        : topStatus.tone === "info"
+        : statusBlock.tone === "info"
           ? { background: "#eff6ff", border: "1px solid #bfdbfe", accent: "#1d4ed8" }
           : { background: "#ffffff", border: "1px solid #e5e7eb", accent: "#111827" };
 
+  const modeCards: Array<{ key: SourceMode; title: string; desc: string }> = [
+    {
+      key: "upload",
+      title: "本地上传 PDF",
+      desc: "你已经拿到文件时，用这条最快。",
+    },
+    {
+      key: "search",
+      title: "自动搜索募集要项",
+      desc: "系统先搜候选 PDF，你看过再决定处理哪一份。",
+    },
+    {
+      key: "direct",
+      title: "手动填写 PDF 链接",
+      desc: "你已经知道准确的 PDF 链接时，用这条最稳。",
+    },
+  ];
+
   return (
-    <div style={{ maxWidth: 780 }}>
+    <div style={{ maxWidth: 860 }}>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--red)", marginBottom: 10, fontWeight: 600 }}>Step 1</div>
-        <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.15, margin: "0 0 10px" }}>
-          跑数据
-        </h1>
+        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--red)", marginBottom: 10, fontWeight: 600 }}>
+          Step 1
+        </div>
+        <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.15, margin: "0 0 10px" }}>跑数据</h1>
         <p style={{ fontSize: 14, color: "var(--ink2)", lineHeight: 1.75, margin: 0 }}>
-          这一步更像把原始 PDF 交给助手。你给我文件或来源页，我先帮你整理出一版可复查结果。
+          这里负责把 PDF 送进系统。你可以直接上传文件、让系统先搜索候选募集要项，或者自己贴准确的 PDF 链接。
         </p>
       </div>
 
@@ -220,37 +332,27 @@ export default function RunPage({ onDone }: Props) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: statusStyle.accent, marginBottom: 6 }}>{topStatus.title}</div>
-            <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.7 }}>{topStatus.description}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: statusStyle.accent, marginBottom: 6 }}>{statusBlock.title}</div>
+            <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.7 }}>{statusBlock.description}</div>
           </div>
-          <div style={{ display: "grid", gap: 6, minWidth: 180 }}>
-            <div className="badge badge-gray">模式：{sourceMode === "crawl" ? "自动抓取 PDF" : "本地上传 PDF"}</div>
-            <div className="badge badge-gray">大学：{univ || "还没填写"}</div>
+          <div style={{ display: "grid", gap: 6, minWidth: 220 }}>
+            <div className="badge badge-gray">模式：{modeTitle(sourceMode)}</div>
+            <div className="badge badge-gray">大学：{university || "还没填写"}</div>
             <div className="badge badge-gray">年度：{year || "未设置"}</div>
+            <div className="badge badge-gray">状态：{stepLabel(step, sourceMode)}</div>
           </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
-        {[
-          {
-            key: "upload" as SourceMode,
-            title: "本地上传 PDF",
-            desc: "适合你已经拿到文件的情况，步骤最短。",
-          },
-          {
-            key: "crawl" as SourceMode,
-            title: "自动抓取 PDF",
-            desc: "适合你只有招生页地址，想让我先帮你把 PDF 找出来。",
-          },
-        ].map((item) => {
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 18 }}>
+        {modeCards.map((item) => {
           const active = sourceMode === item.key;
           return (
             <button
               key={item.key}
               onClick={() => {
                 setSourceMode(item.key);
-                resetStatus();
+                resetRunState();
               }}
               style={{
                 textAlign: "left",
@@ -270,27 +372,106 @@ export default function RunPage({ onDone }: Props) {
         })}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
-        <div className="card" style={{ padding: 16, borderRadius: 18 }}>
-          <div style={{ fontSize: 12, color: "var(--ink3)", marginBottom: 6 }}>当前状态</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>{primaryActionLabel}</div>
-        </div>
-        <div className="card" style={{ padding: 16, borderRadius: 18 }}>
-          <div style={{ fontSize: 12, color: "var(--ink3)", marginBottom: 6 }}>已选文件</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>{file?.name || "还没有"}</div>
-        </div>
-        <div className="card" style={{ padding: 16, borderRadius: 18 }}>
-          <div style={{ fontSize: 12, color: "var(--ink3)", marginBottom: 6 }}>操作建议</div>
-          <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.65 }}>
-            {sourceMode === "crawl" ? "先选学校，再决定是否补招生页 URL。" : "上传后先不要急着关页，等抽取完成再去复查。"}
-          </div>
+      <div className="card" style={{ padding: 22, borderRadius: 22, marginBottom: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: "12px 14px" }}>
+          <label>
+            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
+            <input
+              value={university}
+              onChange={(event) => {
+                setUniversity(event.target.value);
+                resetRunState();
+              }}
+              placeholder="例如：明治大学"
+              className="field"
+              style={{ width: "100%" }}
+            />
+          </label>
+          <label>
+            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>年度</div>
+            <input
+              value={year}
+              onChange={(event) => {
+                setYear(event.target.value);
+                resetRunState();
+              }}
+              placeholder="2026"
+              className="field"
+              style={{ width: "100%" }}
+            />
+          </label>
+
+          {sourceMode === "search" && (
+            <>
+              <label>
+                <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>预设学校</div>
+                <select
+                  value={selectedTarget}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    const matched = targets.find((item) => item.name === next);
+                    setSelectedTarget(next);
+                    if (next) setUniversity(next);
+                    setPageUrl(matched?.url || "");
+                    resetRunState();
+                  }}
+                  className="field"
+                  style={{ width: "100%" }}
+                >
+                  <option value="">可选，不填也行</option>
+                  {targets.map((target) => (
+                    <option key={target.name} value={target.name}>
+                      {target.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>募集页 URL</div>
+                <input
+                  value={pageUrl}
+                  onChange={(event) => {
+                    setPageUrl(event.target.value);
+                    resetRunState();
+                  }}
+                  placeholder="可选，补充官网招生页会更稳"
+                  className="field"
+                  style={{ width: "100%" }}
+                />
+              </label>
+            </>
+          )}
+
+          {sourceMode === "direct" && (
+            <>
+              <label style={{ gridColumn: "span 2" }}>
+                <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>PDF 直链</div>
+                <input
+                  value={pdfUrl}
+                  onChange={(event) => {
+                    setPdfUrl(event.target.value);
+                    resetRunState();
+                  }}
+                  placeholder="https://.../guideline.pdf"
+                  className="field"
+                  style={{ width: "100%" }}
+                />
+              </label>
+              <label style={{ gridColumn: "span 2" }}>
+                <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>来源页 URL（选填）</div>
+                <input
+                  value={pageUrl}
+                  onChange={(event) => {
+                    setPageUrl(event.target.value);
+                    resetRunState();
+                  }}
+                  placeholder="可选，记录这份 PDF 是从哪个招生页来的"
+                  className="field"
+                  style={{ width: "100%" }}
+                />
+              </label>
+            </>
+          )}
         </div>
       </div>
 
@@ -330,7 +511,7 @@ export default function RunPage({ onDone }: Props) {
           {file ? (
             <>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>{file.name}</div>
-              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink2)" }}>我会用这个文件开始抽取。</div>
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink2)" }}>确认后我会直接上传并开始抽取。</div>
             </>
           ) : (
             <>
@@ -341,130 +522,109 @@ export default function RunPage({ onDone }: Props) {
         </div>
       )}
 
-      {sourceMode === "crawl" && (
+      {sourceMode === "search" && (
         <div className="card" style={{ padding: 22, borderRadius: 22, marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>自动抓取入口</div>
-          <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, marginBottom: 14 }}>
-            这里更像“让我先去找文件”。如果预设学校够用，你几乎不用再手动处理。
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>自动搜索候选 PDF</div>
+              <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
+                系统会优先用固定检索词搜索：<strong>{university || "大学名"} 外国人留学生募集要項 {year || "年份"}</strong>
+              </div>
+            </div>
+            <button className="btn btn-primary" disabled={!readyToSearch} onClick={() => void runSearch()}>
+              {step === "searching" ? "正在搜索..." : "先搜索候选"}
+            </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <label>
-              <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>预设学校</div>
-              <select
-                value={selectedTarget}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setSelectedTarget(next);
-                  const target = targets.find((item) => item.name === next);
-                  if (next) setUniv(next);
-                  setUrl(target?.url || "");
-                  resetStatus();
+
+          {searchQuery && (
+            <div style={{ marginBottom: 12, fontSize: 12, color: "var(--ink2)" }}>
+              本次搜索词：<code>{searchQuery}</code>
+            </div>
+          )}
+
+          {candidates.length > 0 && (
+            <div style={{ display: "grid", gap: 12 }}>
+              {candidates.map((candidate, index) => {
+                const active = selectedCandidateUrl === candidate.pdf_url;
+                return (
+                  <label
+                    key={candidate.pdf_url}
+                    style={{
+                      display: "block",
+                      border: active ? "1px solid #cbd5e1" : "1px solid #e5e7eb",
+                      background: active ? "#f8fafc" : "#ffffff",
+                      borderRadius: 16,
+                      padding: 16,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <input
+                        type="radio"
+                        name="pdf-candidate"
+                        checked={active}
+                        onChange={() => setSelectedCandidateUrl(candidate.pdf_url)}
+                        style={{ marginTop: 3 }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>
+                            候选 {index + 1}：{candidate.title || candidate.pdf_url}
+                          </div>
+                          <div className="badge badge-gray">匹配分：{candidate.score}</div>
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, wordBreak: "break-all" }}>
+                          PDF：{candidate.pdf_url}
+                        </div>
+                        {candidate.page_url && candidate.page_url !== candidate.pdf_url && (
+                          <div style={{ fontSize: 12, color: "var(--ink3)", lineHeight: 1.7, wordBreak: "break-all", marginTop: 4 }}>
+                            来源页：{candidate.page_url}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+
+              <div
+                style={{
+                  marginTop: 4,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  paddingTop: 8,
                 }}
-                className="field"
-                style={{ width: "100%" }}
               >
-                <option value="">选择学校</option>
-                {targets.map((target) => (
-                  <option key={target.name} value={target.name}>
-                    {target.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>年度</div>
-              <input
-                value={year}
-                onChange={(event) => {
-                  setYear(event.target.value);
-                  resetStatus();
-                }}
-                placeholder="2026"
-                className="field"
-                style={{ width: "100%" }}
-              />
-            </label>
-          </div>
+                <div style={{ fontSize: 12, color: "var(--ink2)" }}>
+                  先由你确认候选，再继续下载和抽取；不会因为自动搜索直接把结果写进去。
+                </div>
+                <button
+                  className="btn btn-primary"
+                  disabled={!readyToConfirmCandidate}
+                  onClick={() => selectedCandidate && void processPdfCandidate(selectedCandidate)}
+                >
+                  {step === "downloading" || step === "extracting" ? "正在处理..." : "确认这份并开始处理"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      <div className="card" style={{ padding: 24, borderRadius: 22, marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "12px 14px" }}>
-          <label>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>大学名称</div>
-            <input
-              value={univ}
-              onChange={(event) => {
-                setUniv(event.target.value);
-                resetStatus();
-              }}
-              placeholder="例如：明治大学"
-              className="field"
-              style={{ width: "100%" }}
-            />
-          </label>
-          <label>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>年度</div>
-            <input
-              value={year}
-              onChange={(event) => {
-                setYear(event.target.value);
-                resetStatus();
-              }}
-              placeholder="2026"
-              className="field"
-              style={{ width: "100%" }}
-            />
-          </label>
-          <label style={{ gridColumn: "span 2" }}>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 5, fontWeight: 600 }}>
-              {sourceMode === "crawl" ? "招生页 URL（选填）" : "来源 URL（选填）"}
-            </div>
-            <input
-              value={url}
-              onChange={(event) => {
-                setUrl(event.target.value);
-                resetStatus();
-              }}
-              placeholder="https://..."
-              className="field"
-              style={{ width: "100%" }}
-            />
-          </label>
+      {sourceMode === "direct" && (
+        <div className="card" style={{ padding: 22, borderRadius: 22, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>手动 PDF 处理通道</div>
+          <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, marginBottom: 14 }}>
+            如果你已经知道准确的 PDF 链接，这条最稳，也能绕开自动搜索不准的问题。
+          </div>
+          <button className="btn btn-primary" disabled={!readyToDirectRun} onClick={() => void runDirectPdf()}>
+            {step === "downloading" || step === "extracting" ? "正在处理..." : "用这份 PDF 直接处理"}
+          </button>
         </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 20 }}>
-        <button
-          onClick={() => void (sourceMode === "crawl" ? runCrawl() : runUpload())}
-          disabled={!ready}
-          style={{
-            height: 46,
-            padding: "0 32px",
-            background: ready ? "#111827" : "#d6d3d1",
-            color: ready ? "#fff" : "#78716c",
-            border: "none",
-            borderRadius: 14,
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: ready ? "pointer" : "not-allowed",
-            fontFamily: "inherit",
-            boxShadow: ready ? "0 12px 22px rgba(17,24,39,0.12)" : "none",
-          }}
-        >
-          {busy ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
-              {primaryActionLabel}
-            </span>
-          ) : (
-            primaryActionLabel
-          )}
-        </button>
-        <div style={{ fontSize: 12, color: "var(--ink3)" }}>
-          建议先把大学名和年度填准，这样后面的复查会轻松很多。
-        </div>
-      </div>
+      )}
 
       {step === "done" && result && (
         <div
@@ -478,26 +638,12 @@ export default function RunPage({ onDone }: Props) {
         >
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", marginBottom: 8 }}>这份结果已经可以开始复查了</div>
           <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.8, marginBottom: 16 }}>
-            我一共整理出了 <strong style={{ color: "var(--ink)" }}>{result.records}</strong> 条记录。
+            这次一共整理出 <strong style={{ color: "var(--ink)" }}>{result.records}</strong> 条记录。
             {result.failed > 0 ? ` 其中有 ${result.failed} 页需要你额外留意。` : " 目前没有明显失败页。"}
             {result.file_name ? ` 文件名是 ${result.file_name}。` : ""}
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              onClick={() => onDone(result.doc_id)}
-              style={{
-                height: 40,
-                padding: "0 20px",
-                background: "var(--green)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
+            <button className="btn btn-green" onClick={() => onDone(result.doc_id)}>
               前往复查
             </button>
             {result.source_url && (
@@ -505,19 +651,8 @@ export default function RunPage({ onDone }: Props) {
                 href={result.source_url}
                 target="_blank"
                 rel="noreferrer"
-                style={{
-                  height: 40,
-                  padding: "0 18px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  borderRadius: 12,
-                  border: "1px solid var(--border)",
-                  textDecoration: "none",
-                  color: "var(--ink)",
-                  background: "#fff",
-                  fontSize: 13,
-                  fontWeight: 600,
-                }}
+                className="btn"
+                style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
               >
                 查看来源
               </a>
@@ -542,7 +677,9 @@ export default function RunPage({ onDone }: Props) {
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ marginTop: 18, fontSize: 12, color: "var(--ink3)", lineHeight: 1.8 }}>
+        建议顺序：如果你手头已经有 PDF，就直接上传；如果没有，就先用“自动搜索募集要项”找候选，再确认；如果你已经知道准确 PDF 链接，就直接走手动通道。
+      </div>
     </div>
   );
 }
