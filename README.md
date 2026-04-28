@@ -131,6 +131,12 @@ Optional full rerun and report save:
 python scripts/regression_golden_samples.py --run-extract --save-json .\demo\golden_report.json
 ```
 
+For standalone source probing (cron/scheduler-friendly):
+
+```powershell
+python scripts/probe_pdf_sources.py --year 2026 --save-json .\demo\probe_report.json
+```
+
 ## Documentation
 
 - `docs/handoff.md`
