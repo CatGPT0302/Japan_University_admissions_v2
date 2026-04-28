@@ -388,8 +388,10 @@ def _symbol_to_eju_value(field: str, value: str) -> str:
     source = str(value or "").strip()
     if not source:
         return ""
-    if re.fullmatch(r"[○●◎◯□■▲△▽▼※＊*・\s]+", source):
+    if re.fullmatch(r"[○●◎◯▲△\s]+", source):
         return EJU_FIELD_LABELS.get(field, source)
+    if re.fullmatch(r"[□■▽▼※＊*・\s]+", source):
+        return ""
     if source in {"必須", "必要", "要", "提出必須", "受験必須"}:
         return EJU_FIELD_LABELS.get(field, source)
     return source
@@ -1356,7 +1358,8 @@ def _vision_patch_records(
                                     "候補にない学部・学科は出力しないでください。"
                                     "表のヘッダーに記号の意味がある場合は必ず従ってください。"
                                     "○や●が必須を示す列は該当する科目名を値にしてください。"
-                                    "▲が『いずれか提出必須』、□が任意・選択条件を示す場合は、必要な補足を warnings に入れてください。"
+                                    "▲や△が『いずれか提出必須』を示す場合も該当する科目名を値にしてください。"
+                                    "□、■、※、＊、空欄は必須科目として主字段に入れないでください。必要な補足だけ warnings に入れてください。"
                                     "EJU科目は eju_japanese/eju_general/eju_math/eju_physics/eju_chemistry/eju_biology に分けてください。"
                                     "数学は可能なら 数学(コース1), 数学(コース2), 数学(コース1または2) のように書いてください。"
                                     "英語外部資格試験は TOEFL/IELTS/TOEIC など試験名だけを入れ、学習歴や提出書類は入れないでください。"
