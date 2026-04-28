@@ -100,6 +100,8 @@ For stable PDF retrieval, you can maintain your own source registry at `private_
 
 The repository includes `data/sample_pdf_source_registry.csv` only as a replaceable demonstration sample.
 
+Use `data/pdf_source_registry.template.csv` as the starting template for a real maintained registry.
+
 When a registry entry matches a university and year, the system will prefer that maintained source before falling back to open-web search.
 
 ## Documentation

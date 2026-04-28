@@ -78,3 +78,7 @@ Rules:
 8. Use page numbers when clearly available from the provided page or text context.
 9. Do not invent scores or deadlines.
 10. Exclude returnee, domestic special, or non-target applicant categories.
+11. If a faculty does not explicitly require a subject or external test, leave that field empty instead of guessing.
+12. Do not copy English-test requirements into EJU fields, and do not copy EJU subject names into `english_requirement`.
+13. For `screening_schedule`, `result_date`, and `enrollment_period`, prefer the concrete date or date range only; avoid extra explanatory prose.
+14. If one faculty clearly differs from another, keep the faculty-specific requirement separate and do not generalize across the whole PDF.

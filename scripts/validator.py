@@ -40,13 +40,36 @@ HIGH_RISK_FIELDS = [
     "enrollment_period",
 ]
 
-DATE_PATTERN = re.compile(r"(20\d{2})[年/\-.]?\d{1,2}[月/\-.]?\d{1,2}")
+EJU_FIELD_KEYS = [
+    "eju_japanese",
+    "eju_general",
+    "eju_math",
+    "eju_physics",
+    "eju_chemistry",
+    "eju_biology",
+]
+
+DATE_PATTERN = re.compile(r"(20\d{2})[年\-.]?\d{1,2}[月\-.]?\d{1,2}")
 EJU_FORBIDDEN = {"TOEFL", "IELTS", "TOEIC"}
 ENGLISH_FORBIDDEN = {"日本語", "総合科目", "数学", "物理", "化学", "生物"}
+NOT_APPLICABLE_MARKERS = {
+    "なし",
+    "不要",
+    "該当なし",
+    "課さない",
+    "問わない",
+    "任意",
+    "出願基準点なし",
+    "基準点なし",
+}
 
 
 def _s(v: Any) -> str:
     return str(v or "").strip()
+
+
+def _contains_any(text: str, tokens: set[str] | list[str] | tuple[str, ...]) -> bool:
+    return any(token for token in tokens if token and token in text)
 
 
 def _clamp_confidence(value: Any, default: float = 0.0) -> float:
@@ -102,6 +125,73 @@ def normalize_manual_modified_fields(raw: Any) -> list[str]:
     return list(dict.fromkeys(values))
 
 
+def _field_text_bundle(record: dict[str, Any], field_evidence: dict[str, dict[str, Any]], field: str) -> str:
+    parts = [
+        _s(record.get(field)),
+        _s(field_evidence.get(field, {}).get("text")),
+    ]
+    return " ".join(part for part in parts if part)
+
+
+def _is_optional_empty_field(record: dict[str, Any], field_evidence: dict[str, dict[str, Any]], field: str) -> bool:
+    value = _s(record.get(field))
+    evidence_text = _s(field_evidence.get(field, {}).get("text"))
+    combined = _field_text_bundle(record, field_evidence, field)
+    if value or evidence_text:
+        return _contains_any(combined, NOT_APPLICABLE_MARKERS)
+
+    if field == "deadline_rule":
+        return bool(_s(record.get("application_period")))
+
+    if field == "eju_japanese":
+        context = " ".join(
+            [
+                _s(record.get("eju_session")),
+                _field_text_bundle(record, field_evidence, "eju_general"),
+                _field_text_bundle(record, field_evidence, "eju_math"),
+                _field_text_bundle(record, field_evidence, "eju_physics"),
+                _field_text_bundle(record, field_evidence, "eju_chemistry"),
+                _field_text_bundle(record, field_evidence, "eju_biology"),
+            ]
+        )
+        return bool(context)
+
+    if field in {"eju_physics", "eju_chemistry", "eju_biology"}:
+        sibling_bundle = " ".join(
+            _field_text_bundle(record, field_evidence, key)
+            for key in EJU_FIELD_KEYS
+            if key != field
+        )
+        return bool(sibling_bundle or _s(record.get("eju_session")))
+
+    if field == "eju_math":
+        sibling_bundle = " ".join(
+            _field_text_bundle(record, field_evidence, key)
+            for key in ["eju_general", "eju_physics", "eju_chemistry", "eju_biology"]
+        )
+        return bool(sibling_bundle or _s(record.get("eju_session")))
+
+    if field == "eju_general":
+        sibling_bundle = " ".join(
+            _field_text_bundle(record, field_evidence, key)
+            for key in ["eju_math", "eju_physics", "eju_chemistry", "eju_biology"]
+        )
+        return bool(sibling_bundle or _s(record.get("eju_session")))
+
+    if field == "english_requirement":
+        context = " ".join(
+            [
+                _s(record.get("screening_method")),
+                _s(record.get("screening_schedule")),
+                _s(record.get("faculty")),
+                _s(record.get("department")),
+            ]
+        )
+        return bool(context)
+
+    return False
+
+
 def compute_risk_level(field_confidence: dict[str, float]) -> str:
     high_risk_scores = [field_confidence.get(field, 0.0) for field in HIGH_RISK_FIELDS]
     if any(score < 0.6 for score in high_risk_scores):
@@ -127,6 +217,9 @@ def _ensure_field_metadata(record: dict[str, Any]) -> tuple[dict[str, float], di
             evidence["text"] = value
 
         current = field_confidence.get(field, 0.0)
+        if not value and _is_optional_empty_field(record, field_evidence, field):
+            field_confidence[field] = max(current, 0.88)
+            continue
         if current > 0:
             continue
 
@@ -159,7 +252,10 @@ def validate(record: dict[str, Any]) -> dict[str, Any]:
     field_confidence, field_evidence = _ensure_field_metadata(r)
     risk_level = compute_risk_level(field_confidence)
     nonzero_scores = [score for score in field_confidence.values() if score > 0]
-    confidence = round(sum(nonzero_scores) / len(nonzero_scores), 4) if nonzero_scores else _clamp_confidence(r.get("confidence"), 0.0)
+    confidence = round(sum(nonzero_scores) / len(nonzero_scores), 4) if nonzero_scores else _clamp_confidence(
+        r.get("confidence"),
+        0.0,
+    )
 
     if not faculty:
         warnings.append("faculty is empty")

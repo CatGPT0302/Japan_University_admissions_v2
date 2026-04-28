@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import collections
 import json
 import os
 import re
@@ -51,6 +52,20 @@ MEIJI_REQUIRED_FACULTIES = [
     "情報コミュニケーション学部",
     "国際日本学部",
     "総合数理学部",
+]
+WASEDA_REQUIRED_FACULTIES = [
+    "政治経済学部",
+    "法学部",
+    "教育学部",
+    "商学部",
+    "社会科学部",
+    "文化構想学部",
+    "文学部",
+    "基幹理工学部",
+    "創造理工学部",
+    "先進理工学部",
+    "人間科学部",
+    "スポーツ科学部",
 ]
 
 
@@ -346,11 +361,11 @@ def _prepare_record(
 
         if page_map:
             inferred = _find_evidence(field, value, page_map, preferred_page=int(page_number) if page_number not in ("", None) else None)
-            if not evidence_text:
+            if value and not evidence_text:
                 evidence_text = inferred.get("text") or value
-            if evidence_page is None:
+            if value and evidence_page is None:
                 evidence_page = inferred.get("page")
-        elif not evidence_text:
+        elif value and not evidence_text:
             evidence_text = value
 
         confidence_value = raw_confidence.get(field)
@@ -450,6 +465,45 @@ def _normalize_keio_record(record: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(record)
+    eju_japanese = str(normalized.get("eju_japanese") or "").strip()
+    if any(token in eju_japanese for token in ["受験票", "PDF", "成績通知書"]):
+        normalized["eju_japanese"] = ""
+
+    english = str(normalized.get("english_requirement") or "").strip()
+    if english:
+        normalized["english_requirement"] = re.sub(r"[、,]?\s*志望理由書等", "", english).strip(" 、,/")
+    return normalized
+
+
+def _backfill_common_fields(records: list[dict[str, Any]], fields: list[str]) -> list[dict[str, Any]]:
+    if not records:
+        return records
+
+    normalized_records = [_normalize_record_noise(record) for record in records]
+    common_values: dict[str, str] = {}
+    for field in fields:
+        values = [str(record.get(field) or "").strip() for record in normalized_records if str(record.get(field) or "").strip()]
+        if not values:
+            continue
+        value, count = collections.Counter(values).most_common(1)[0]
+        if count >= 2:
+            common_values[field] = value
+
+    if not common_values:
+        return normalized_records
+
+    patched: list[dict[str, Any]] = []
+    for record in normalized_records:
+        rec = dict(record)
+        for field, value in common_values.items():
+            if not str(rec.get(field) or "").strip():
+                rec[field] = value
+        patched.append(rec)
+    return patched
+
+
 def _filter_non_private_student_records(result: dict[str, Any]) -> dict[str, Any]:
     records = []
     for rec in result.get("records") or []:
@@ -481,40 +535,91 @@ def _dedupe_by_faculty(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [best_by_faculty[f] for f in order]
 
 
+def _supplement_missing_faculties(
+    full_text: str,
+    university: str,
+    year: str,
+    target_university: str,
+    target_year: str,
+    required_faculties: list[str],
+    existing_records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if university != target_university or str(year) != target_year:
+        return existing_records
+
+    merged = list(existing_records)
+    chunk_size = 4
+
+    while True:
+        existing_faculties = {str(r.get("faculty") or "").strip() for r in merged}
+        missing = [f for f in required_faculties if f not in existing_faculties]
+        if not missing:
+            return _dedupe_by_faculty(merged)
+
+        progressed = False
+        for idx in range(0, len(missing), chunk_size):
+            batch = missing[idx: idx + chunk_size]
+            messages = [
+                {"role": "system", "content": _build_system_prompt()},
+                {
+                    "role": "user",
+                    "content": (
+                        f"[Info] university={university} year={year} mode=text-supplement\n\n"
+                        "以下の学部だけを補完抽出してください。"
+                        "各学部につき1レコード、代表学科名のみ、重複禁止。"
+                        "本文に明記がない科目要件や英語資格要件は空欄のままにしてください。"
+                        "学部ごとの差異をまとめて一般化しないでください。"
+                        "不足学部一覧: "
+                        + "、".join(batch)
+                        + "。\n\n[全文テキスト]\n"
+                        + full_text
+                    ),
+                },
+            ]
+            supplement = _call_openai(messages, TEXT_MODEL, max_tokens=2500, token_param="max_completion_tokens")
+            extra = supplement.get("records") or []
+            filtered = [r for r in extra if str(r.get("faculty") or "").strip() in batch]
+            if filtered:
+                merged.extend(filtered)
+                merged = _dedupe_by_faculty(merged)
+                progressed = True
+
+        if not progressed:
+            return _dedupe_by_faculty(merged)
+
+
 def _supplement_meiji_missing_faculties(
     full_text: str,
     university: str,
     year: str,
     existing_records: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    if university != "明治大学" or str(year) != "2026":
-        return existing_records
+    return _supplement_missing_faculties(
+        full_text=full_text,
+        university=university,
+        year=year,
+        target_university="明治大学",
+        target_year="2026",
+        required_faculties=MEIJI_REQUIRED_FACULTIES,
+        existing_records=existing_records,
+    )
 
-    existing_faculties = {str(r.get("faculty") or "").strip() for r in existing_records}
-    missing = [f for f in MEIJI_REQUIRED_FACULTIES if f not in existing_faculties]
-    if not missing:
-        return _dedupe_by_faculty(existing_records)
 
-    messages = [
-        {"role": "system", "content": _build_system_prompt()},
-        {
-            "role": "user",
-            "content": (
-                f"[Info] university={university} year={year} mode=text-supplement\n\n"
-                "以下の学部だけを補完抽出してください。"
-                "各学部につき1レコード、代表学科名のみ、重複禁止。"
-                "不足学部一覧: "
-                + "、".join(missing)
-                + "。\n\n[全文テキスト]\n"
-                + full_text
-            ),
-        },
-    ]
-    supplement = _call_openai(messages, TEXT_MODEL, max_tokens=2500, token_param="max_completion_tokens")
-    extra = supplement.get("records") or []
-    merged = existing_records + [r for r in extra if str(r.get("faculty") or "").strip() in missing]
-    merged = _dedupe_by_faculty(merged)
-    return merged
+def _supplement_waseda_missing_faculties(
+    full_text: str,
+    university: str,
+    year: str,
+    existing_records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return _supplement_missing_faculties(
+        full_text=full_text,
+        university=university,
+        year=year,
+        target_university="早稲田大学",
+        target_year="2026",
+        required_faculties=WASEDA_REQUIRED_FACULTIES,
+        existing_records=existing_records,
+    )
 
 
 def _find_sparse_pages(page_map: dict[int, str], threshold: int = 200) -> list[int]:
@@ -644,12 +749,18 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
     result = _call_openai(messages, TEXT_MODEL, max_tokens=12000, token_param="max_completion_tokens")
     if university == "明治大学" and str(year) == "2026" and result.get("records"):
         result["records"] = _supplement_meiji_missing_faculties(full_text, university, year, result.get("records") or [])
+    if university == "早稲田大学" and str(year) == "2026" and result.get("records"):
+        result["records"] = _supplement_waseda_missing_faculties(full_text, university, year, result.get("records") or [])
     if university == "慶應義塾大学" and str(year) == "2026" and result.get("records"):
         result["records"] = [_normalize_keio_record(r) for r in _collapse_keio_faculties(result["records"])]
     if university == "東京大学" and str(year) == "2026" and result.get("records"):
         result = _filter_non_private_student_records(result)
     if not result.get("records"):
         raise RuntimeError("text_path returned 0 records")
+    result["records"] = _backfill_common_fields(
+        result.get("records") or [],
+        ["application_period", "deadline_rule", "eju_session", "enrollment_period"],
+    )
 
     # Generic vision patch for image-based tables
     sparse_pages = _find_sparse_pages(page_map)
