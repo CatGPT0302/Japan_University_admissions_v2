@@ -654,6 +654,10 @@ def _normalize_eju_session_value(value: str) -> str:
     for round_no in re.findall(r"第\s*([12１２])\s*回", source):
         n = round_no.translate(str.maketrans("１２", "12"))
         add_round("第一回" if n == "1" else "第二回")
+    if "第一回" in source:
+        add_round("第一回")
+    if "第二回" in source:
+        add_round("第二回")
 
     # Month-based fallback (EJU common sessions): 6月/7月 => 第一回, 11月 => 第二回
     for month_str in re.findall(r"(\d{1,2})\s*月(?:回)?", source):
@@ -1526,6 +1530,12 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
             university,
             year,
             doc_id,
+        )
+        # Vision patch can add sparse records; run one more common-field pass
+        # so doc-level constants (like EJU session) stay complete.
+        result["records"] = _backfill_common_fields(
+            result.get("records") or [],
+            ["application_period", "deadline_rule", "eju_session", "enrollment_period"],
         )
 
     inserted = _insert_result(doc_id, result, page_map=page_map, university=university, year=year)
