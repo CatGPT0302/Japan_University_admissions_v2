@@ -540,7 +540,15 @@ export default function RunPage({ onDone }: Props) {
                   .slice(0, 8)
                   .map((item) => (
                     <div key={`${item.university}-${item.seed_url}`} style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.6, wordBreak: "break-all" }}>
-                      [{item.university}] {item.status} {item.top_candidate_pdf ? `- ${item.top_candidate_pdf}` : ""}
+                      <span>[{item.university}] {item.status}</span>
+                      {item.top_candidate_pdf && (
+                        <>
+                          {" · "}
+                          <a href={item.top_candidate_pdf} target="_blank" rel="noreferrer" style={{ color: "var(--red)" }}>
+                            open candidate pdf
+                          </a>
+                        </>
+                      )}
                     </div>
                   ))}
                 {probeResult.probes.every((item) => !item.is_new_pdf_candidate && item.status !== "error") && (
