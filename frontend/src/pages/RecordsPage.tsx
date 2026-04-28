@@ -15,17 +15,17 @@ import type {
 } from "../types";
 
 const COLS: Array<{ key: keyof ConfirmedRecord; label: string; w?: number }> = [
-  { key: "university", label: "University", w: 140 },
-  { key: "faculty", label: "Faculty", w: 120 },
-  { key: "department", label: "Department", w: 130 },
-  { key: "admission_year", label: "Year", w: 70 },
-  { key: "application_period", label: "Application", w: 170 },
-  { key: "deadline_rule", label: "Deadline", w: 100 },
-  { key: "eju_session", label: "EJU Session", w: 110 },
-  { key: "eju_japanese", label: "EJU Japanese", w: 110 },
-  { key: "english_requirement", label: "English", w: 180 },
-  { key: "screening_method", label: "Method", w: 140 },
-  { key: "result_date", label: "Result Date", w: 120 },
+  { key: "university", label: "University", w: 180 },
+  { key: "faculty", label: "Faculty", w: 150 },
+  { key: "department", label: "Department", w: 170 },
+  { key: "admission_year", label: "Year", w: 84 },
+  { key: "application_period", label: "Application", w: 190 },
+  { key: "deadline_rule", label: "Deadline", w: 120 },
+  { key: "eju_session", label: "EJU Session", w: 120 },
+  { key: "eju_japanese", label: "EJU Japanese", w: 120 },
+  { key: "english_requirement", label: "English", w: 220 },
+  { key: "screening_method", label: "Method", w: 180 },
+  { key: "result_date", label: "Result Date", w: 130 },
 ];
 
 const FIELD_LABELS: Record<string, string> = {
@@ -93,313 +93,322 @@ export default function RecordsPage() {
       .slice(0, 8);
   }, [quality]);
 
-  return (
-    <div style={{ maxWidth: 1160 }}>
-      <div style={{ marginBottom: 24 }}>
-        <div
-          style={{
-            fontSize: 10,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            color: "var(--red)",
-            marginBottom: 10,
-            fontWeight: 500,
-          }}
-        >
-          Step 3
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <h1
-            style={{
-              fontFamily: "Georgia,serif",
-              fontSize: 34,
-              fontStyle: "italic",
-              fontWeight: 400,
-              letterSpacing: -0.5,
-              lineHeight: 1.1,
-            }}
-          >
-            Records
-          </h1>
-          <button
-            onClick={() =>
-              downloadExcel({
-                university: univ || undefined,
-                year: yr ? Number(yr) : undefined,
-                faculty: fac || undefined,
-              })
-            }
-            style={{
-              height: 38,
-              padding: "0 18px",
-              background: "var(--ink)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            Export Excel
-          </button>
-        </div>
-      </div>
+  const activeFilters = useMemo(() => {
+    return [
+      univ ? `University: ${univ}` : "",
+      fac ? `Faculty: ${fac}` : "",
+      yr ? `Year: ${yr}` : "",
+    ].filter(Boolean);
+  }, [fac, univ, yr]);
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 20 }}>
-        {[
-          { l: "Universities", v: stats?.universities ?? "—" },
-          { l: "Confirmed", v: stats?.total_records ?? "—" },
-          { l: "Avg Confidence", v: stats ? stats.avg_confidence.toFixed(2) : "—" },
-        ].map((c) => (
-          <div
-            key={c.l}
-            style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "20px" }}
-          >
-            <div style={{ fontSize: 10, color: "var(--ink3)", marginBottom: 6 }}>{c.l}</div>
-            <div
-              style={{
-                fontFamily: "Georgia,serif",
-                fontSize: 30,
-                fontWeight: 400,
-                color: "var(--ink)",
-                lineHeight: 1,
-              }}
-            >
-              {c.v}
+  return (
+    <div className="page-shell">
+      <section className="hero-panel">
+        <div className="hero-grid">
+          <div>
+            <div className="section-eyebrow">Step 3 · Records</div>
+            <h2 className="section-title">Search, audit, and export</h2>
+            <p className="section-copy">
+              Records is now positioned like the finish line of the admissions workflow: search across confirmed rows, keep quality signals visible,
+              and export the current slice without leaving the dashboard.
+            </p>
+          </div>
+
+          <div className="progress-stack">
+            <div className="mini-stat">
+              <span className="mini-stat-label">Search result</span>
+              <span className="mini-stat-value">{loading ? "Loading" : `${rows.length} row(s)`}</span>
             </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Active filters</span>
+              <span className="mini-stat-value">{activeFilters.length || "None"}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Export scope</span>
+              <span className="mini-stat-value">{activeFilters.length ? "Filtered" : "All records"}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="toolbar-shell">
+        <div className="toolbar-row">
+          <div>
+            <h3 className="panel-title">Records search</h3>
+            <p className="panel-copy">
+              Filter the confirmed dataset by university, faculty, and year. Export always respects the current search scope.
+            </p>
+          </div>
+          <div className="inline-actions">
+            <button className="btn btn-primary" onClick={() => void load()} type="button">
+              {loading ? "Refreshing..." : "Run search"}
+            </button>
+            <button
+              className="btn btn-green"
+              onClick={() =>
+                downloadExcel({
+                  university: univ || undefined,
+                  year: yr ? Number(yr) : undefined,
+                  faculty: fac || undefined,
+                })
+              }
+              type="button"
+            >
+              Export current view
+            </button>
+          </div>
+        </div>
+
+        <div className="input-grid" style={{ marginTop: 16 }}>
+          {[
+            {
+              label: "University",
+              value: univ,
+              onChange: setUniv,
+              placeholder: "Example: Waseda University",
+            },
+            {
+              label: "Faculty",
+              value: fac,
+              onChange: setFac,
+              placeholder: "Example: Engineering",
+            },
+            {
+              label: "Year",
+              value: yr,
+              onChange: setYr,
+              placeholder: "2026",
+            },
+          ].map((item) => (
+            <label key={item.label} className="field-wrap">
+              <span className="field-label">{item.label}</span>
+              <input
+                value={item.value}
+                onChange={(event) => item.onChange(event.target.value)}
+                onKeyDown={(event) => event.key === "Enter" && void load()}
+                placeholder={item.placeholder}
+                className="field"
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="filter-row" style={{ marginTop: 14 }}>
+          {activeFilters.length ? (
+            activeFilters.map((item) => (
+              <span key={item} className="badge badge-blue">
+                {item}
+              </span>
+            ))
+          ) : (
+            <span className="badge badge-gray">No filters applied</span>
+          )}
+          <span className="badge badge-gray">{loading ? "Fetching latest records" : `${rows.length} matching row(s)`}</span>
+        </div>
+      </section>
+
+      <section className="metric-grid">
+        {[
+          {
+            label: "Universities",
+            value: stats?.universities ?? "—",
+            copy: "Distinct universities in confirmed records",
+            tone: "badge badge-blue",
+          },
+          {
+            label: "Confirmed rows",
+            value: stats?.total_records ?? "—",
+            copy: "Rows available for downstream use",
+            tone: "badge badge-green",
+          },
+          {
+            label: "Average confidence",
+            value: stats ? stats.avg_confidence.toFixed(2) : "—",
+            copy: "Global confidence across records",
+            tone: "badge badge-amber",
+          },
+          {
+            label: "Current view",
+            value: loading ? "..." : rows.length,
+            copy: "Rows matching the active search",
+            tone: "badge badge-gray",
+          },
+        ].map((card) => (
+          <div key={card.label} className="metric-card">
+            <div className="split-row" style={{ marginBottom: 8 }}>
+              <div className="metric-label">{card.label}</div>
+              <span className={card.tone}>{card.label}</span>
+            </div>
+            <div className="metric-value">{card.value}</div>
+            <div className="metric-copy">{card.copy}</div>
           </div>
         ))}
-      </div>
+      </section>
 
       {quality && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 20 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 10 }}>Risk Distribution (Staging)</div>
-            <div style={{ display: "grid", gap: 6, fontSize: 12, color: "var(--ink2)" }}>
-              <div>High: {quality.risk_distribution.high || 0}</div>
-              <div>Medium: {quality.risk_distribution.medium || 0}</div>
-              <div>Low: {quality.risk_distribution.low || 0}</div>
+        <section className="insight-grid">
+          <div className="insight-card">
+            <div className="card-kicker">Risk monitor</div>
+            <h3 className="panel-title">Staging risk distribution</h3>
+            <div className="list-stack" style={{ marginTop: 12 }}>
+              <div className="status-pill">
+                <span>High risk</span>
+                <strong>{quality.risk_distribution.high || 0}</strong>
+              </div>
+              <div className="status-pill">
+                <span>Medium risk</span>
+                <strong>{quality.risk_distribution.medium || 0}</strong>
+              </div>
+              <div className="status-pill">
+                <span>Low risk</span>
+                <strong>{quality.risk_distribution.low || 0}</strong>
+              </div>
             </div>
           </div>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 10 }}>Top Manually Modified Fields</div>
-            <div style={{ display: "grid", gap: 6, fontSize: 12, color: "var(--ink2)" }}>
+
+          <div className="insight-card">
+            <div className="card-kicker">Manual corrections</div>
+            <h3 className="panel-title">Most edited fields</h3>
+            <div className="list-stack" style={{ marginTop: 12 }}>
               {(quality.top_modified_fields || []).slice(0, 5).map((item) => (
-                <div key={item.field}>
-                  {FIELD_LABELS[item.field] || item.field}: {item.count}
+                <div key={item.field} className="status-pill">
+                  <span>{FIELD_LABELS[item.field] || item.field}</span>
+                  <strong>{item.count}</strong>
                 </div>
               ))}
-              {(!quality.top_modified_fields || quality.top_modified_fields.length === 0) && <div>No correction events yet.</div>}
+              {(!quality.top_modified_fields || quality.top_modified_fields.length === 0) && (
+                <div className="empty-copy">No correction events yet.</div>
+              )}
             </div>
           </div>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 10 }}>Confidence Calibration (Correction Rate)</div>
-            <div style={{ display: "grid", gap: 6, fontSize: 12, color: "var(--ink2)" }}>
+
+          <div className="insight-card">
+            <div className="card-kicker">Calibration</div>
+            <h3 className="panel-title">Correction rate by confidence</h3>
+            <div className="list-stack" style={{ marginTop: 12 }}>
               {(quality.confidence_calibration || []).slice(0, 5).map((item) => (
-                <div key={item.bucket}>
-                  {item.bucket}: {Math.round(item.corrected_rate * 100)}%
+                <div key={item.bucket} className="status-pill">
+                  <span>{item.bucket}</span>
+                  <strong>{Math.round(item.corrected_rate * 100)}%</strong>
                 </div>
               ))}
-              {(!quality.confidence_calibration || quality.confidence_calibration.length === 0) && <div>No calibration data yet.</div>}
+              {(!quality.confidence_calibration || quality.confidence_calibration.length === 0) && (
+                <div className="empty-copy">No calibration data yet.</div>
+              )}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {topCoverage.length > 0 && (
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 10 }}>Key Field Coverage (Top 8)</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>
+        <section className="panel">
+          <div className="split-row" style={{ marginBottom: 14 }}>
+            <div>
+              <h3 className="panel-title">Key field coverage</h3>
+              <p className="panel-copy">A quick read on which high-value fields are densely populated and which ones need more manual work.</p>
+            </div>
+            <span className="badge badge-gray">Top 8 fields</span>
+          </div>
+
+          <div className="coverage-grid">
             {topCoverage.map((item) => (
-              <div key={item.field} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "8px 10px", background: "var(--bg)" }}>
-                <div style={{ fontSize: 11, color: "var(--ink2)", marginBottom: 4 }}>{FIELD_LABELS[item.field] || item.field}</div>
-                <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 600 }}>
+              <div
+                key={item.field}
+                className="summary-box"
+                style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}
+              >
+                <div className="field-label">{FIELD_LABELS[item.field] || item.field}</div>
+                <div className="metric-value" style={{ fontSize: 26, marginTop: 8 }}>
                   {Math.round(item.fill_rate * 100)}%
                 </div>
-                <div style={{ fontSize: 10, color: "var(--ink3)" }}>
-                  Modified {Math.round(item.modified_rate * 100)}%
-                </div>
+                <div className="muted-text">Modified {Math.round(item.modified_rate * 100)}%</div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: "var(--ink3)", marginBottom: 10 }}>Recent Correction Events (Top 10)</div>
-        <div style={{ display: "grid", gap: 8 }}>
-          {corrections.slice(0, 10).map((event) => (
-            <div key={event.id} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "8px 10px", background: "var(--bg)" }}>
-              <div style={{ fontSize: 12, color: "var(--ink)", marginBottom: 4 }}>
-                [{event.university || "Unknown"}] {FIELD_LABELS[event.field_name] || event.field_name}
+      <section className="panel">
+        <div className="split-row" style={{ marginBottom: 14 }}>
+          <div>
+            <h3 className="panel-title">Recent correction events</h3>
+            <p className="panel-copy">Keep the latest manual changes visible so the records team can spot recurring data quality themes.</p>
+          </div>
+          <span className="badge badge-gray">Latest 10</span>
+        </div>
+
+        <div className="correction-stack">
+          {corrections.slice(0, 10).map((event: CorrectionEvent) => (
+            <div
+              key={event.id}
+              className="summary-box"
+              style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}
+            >
+              <div className="split-row">
+                <div>
+                  <strong>{event.university || "Unknown university"}</strong>
+                  <div className="muted-text">{FIELD_LABELS[event.field_name] || event.field_name}</div>
+                </div>
+                <span className="badge badge-blue">{event.admission_year || "No year"}</span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--ink2)", lineHeight: 1.6 }}>
-                Old: {event.old_value || "(empty)"} {"=>"} New: {event.new_value || "(empty)"}
+              <div className="muted-text" style={{ marginTop: 8 }}>
+                Old: {event.old_value || "(empty)"} → New: {event.new_value || "(empty)"}
               </div>
             </div>
           ))}
-          {corrections.length === 0 && <div style={{ fontSize: 12, color: "var(--ink3)" }}>No correction events yet.</div>}
+          {corrections.length === 0 && (
+            <div className="empty-state">
+              <h4 className="empty-title">No correction events yet</h4>
+              <p className="empty-copy">Manual edit history will appear here once the review team starts adjusting staging rows.</p>
+            </div>
+          )}
         </div>
-      </div>
+      </section>
 
-      <div
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: 10,
-          padding: "14px 16px",
-          marginBottom: 16,
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        {[
-          { val: univ, set: setUniv, ph: "University", w: 160 },
-          { val: fac, set: setFac, ph: "Faculty", w: 140 },
-          { val: yr, set: setYr, ph: "Year", w: 100 },
-        ].map((f) => (
-          <input
-            key={f.ph}
-            value={f.val}
-            onChange={(e) => f.set(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void load()}
-            placeholder={f.ph}
-            style={{
-              height: 36,
-              width: f.w,
-              padding: "0 12px",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              fontSize: 13,
-              color: "var(--ink)",
-              background: "var(--bg)",
-              outline: "none",
-            }}
-          />
-        ))}
-        <button
-          onClick={() => void load()}
-          style={{
-            height: 36,
-            padding: "0 16px",
-            background: "var(--ink)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          Search
-        </button>
-        <span style={{ fontSize: 12, color: "var(--ink3)", marginLeft: 4 }}>
-          {loading ? "Loading..." : `${rows.length} rows`}
-        </span>
-      </div>
-
-      {err && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: "10px 16px",
-            background: "var(--red-soft)",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            fontSize: 13,
-            color: "var(--red)",
-          }}
-        >
-          {err}
-        </div>
-      )}
+      {err && <section className="message-box error">{err}</section>}
 
       {rows.length === 0 && !loading ? (
-        <div
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 10,
-            padding: "32px",
-            fontSize: 14,
-            color: "var(--ink3)",
-            textAlign: "center",
-          }}
-        >
-          No confirmed records.
-        </div>
+        <section className="empty-state">
+          <h3 className="empty-title">No confirmed records found</h3>
+          <p className="empty-copy">
+            Try broadening the search filters, or confirm rows in Review before exporting.
+          </p>
+        </section>
       ) : (
-        <div style={{ overflowX: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}>
-                {COLS.map((c) => (
-                  <th
-                    key={c.key}
-                    style={{
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      fontSize: 10,
-                      fontWeight: 500,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--ink3)",
-                      whiteSpace: "nowrap",
-                      width: c.w,
-                    }}
-                  >
-                    {c.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr
-                  key={r.id}
-                  style={{
-                    borderBottom: "1px solid var(--border)",
-                    background: i % 2 === 0 ? "var(--surface)" : "var(--bg)",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = i % 2 === 0 ? "var(--surface)" : "var(--bg)")
-                  }
-                >
-                  {COLS.map((c) => (
-                    <td
-                      key={c.key}
-                      style={{
-                        padding: "10px 14px",
-                        color: c.key === "university" ? "var(--ink)" : "var(--ink2)",
-                        maxWidth: c.w,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={String(r[c.key] ?? "")}
-                    >
-                      {r[c.key] || <span style={{ color: "var(--ink3)" }}>—</span>}
-                    </td>
+        <section className="table-shell">
+          <div className="split-row" style={{ padding: "18px 20px 0" }}>
+            <div>
+              <h3 className="panel-title">Confirmed dataset</h3>
+              <p className="panel-copy">The table stays compact for operators, but the search and export controls remain visible above it.</p>
+            </div>
+            <span className="badge badge-gray">{rows.length} visible rows</span>
+          </div>
+
+          <div className="table-scroll">
+            <table className="records-table">
+              <thead>
+                <tr>
+                  {COLS.map((column) => (
+                    <th key={column.key} style={{ width: column.w }}>
+                      {column.label}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    {COLS.map((column) => (
+                      <td key={column.key} title={String(row[column.key] ?? "")} className={column.key === "university" ? "primary-cell" : ""}>
+                        {row[column.key] || <span style={{ color: "var(--ink4)" }}>—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </div>
   );

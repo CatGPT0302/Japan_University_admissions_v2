@@ -26,25 +26,25 @@ interface Props {
 type RiskFilter = "all" | RiskLevel;
 
 const REVIEW_FIELDS = [
-  { key: "university", label: "大学名", span: 2, critical: false },
-  { key: "faculty", label: "学部", span: 1, critical: false },
-  { key: "department", label: "学科 / 专攻", span: 1, critical: false },
-  { key: "application_period", label: "出愿期间", span: 2, critical: true },
-  { key: "deadline_rule", label: "必着 / 消印", span: 1, critical: true },
-  { key: "eju_session", label: "EJU 实施回", span: 1, critical: true },
-  { key: "eju_japanese", label: "EJU 日本语", span: 1, critical: true },
-  { key: "eju_general", label: "EJU 综合科目", span: 1, critical: true },
-  { key: "eju_math", label: "EJU 数学", span: 1, critical: true },
-  { key: "eju_physics", label: "EJU 物理", span: 1, critical: true },
-  { key: "eju_chemistry", label: "EJU 化学", span: 1, critical: true },
-  { key: "eju_biology", label: "EJU 生物", span: 1, critical: true },
-  { key: "english_requirement", label: "英语外部资格试验", span: 2, critical: true },
-  { key: "screening_method", label: "选考方法", span: 2, critical: true },
-  { key: "screening_schedule", label: "选考日程", span: 2, critical: true },
-  { key: "result_date", label: "合格发表日", span: 2, critical: true },
-  { key: "enrollment_period", label: "入学手续期间", span: 2, critical: true },
-  { key: "prefecture", label: "都道府县", span: 1, critical: false },
-  { key: "campus", label: "校区", span: 1, critical: false },
+  { key: "university", label: "University", span: 2, critical: false },
+  { key: "faculty", label: "Faculty", span: 1, critical: false },
+  { key: "department", label: "Department / Major", span: 1, critical: false },
+  { key: "application_period", label: "Application Period", span: 2, critical: true },
+  { key: "deadline_rule", label: "Deadline Rule", span: 1, critical: true },
+  { key: "eju_session", label: "EJU Session", span: 1, critical: true },
+  { key: "eju_japanese", label: "EJU Japanese", span: 1, critical: true },
+  { key: "eju_general", label: "EJU General", span: 1, critical: true },
+  { key: "eju_math", label: "EJU Math", span: 1, critical: true },
+  { key: "eju_physics", label: "EJU Physics", span: 1, critical: true },
+  { key: "eju_chemistry", label: "EJU Chemistry", span: 1, critical: true },
+  { key: "eju_biology", label: "EJU Biology", span: 1, critical: true },
+  { key: "english_requirement", label: "English Requirement", span: 2, critical: true },
+  { key: "screening_method", label: "Screening Method", span: 2, critical: true },
+  { key: "screening_schedule", label: "Screening Schedule", span: 2, critical: true },
+  { key: "result_date", label: "Result Date", span: 2, critical: true },
+  { key: "enrollment_period", label: "Enrollment Period", span: 2, critical: true },
+  { key: "prefecture", label: "Prefecture", span: 1, critical: false },
+  { key: "campus", label: "Campus", span: 1, critical: false },
 ] as const;
 
 function riskRank(risk: RiskLevel | undefined): number {
@@ -54,25 +54,25 @@ function riskRank(risk: RiskLevel | undefined): number {
 }
 
 function riskLabel(risk: RiskLevel | undefined): string {
-  if (risk === "high") return "高风险";
-  if (risk === "medium") return "中风险";
-  return "低风险";
+  if (risk === "high") return "High risk";
+  if (risk === "medium") return "Medium risk";
+  return "Low risk";
 }
 
 function riskDescription(risk: RiskLevel | undefined): string {
-  if (risk === "high") return "这条记录里至少有一个关键字段可信度偏低，建议先看。";
-  if (risk === "medium") return "大部分内容可用，但还有几个字段值得人工确认。";
-  return "这条记录整体比较稳，适合后面集中快速确认。";
+  if (risk === "high") return "Critical fields are low-confidence or inconsistent. Resolve this row before mass confirmation.";
+  if (risk === "medium") return "Most values look usable, but there are still a few fields worth validating manually.";
+  return "This row looks stable. It can usually be reviewed quickly after the higher-risk queue is cleared.";
 }
 
-function riskBadgeStyle(risk: RiskLevel | undefined): CSSProperties {
-  if (risk === "high") return { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" };
-  if (risk === "medium") return { background: "#fffbeb", color: "#92400e", border: "1px solid #fde68a" };
-  return { background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" };
+function riskBadgeClass(risk: RiskLevel | undefined): string {
+  if (risk === "high") return "badge badge-red";
+  if (risk === "medium") return "badge badge-amber";
+  return "badge badge-green";
 }
 
 function fmtDate(value?: string | null): string {
-  if (!value) return "";
+  if (!value) return "Not available";
   return value.replace("T", " ").slice(0, 16);
 }
 
@@ -196,7 +196,11 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       setDocQuality(quality);
       setRows(stagingRows);
       setSelectedRowId(stagingRows[0]?.id ?? null);
-      setMsg(stagingRows.length ? `已经载入 ${stagingRows.length} 条记录，可以开始按风险复查。` : "这个文档还没有 staging 记录。");
+      setMsg(
+        stagingRows.length
+          ? `Loaded ${stagingRows.length} row(s). The queue is now sorted so the riskiest items surface first.`
+          : "This document does not have staging rows yet.",
+      );
     } catch (error) {
       setErr(toErrorMessage(error));
     } finally {
@@ -224,7 +228,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   async function removeDocument(doc: DocumentListItem) {
     if (deletingDocId) return;
     const ok = window.confirm(
-      `删除「${doc.university_name || doc.filename}」这份文档，以及它对应的 staging / records？\n本地 PDF 文件不会被删除。`,
+      `Delete document "${doc.university_name || doc.filename}" and its staging/confirmed records? Local PDF files are not deleted.`,
     );
     if (!ok) return;
     setDeletingDocId(doc.doc_id);
@@ -241,7 +245,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
         setRows([]);
         setSelectedRowId(null);
       }
-      setMsg(`已删除文档：staging ${result.deleted_staging} 条，records ${result.deleted_records} 条。`);
+      setMsg(`Deleted document. Removed ${result.deleted_staging} staging row(s) and ${result.deleted_records} confirmed row(s).`);
     } catch (error) {
       setErr(toErrorMessage(error));
     } finally {
@@ -275,7 +279,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       const nextRows = rows.filter((item) => item.id !== currentRow.id);
       setRows(nextRows);
       setSelectedRowId(nextRows[0]?.id ?? null);
-      setMsg("这条记录已经删除。");
+      setMsg("The selected staging row was removed.");
       if (selectedDocId) await refreshCurrentDocument(selectedDocId);
     } catch (error) {
       setErr(toErrorMessage(error));
@@ -292,7 +296,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     try {
       const result = await confirmDoc(selectedDocId);
       await refreshCurrentDocument(selectedDocId);
-      setMsg(`确认入库完成：新增 ${result.confirmed} 条，跳过 ${result.skipped} 条。`);
+      setMsg(`Confirmation completed. ${result.confirmed} row(s) inserted, ${result.skipped} skipped.`);
       setTimeout(() => onDone(), 1200);
     } catch (error) {
       setErr(toErrorMessage(error));
@@ -305,7 +309,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     if (!selectedDocId || bulkReviewing) return;
     const targets = rows.filter((row) => row.risk_level === "low" && !Number(row.is_reviewed));
     if (!targets.length) {
-      setMsg("没有需要批量标记的低风险记录。");
+      setMsg("There are no low-risk rows waiting for bulk review.");
       return;
     }
 
@@ -322,7 +326,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
         ),
       );
       await refreshCurrentDocument(selectedDocId);
-      setMsg(`已批量标记 ${targets.length} 条低风险记录为已查看。`);
+      setMsg(`Marked ${targets.length} low-risk row(s) as reviewed.`);
     } catch (error) {
       setErr(toErrorMessage(error));
     } finally {
@@ -335,112 +339,146 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   }
 
   const statusTitle = !selectedDocId
-    ? "先选一份文档，我来帮你安排复查顺序"
+    ? "Choose a document and the queue will organize itself for you"
     : blockingHighRisk
-      ? `当前有 ${metrics.high} 条高风险记录，建议先从它们开始`
-      : `这份文档里共有 ${metrics.total} 条记录，现在可以按节奏复查`;
+      ? `${metrics.high} high-risk row(s) still need attention before confirmation`
+      : `${metrics.total} row(s) are loaded and the review queue is in a healthy state`;
 
   const statusDescription = !selectedDocId
-    ? "文档进入这里后，会自动按 high → medium → low 排序，不需要你自己找重点。"
+    ? "This screen now presents the review workflow like an operations desk: document selection on the left, risk-guided record review in the center, and a fast queue on the right."
     : blockingHighRisk
-      ? "高风险通常意味着关键字段置信度偏低。先处理这些记录，后面的确认会更放心。"
+      ? "High risk usually means critical fields have weak evidence or low confidence. Resolve those rows first so confirmation stays safe."
       : metrics.low > 0
-        ? `低风险记录有 ${metrics.low} 条，可以考虑直接批量标记为已查看。`
-        : "如果你已经看完关键字段，可以继续确认入库。";
+        ? `There are ${metrics.low} low-risk row(s) that can usually be reviewed in bulk once the priority queue is clear.`
+        : "The document is ready for a final pass before confirmation into records.";
 
   return (
-    <div style={{ maxWidth: 1280 }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--red)", marginBottom: 10, fontWeight: 600 }}>Step 2</div>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+    <div className="page-shell">
+      <section className="hero-panel">
+        <div className="hero-grid">
           <div>
-            <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.15, margin: 0 }}>复查协作</h1>
-            <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink2)" }}>
-              这里不是后台列表，而是你和系统一起确认风险的工作台。
+            <div className="section-eyebrow">Step 2 · Review</div>
+            <h2 className="section-title">Risk-guided review queue</h2>
+            <p className="section-copy">
+              The review stage now behaves like a professional internal SaaS workspace: triage documents, surface risky rows first,
+              inspect evidence snippets inline, and only unlock confirmation after the highest-risk items are reviewed.
+            </p>
+          </div>
+
+          <div className="progress-stack">
+            <div className="mini-stat">
+              <span className="mini-stat-label">Selected document</span>
+              <span className="mini-stat-value">{selectedDocId ? `#${selectedDocId}` : "None"}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Reviewed rows</span>
+              <span className="mini-stat-value">{metrics.reviewed}/{metrics.total}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Confirmation gate</span>
+              <span className="mini-stat-value">{blockingHighRisk ? "Locked" : "Available"}</span>
             </div>
           </div>
-          {selectedDocId && <span style={{ fontSize: 12, color: "var(--ink3)" }}>当前文档 #{selectedDocId}</span>}
         </div>
-      </div>
+      </section>
 
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: 20,
-          padding: "18px 20px",
-          boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-          marginBottom: 18,
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>{statusTitle}</div>
-            <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.75 }}>{statusDescription}</div>
+      <section className={`tone-banner ${blockingHighRisk ? "warning" : selectedDocId ? "success" : "neutral"}`}>
+        <div>
+          <h3 className="tone-title">{statusTitle}</h3>
+          <p className="tone-copy">{statusDescription}</p>
+        </div>
+        <div className="status-grid">
+          <div className="status-pill">
+            <span>High risk</span>
+            <strong>{metrics.high}</strong>
           </div>
-          <div style={{ display: "grid", gap: 6, minWidth: 210 }}>
-            <div className="badge badge-red">高风险 {metrics.high}</div>
-            <div className="badge badge-amber">中风险 {metrics.medium}</div>
-            <div className="badge badge-green">低风险 {metrics.low}</div>
+          <div className="status-pill">
+            <span>Medium risk</span>
+            <strong>{metrics.medium}</strong>
+          </div>
+          <div className="status-pill">
+            <span>Low risk</span>
+            <strong>{metrics.low}</strong>
+          </div>
+          <div className="status-pill">
+            <span>Reviewed</span>
+            <strong>{metrics.reviewed}</strong>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16 }}>
-        <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="card" style={{ padding: 16, borderRadius: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>文档列表</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 8, marginBottom: 8 }}>
-              <input className="field" value={docQuery} onChange={(event) => setDocQuery(event.target.value)} placeholder="大学 / 文件 / URL" />
-              <input className="field" value={docYear} onChange={(event) => setDocYear(event.target.value)} placeholder="年度" />
+      <section className="doc-layout">
+        <aside className="sidebar-panel">
+          <div className="panel">
+            <div className="split-row" style={{ marginBottom: 12 }}>
+              <div>
+                <h3 className="panel-title">Document tray</h3>
+                <p className="panel-copy">Filter documents, open by ID, and keep the intake backlog manageable.</p>
+              </div>
+              <span className="badge badge-gray">{documents.length} loaded</span>
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <button className="btn btn-primary" onClick={() => void loadDocuments()}>
-                {loadingDocs ? "加载中..." : "筛选文档"}
+
+            <div className="input-grid" style={{ marginBottom: 10 }}>
+              <label className="field-wrap">
+                <span className="field-label">Search documents</span>
+                <input className="field" value={docQuery} onChange={(event) => setDocQuery(event.target.value)} placeholder="University / file / URL" />
+              </label>
+              <label className="field-wrap">
+                <span className="field-label">Year</span>
+                <input className="field" value={docYear} onChange={(event) => setDocYear(event.target.value)} placeholder="2026" />
+              </label>
+            </div>
+
+            <div className="inline-actions" style={{ marginBottom: 10 }}>
+              <button className="btn btn-primary" onClick={() => void loadDocuments()} type="button">
+                {loadingDocs ? "Loading..." : "Refresh tray"}
               </button>
               <button
-                className="btn"
+                className="btn btn-ghost"
                 onClick={() => {
                   const docId = Number(docIdInput);
                   if (docId) void loadDocument(docId);
                 }}
+                type="button"
               >
-                用 doc_id 打开
+                Open by ID
               </button>
             </div>
-            <input
-              className="field"
-              value={docIdInput}
-              onChange={(event) => setDocIdInput(event.target.value)}
-              placeholder="开发兜底：输入 doc_id"
-              style={{ width: "100%", marginBottom: 12 }}
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 420, overflowY: "auto" }}>
+
+            <label className="field-wrap" style={{ marginBottom: 14 }}>
+              <span className="field-label">Document ID</span>
+              <input
+                className="field"
+                value={docIdInput}
+                onChange={(event) => setDocIdInput(event.target.value)}
+                placeholder="Enter a doc_id"
+              />
+            </label>
+
+            <div className="list-stack" style={{ maxHeight: 520, overflowY: "auto" }}>
               {documents.map((doc) => {
                 const active = selectedDocId === doc.doc_id;
                 return (
-                  <div
+                  <button
                     key={doc.doc_id}
-                    role="button"
-                    tabIndex={0}
+                    className={`doc-card${active ? " is-active" : ""}`}
                     onClick={() => void loadDocument(doc.doc_id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") void loadDocument(doc.doc_id);
-                    }}
-                    style={{
-                      textAlign: "left",
-                      padding: "12px 12px 10px",
-                      background: active ? "#111827" : "#fafaf9",
-                      color: active ? "#fff" : "var(--ink)",
-                      border: active ? "1px solid #111827" : "1px solid var(--border)",
-                      borderRadius: 14,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
+                    type="button"
                   >
-                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{doc.university_name || "未命名文档"}</div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
-                      <div style={{ fontSize: 11, opacity: 0.8, wordBreak: "break-all" }}>{doc.filename}</div>
+                    <div className="queue-head">
+                      <div>
+                        <h4 className="doc-title">{doc.university_name || "Unnamed document"}</h4>
+                        <div className="doc-meta">{doc.filename}</div>
+                      </div>
+                      <span className="badge badge-gray">#{doc.doc_id}</span>
+                    </div>
+
+                    <div className="doc-meta" style={{ marginTop: 10 }}>
+                      {doc.admission_year || "No year"} · staging {doc.staging_count} · confirmed {doc.confirmed_count}
+                    </div>
+                    <div className="doc-meta">{fmtDate(doc.created_at)}</div>
+
+                    <div className="inline-actions" style={{ marginTop: 12 }}>
                       <button
                         className="btn btn-red"
                         disabled={deletingDocId === doc.doc_id}
@@ -448,239 +486,236 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                           event.stopPropagation();
                           void removeDocument(doc);
                         }}
-                        style={{ padding: "6px 8px", fontSize: 11, flexShrink: 0 }}
+                        type="button"
                       >
-                        {deletingDocId === doc.doc_id ? "删除中" : "删除"}
+                        {deletingDocId === doc.doc_id ? "Deleting..." : "Delete"}
                       </button>
                     </div>
-                    <div style={{ fontSize: 11, opacity: 0.75 }}>
-                      {doc.admission_year || "—"} · staging {doc.staging_count} · confirmed {doc.confirmed_count}
-                    </div>
-                    <div style={{ fontSize: 10, opacity: 0.65, marginTop: 4 }}>{fmtDate(doc.created_at)}</div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="card" style={{ padding: 16, borderRadius: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>文档摘要</div>
+          <div className="panel">
+            <h3 className="panel-title">Document summary</h3>
             {summary ? (
-              <div style={{ display: "grid", gap: 8, fontSize: 12, color: "var(--ink2)" }}>
-                <div><strong style={{ color: "var(--ink)" }}>大学：</strong>{summary.university_name || "—"}</div>
-                <div><strong style={{ color: "var(--ink)" }}>年度：</strong>{summary.admission_year || "—"}</div>
-                <div><strong style={{ color: "var(--ink)" }}>文件：</strong>{summary.filename || "—"}</div>
-                <div><strong style={{ color: "var(--ink)" }}>状态：</strong>{summary.status || "—"}</div>
-                <div><strong style={{ color: "var(--ink)" }}>staging：</strong>{summary.staging_count}</div>
-                <div><strong style={{ color: "var(--ink)" }}>待复查：</strong>{summary.review_count ?? 0}</div>
-                <div><strong style={{ color: "var(--ink)" }}>已确认：</strong>{summary.confirmed_count}</div>
-                <div><strong style={{ color: "var(--ink)" }}>平均置信度：</strong>{summary.avg_confidence?.toFixed(2) ?? "0.00"}</div>
+              <div className="list-stack">
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
+                  <div className="field-label">University</div>
+                  <div className="muted-text">{summary.university_name || "Unknown"}</div>
+                </div>
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
+                  <div className="field-label">Status snapshot</div>
+                  <div className="muted-text">
+                    {summary.status || "Unknown"} · staging {summary.staging_count} · review {summary.review_count ?? 0} · confirmed {summary.confirmed_count}
+                  </div>
+                </div>
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
+                  <div className="field-label">Average confidence</div>
+                  <div className="muted-text">{summary.avg_confidence?.toFixed(2) ?? "0.00"}</div>
+                </div>
                 {summary.source_url && (
-                  <a href={summary.source_url} target="_blank" rel="noreferrer" style={{ color: "var(--red)", textDecoration: "none" }}>
-                    打开原始来源
+                  <a href={summary.source_url} target="_blank" rel="noreferrer" className="btn btn-ghost">
+                    Open original source
                   </a>
                 )}
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: "var(--ink3)" }}>选中文档后，这里会告诉你当前整体进度。</div>
+              <div className="empty-state">
+                <h4 className="empty-title">No document selected</h4>
+                <p className="empty-copy">Choose a document to populate its quality snapshot and review queue.</p>
+              </div>
             )}
           </div>
 
           {docQuality && (
-            <div className="card" style={{ padding: 16, borderRadius: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Doc Quality Snapshot</div>
-              <div style={{ display: "grid", gap: 8, fontSize: 12, color: "var(--ink2)" }}>
-                <div>
-                  <strong style={{ color: "var(--ink)" }}>Risk:</strong> high {docQuality.risk_distribution.high || 0} / medium {docQuality.risk_distribution.medium || 0} / low {docQuality.risk_distribution.low || 0}
+            <div className="panel">
+              <h3 className="panel-title">Quality snapshot</h3>
+              <div className="list-stack">
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
+                  <div className="field-label">Risk distribution</div>
+                  <div className="muted-text">
+                    High {docQuality.risk_distribution.high || 0} · Medium {docQuality.risk_distribution.medium || 0} · Low {docQuality.risk_distribution.low || 0}
+                  </div>
                 </div>
-                <div>
-                  <strong style={{ color: "var(--ink)" }}>Top Modified Fields:</strong>{" "}
-                  {(docQuality.top_modified_fields || [])
-                    .slice(0, 3)
-                    .map((item) => `${item.field}(${item.count})`)
-                    .join(", ") || "none"}
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
+                  <div className="field-label">Most edited fields</div>
+                  <div className="muted-text">
+                    {(docQuality.top_modified_fields || [])
+                      .slice(0, 3)
+                      .map((item) => `${item.field} (${item.count})`)
+                      .join(", ") || "No manual edits captured yet."}
+                  </div>
                 </div>
-                <div style={{ display: "grid", gap: 4 }}>
-                  {(docQuality.field_coverage || [])
-                    .filter((item) => item.fill_rate < 0.7)
-                    .slice(0, 4)
-                    .map((item) => (
-                      <div key={item.field}>
-                        {item.field}: fill {Math.round(item.fill_rate * 100)}% / modified {Math.round(item.modified_rate * 100)}%
-                      </div>
-                    ))}
-                  {docQuality.field_coverage.filter((item) => item.fill_rate < 0.7).length === 0 && (
-                    <div>All key fields are at least 70% covered in this doc.</div>
-                  )}
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
+                  <div className="field-label">Coverage alerts</div>
+                  <div className="muted-text">
+                    {docQuality.field_coverage
+                      .filter((item) => item.fill_rate < 0.7)
+                      .slice(0, 3)
+                      .map((item) => `${item.field} ${Math.round(item.fill_rate * 100)}%`)
+                      .join(" · ") || "No low-coverage key fields in this snapshot."}
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </aside>
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="card" style={{ padding: "16px 18px", borderRadius: 20 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 }}>
-              {[
-                { key: "all" as RiskFilter, label: `全部 ${metrics.total}` },
-                { key: "high" as RiskFilter, label: `高风险 ${metrics.high}` },
-                { key: "medium" as RiskFilter, label: `中风险 ${metrics.medium}` },
-                { key: "low" as RiskFilter, label: `低风险 ${metrics.low}` },
-              ].map((item) => (
-                <button key={item.key} className={riskFilter === item.key ? "btn btn-primary" : "btn"} onClick={() => setRiskFilter(item.key)}>
-                  {item.label}
-                </button>
-              ))}
-
-              <button className="btn" onClick={() => void bulkMarkLowRiskReviewed()} disabled={bulkReviewing}>
-                {bulkReviewing ? "处理中..." : "一键标记低风险已查看"}
-              </button>
-
-              <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                <span className="badge badge-gray">已查看 {metrics.reviewed}/{metrics.total}</span>
-                <button className="btn btn-green" onClick={() => void confirmCurrentDocument()} disabled={!selectedDocId || confirming || !rows.length || blockingHighRisk}>
-                  {confirming ? "入库中..." : "确认入库"}
-                </button>
+        <section className="record-shell">
+          <div className="toolbar-shell">
+            <div className="toolbar-row">
+              <div>
+                <h3 className="panel-title">Review controls</h3>
+                <p className="panel-copy">
+                  The queue is sorted by high → medium → low risk. Confirmation only unlocks when high-risk rows are not left unreviewed.
+                </p>
+              </div>
+              <div className="inline-actions">
+                {[
+                  { key: "all" as RiskFilter, label: `All ${metrics.total}` },
+                  { key: "high" as RiskFilter, label: `High ${metrics.high}` },
+                  { key: "medium" as RiskFilter, label: `Medium ${metrics.medium}` },
+                  { key: "low" as RiskFilter, label: `Low ${metrics.low}` },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    className={`filter-chip${riskFilter === item.key ? " is-active" : ""}`}
+                    onClick={() => setRiskFilter(item.key)}
+                    type="button"
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
-              {blockingHighRisk
-                ? "建议先检查高风险字段。只要还有高风险记录没看过，系统就不会让整份文档直接确认。"
-                : "高风险部分已经处理得差不多了。现在可以继续检查中风险，或者快速处理低风险记录。"}
+            <div className="toolbar-flex" style={{ marginTop: 14 }}>
+              <div className="inline-actions">
+                <button className="btn btn-ghost" onClick={() => void bulkMarkLowRiskReviewed()} disabled={bulkReviewing} type="button">
+                  {bulkReviewing ? "Marking..." : "Mark low-risk rows reviewed"}
+                </button>
+                <span className="badge badge-gray">Reviewed {metrics.reviewed}/{metrics.total}</span>
+              </div>
+
+              <button
+                className="btn btn-green"
+                onClick={() => void confirmCurrentDocument()}
+                disabled={!selectedDocId || confirming || !rows.length || blockingHighRisk}
+                type="button"
+              >
+                {confirming ? "Confirming..." : "Confirm into records"}
+              </button>
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+          <div className="metric-grid">
             {[
-              { label: "高风险", value: metrics.high, color: "#b91c1c", hint: "优先检查" },
-              { label: "中风险", value: metrics.medium, color: "#92400e", hint: "建议复核" },
-              { label: "低风险", value: metrics.low, color: "#166534", hint: "可快速通过" },
-              { label: "已查看", value: metrics.reviewed, color: "var(--ink)", hint: "人工已看过" },
+              { label: "High risk", value: metrics.high, copy: "Immediate review priority", className: "badge badge-red" },
+              { label: "Medium risk", value: metrics.medium, copy: "Needs targeted validation", className: "badge badge-amber" },
+              { label: "Low risk", value: metrics.low, copy: "Eligible for quick pass", className: "badge badge-green" },
+              { label: "Reviewed", value: metrics.reviewed, copy: "Human-reviewed rows", className: "badge badge-blue" },
             ].map((card) => (
-              <div key={card.label} className="card" style={{ padding: 18, borderRadius: 18 }}>
-                <div style={{ fontSize: 10, color: "var(--ink3)", marginBottom: 6 }}>{card.label}</div>
-                <div style={{ fontSize: 28, lineHeight: 1, color: card.color, fontWeight: 700, marginBottom: 6 }}>{card.value}</div>
-                <div style={{ fontSize: 12, color: "var(--ink2)" }}>{card.hint}</div>
+              <div key={card.label} className="metric-card">
+                <div className="split-row" style={{ marginBottom: 8 }}>
+                  <div className="metric-label">{card.label}</div>
+                  <span className={card.className}>{card.label}</span>
+                </div>
+                <div className="metric-value">{card.value}</div>
+                <div className="metric-copy">{card.copy}</div>
               </div>
             ))}
           </div>
 
-          {msg && <div style={{ padding: "12px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 14, color: "#1d4ed8", fontSize: 13 }}>{msg}</div>}
-          {err && <div style={{ padding: "12px 14px", background: "#fff7f7", border: "1px solid #fecaca", borderRadius: 14, color: "var(--red)", fontSize: 13 }}>{err}</div>}
+          {msg && <div className="message-box info">{msg}</div>}
+          {err && <div className="message-box error">{err}</div>}
 
           {!currentRow && !loadingRows && (
-            <div className="card" style={{ padding: 32, color: "var(--ink3)", textAlign: "center", fontSize: 14, borderRadius: 20 }}>
-              从左侧文档列表中选一份文档，我会按风险顺序把记录排给你。
+            <div className="empty-state">
+              <h3 className="empty-title">No review row selected</h3>
+              <p className="empty-copy">Pick a document from the tray and the system will route you to the most important row first.</p>
             </div>
           )}
 
           {currentRow && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
-              <div className="card" style={{ padding: 24, borderRadius: 22 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, gap: 12 }}>
+            <div className="review-layout">
+              <div className="panel">
+                <div className="toolbar-flex" style={{ marginBottom: 18 }}>
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
-                      记录 #{currentRow.id}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                      <span className="badge" style={riskBadgeStyle(currentRow.risk_level)}>{riskLabel(currentRow.risk_level)}</span>
-                      <span className="badge badge-gray">整体置信度 {Number(currentRow.confidence ?? 0).toFixed(2)}</span>
-                      <span className={Number(currentRow.is_reviewed) ? "badge badge-green" : "badge badge-amber"}>
-                        {Number(currentRow.is_reviewed) ? "已查看" : "未查看"}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.7 }}>{riskDescription(currentRow.risk_level)}</div>
+                    <span className={riskBadgeClass(currentRow.risk_level)}>{riskLabel(currentRow.risk_level)}</span>
+                    <h3 className="panel-title" style={{ marginTop: 10 }}>
+                      Review row #{currentRow.id}
+                    </h3>
+                    <p className="panel-copy">{riskDescription(currentRow.risk_level)}</p>
                   </div>
-                  <div style={{ fontSize: 12, color: "var(--ink3)", textAlign: "right" }}>
-                    <div>page {currentRow.page_number ?? "—"}</div>
-                    <div>{fmtDate(currentRow.reviewed_at)}</div>
+
+                  <div className="list-stack" style={{ minWidth: 200 }}>
+                    <span className="badge badge-gray">Confidence {Number(currentRow.confidence ?? 0).toFixed(2)}</span>
+                    <span className={Number(currentRow.is_reviewed) ? "badge badge-green" : "badge badge-amber"}>
+                      {Number(currentRow.is_reviewed) ? "Reviewed" : "Needs review"}
+                    </span>
+                    <span className="badge badge-gray">Page {currentRow.page_number ?? "—"}</span>
+                    <span className="badge badge-gray">Reviewed at {fmtDate(currentRow.reviewed_at)}</span>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    padding: "12px 14px",
-                    borderRadius: 14,
-                    background: "#fafaf9",
-                    border: "1px solid #e7e5e4",
-                    marginBottom: 18,
-                    fontSize: 12,
-                    color: "var(--ink2)",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  建议先看带红色提示的字段，它们代表 AI 自己也不够确定。绿色和灰色字段一般可以放在后面快速过一遍。
+                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)", marginBottom: 18 }}>
+                  <strong style={{ display: "block", marginBottom: 6 }}>Review guidance</strong>
+                  <span className="helper-text" style={{ color: "var(--ink2)" }}>
+                    Critical fields show stronger warnings when confidence is weak. Evidence snippets stay beside the fields they support so reviewers do not need to jump around the interface.
+                  </span>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 14px", marginBottom: 18 }}>
+                <div className="field-grid">
                   {REVIEW_FIELDS.map((field) => {
                     const confidence = Number(currentRow.field_confidence?.[field.key] ?? 0);
                     const evidence = currentRow.field_evidence?.[field.key];
                     const modified = (currentRow.manual_modified_fields || []).includes(field.key);
                     const shouldWarn = field.critical && confidence < 0.8;
-                    const inputStyle: CSSProperties = {
-                      width: "100%",
-                      minHeight: field.span === 2 ? 84 : 40,
-                      padding: "10px 12px",
-                      border: `1px solid ${shouldWarn ? "#fca5a5" : "#d6d3d1"}`,
-                      borderRadius: 12,
-                      fontSize: 13,
-                      color: "var(--ink)",
-                      background: shouldWarn ? "#fff7f7" : "#fafaf9",
-                      resize: "vertical",
-                      fontFamily: "inherit",
-                    };
+                    const textarea = field.span === 2;
+                    const inputStyle: CSSProperties = textarea
+                      ? { minHeight: 96 }
+                      : {};
 
                     return (
-                      <div key={field.key} style={field.span === 2 ? { gridColumn: "span 2" } : {}}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: shouldWarn ? "#b91c1c" : "var(--ink3)" }}>
-                            {field.label}
-                          </span>
-                          {field.critical && (
-                            <span
-                              style={{
-                                fontSize: 11,
-                                padding: "2px 8px",
-                                borderRadius: 999,
-                                background: shouldWarn ? "#fef2f2" : "#f5f5f4",
-                                color: shouldWarn ? "#b91c1c" : "#57534e",
-                                border: shouldWarn ? "1px solid #fecaca" : "1px solid #e7e5e4",
-                              }}
-                            >
-                              {shouldWarn ? "建议优先检查" : `confidence ${confidence.toFixed(2)}`}
-                            </span>
-                          )}
-                          {modified && <span className="badge badge-blue">你改过</span>}
+                      <div
+                        key={field.key}
+                        className={`review-field${field.span === 2 ? " is-span-2" : ""}${field.critical ? " is-critical" : ""}${shouldWarn ? " is-warning" : ""}`}
+                      >
+                        <div className="field-header">
+                          <span className="field-name">{field.label}</span>
+                          <div className="inline-actions">
+                            {field.critical && (
+                              <span className={shouldWarn ? "badge badge-red" : "badge badge-blue"}>
+                                {shouldWarn ? "Priority check" : `Confidence ${confidence.toFixed(2)}`}
+                              </span>
+                            )}
+                            {modified && <span className="badge badge-green">Manually edited</span>}
+                          </div>
                         </div>
 
-                        {field.span === 2 ? (
-                          <textarea value={draft[field.key] || ""} onChange={(event) => updateDraft(field.key, event.target.value)} style={inputStyle} />
+                        {textarea ? (
+                          <textarea
+                            value={draft[field.key] || ""}
+                            onChange={(event) => updateDraft(field.key, event.target.value)}
+                            className="field-textarea"
+                            style={inputStyle}
+                          />
                         ) : (
-                          <input value={draft[field.key] || ""} onChange={(event) => updateDraft(field.key, event.target.value)} style={inputStyle} />
+                          <input
+                            value={draft[field.key] || ""}
+                            onChange={(event) => updateDraft(field.key, event.target.value)}
+                            className="field"
+                            style={inputStyle}
+                          />
                         )}
 
                         {field.critical && evidence?.text && (
-                          <details style={{ marginTop: 6 }}>
-                            <summary style={{ fontSize: 12, color: "var(--ink2)", cursor: "pointer" }}>
-                              查看依据 {evidence.page ? `(p.${evidence.page})` : ""}
-                            </summary>
-                            <div
-                              style={{
-                                marginTop: 6,
-                                padding: "10px 12px",
-                                background: "#ffffff",
-                                border: "1px solid #e7e5e4",
-                                borderRadius: 10,
-                                fontSize: 12,
-                                lineHeight: 1.7,
-                                color: "var(--ink2)",
-                              }}
-                            >
-                              {evidence.text}
-                            </div>
-                          </details>
+                          <div className="evidence-box">
+                            <div className="field-label">Evidence snippet {evidence.page ? `(p.${evidence.page})` : ""}</div>
+                            <div className="muted-text">{evidence.text}</div>
+                          </div>
                         )}
                       </div>
                     );
@@ -688,82 +723,91 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 </div>
 
                 {(currentRow.warnings_json || []).length > 0 && (
-                  <div style={{ marginBottom: 18, padding: "12px 14px", border: "1px solid #fde68a", background: "#fffbeb", borderRadius: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 8 }}>系统提醒</div>
-                    <div style={{ display: "grid", gap: 6, fontSize: 12, color: "#92400e" }}>
+                  <div className="warning-box" style={{ marginTop: 18 }}>
+                    <h4 className="warning-title">System warnings</h4>
+                    <div className="warning-stack">
                       {(currentRow.warnings_json || []).map((warning, index) => (
-                        <div key={`${warning}-${index}`}>• {warning}</div>
+                        <div key={`${warning}-${index}`} className="muted-text">
+                          • {warning}
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div style={{ display: "flex", gap: 8, paddingTop: 16, borderTop: "1px solid #ece8df", flexWrap: "wrap" }}>
-                  <button className="btn" onClick={() => void savePatch({ ...draft, is_reviewed: 1 }, "修改已保存，同时已标记为已查看。")} disabled={saving}>
-                    保存
+                <div className="inline-actions" style={{ marginTop: 18 }}>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => void savePatch({ ...draft, is_reviewed: 1 }, "Changes saved and the row was marked reviewed.")}
+                    disabled={saving}
+                    type="button"
+                  >
+                    Save
                   </button>
-                  <button className="btn btn-amber" onClick={() => void savePatch({ is_reviewed: 1, reviewed_at: "" }, "这条记录已标记为已查看。")} disabled={saving}>
-                    标记已查看
+                  <button
+                    className="btn btn-amber"
+                    onClick={() => void savePatch({ is_reviewed: 1, reviewed_at: "" }, "This row was marked reviewed.")}
+                    disabled={saving}
+                    type="button"
+                  >
+                    Mark reviewed
                   </button>
                   <button
                     className="btn btn-green"
-                    onClick={() => void savePatch({ ...draft, is_reviewed: 1, needs_review: 0 }, "已保存并标记为已查看。")}
+                    onClick={() => void savePatch({ ...draft, is_reviewed: 1, needs_review: 0 }, "Changes saved and the row is now marked reviewed.")}
                     disabled={saving}
+                    type="button"
                   >
-                    保存并标记已查看
+                    Save and close risk
                   </button>
-                  <button className="btn btn-red" onClick={() => void removeCurrent()} disabled={saving} style={{ marginLeft: "auto" }}>
-                    删除
+                  <button className="btn btn-red" onClick={() => void removeCurrent()} disabled={saving} type="button">
+                    Delete row
                   </button>
                 </div>
               </div>
 
-              <div className="card" style={{ padding: 16, borderRadius: 22 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
-                  记录队列 {riskFilter === "all" ? "" : `· ${riskLabel(riskFilter)}`}
+              <aside className="panel">
+                <div className="split-row" style={{ marginBottom: 12 }}>
+                  <div>
+                    <h3 className="panel-title">Queue</h3>
+                    <p className="panel-copy">Work top-to-bottom to keep the review motion steady.</p>
+                  </div>
+                  <span className="badge badge-gray">{riskFilter === "all" ? "All risks" : riskLabel(riskFilter)}</span>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7, marginBottom: 12 }}>
-                  这里已经帮你按风险排好序了。通常从最上面往下看就行。
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 720, overflowY: "auto" }}>
+
+                <div className="list-stack" style={{ maxHeight: 760, overflowY: "auto" }}>
                   {filteredRows.map((row) => {
                     const active = row.id === currentRow.id;
                     return (
                       <button
                         key={row.id}
+                        className={`queue-card${active ? " is-active" : ""}`}
                         onClick={() => setSelectedRowId(row.id)}
-                        style={{
-                          textAlign: "left",
-                          padding: "12px 12px",
-                          borderRadius: 14,
-                          border: active ? "1px solid #111827" : "1px solid #e5e7eb",
-                          background: active ? "#111827" : "#fafaf9",
-                          color: active ? "#fff" : "var(--ink)",
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
+                        type="button"
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700 }}>
-                            {row.faculty || row.department || `记录 #${row.id}`}
+                        <div className="queue-head">
+                          <div>
+                            <h4 className="queue-title">{row.faculty || row.department || `Row #${row.id}`}</h4>
+                            <div className="queue-meta">{row.department || row.university || "Unlabeled row"}</div>
                           </div>
-                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 999, ...riskBadgeStyle(row.risk_level) }}>
-                            {riskLabel(row.risk_level)}
-                          </span>
+                          <span className={riskBadgeClass(row.risk_level)}>{riskLabel(row.risk_level)}</span>
                         </div>
-                        <div style={{ fontSize: 11, opacity: 0.85 }}>整体置信度 {Number(row.confidence ?? 0).toFixed(2)}</div>
-                        <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
-                          {Number(row.is_reviewed) ? "已查看" : "未查看"} · {Number(row.is_confirmed) ? "已确认" : "未确认"}
+
+                        <div className="queue-meta" style={{ marginTop: 8 }}>
+                          Confidence {Number(row.confidence ?? 0).toFixed(2)}
+                        </div>
+                        <div className="queue-meta">
+                          {Number(row.is_reviewed) ? "Reviewed" : "Needs review"} · {Number(row.is_confirmed) ? "Confirmed" : "Not confirmed"}
                         </div>
                       </button>
                     );
                   })}
                 </div>
-              </div>
+              </aside>
             </div>
           )}
         </section>
-      </div>
+      </section>
     </div>
   );
 }
