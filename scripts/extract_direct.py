@@ -620,52 +620,37 @@ def _normalize_eju_session_value(value: str) -> str:
     source = str(value or "").translate(FULLWIDTH_ASCII_TRANS).strip()
     if not source:
         return ""
-    normalized_dates = _normalize_date_expression(source, mode="list", strict_date_only=True)
-    if normalized_dates:
-        return normalized_dates
-
-    # If source has year/month without day, normalize to YYYY/MM/01 for date-only display.
-    ym_tokens: list[str] = []
-    for y, m in re.findall(r"(20\d{2})\s*[年/.-]\s*(\d{1,2})\s*月?", source):
-        token = f"{int(y):04d}/{int(m):02d}/01"
-        if token not in ym_tokens:
-            ym_tokens.append(token)
-    if ym_tokens:
-        return " / ".join(ym_tokens[:4])
-
-    # Fallback for "2025年度第1回/第2回" style: map rounds to common months.
-    year_round_tokens: list[str] = []
-    for year, round_no in re.findall(r"(20\d{2})\s*年度\s*第\s*([12１２])\s*回", source):
-        month = "06" if round_no.translate(str.maketrans("１２", "12")) == "1" else "11"
-        token = f"{int(year):04d}/{month}/01"
-        if token not in year_round_tokens:
-            year_round_tokens.append(token)
-    if year_round_tokens:
-        return " / ".join(year_round_tokens[:4])
-
-    round_matches = re.findall(r"第\s*([12１２])\s*回", source)
     rounds: list[str] = []
-    for round_no in round_matches:
-        label = f"第{round_no.translate(str.maketrans('１２', '12'))}回"
+
+    def add_round(label: str) -> None:
         if label not in rounds:
             rounds.append(label)
-    if rounds:
-        return " / ".join(rounds[:2])
 
-    monthly_matches = re.findall(r"(\d{1,2})\s*月回", source)
-    monthly_labels: list[str] = []
-    for month in monthly_matches:
-        label = f"{int(month):02d}月回"
-        if label not in monthly_labels:
-            monthly_labels.append(label)
-    if monthly_labels:
-        return " / ".join(monthly_labels[:4])
+    # Direct pattern: 第1回 / 第2回
+    for round_no in re.findall(r"第\s*([12１２])\s*回", source):
+        n = round_no.translate(str.maketrans("１２", "12"))
+        add_round("第一回" if n == "1" else "第二回")
 
-    existing_tokens = [match.group(0).strip() for match in NORMALIZED_EJU_SESSION_TOKEN_RE.finditer(source)]
-    existing_tokens = list(dict.fromkeys(token for token in existing_tokens if token))
-    if existing_tokens:
-        return " / ".join(existing_tokens[:4])
-    return ""
+    # Month-based fallback (EJU common sessions): 6月/7月 => 第一回, 11月 => 第二回
+    for month_str in re.findall(r"(\d{1,2})\s*月(?:回)?", source):
+        month = int(month_str)
+        if month in {6, 7}:
+            add_round("第一回")
+        elif month == 11:
+            add_round("第二回")
+
+    # Date token fallback: infer month then map to first/second round.
+    for token in re.findall(r"(20\d{2})/(\d{2})/\d{2}", _normalize_date_expression(source, mode="list", strict_date_only=True)):
+        month = int(token[1])
+        if month in {6, 7}:
+            add_round("第一回")
+        elif month == 11:
+            add_round("第二回")
+
+    if not rounds:
+        return ""
+    ordered = [label for label in ["第一回", "第二回"] if label in rounds]
+    return " / ".join(ordered)
 
 
 def _normalize_screening_method_value(value: str) -> str:
@@ -673,6 +658,8 @@ def _normalize_screening_method_value(value: str) -> str:
     if not source:
         return ""
     labels: list[str] = []
+    if any(token in source for token in ["書類選考", "書類審査"]) and "書類選考" not in labels:
+        labels.append("書類選考")
     if "小論文" in source and "小論文" not in labels:
         labels.append("小論文")
     if re.search(r"校内.{0,8}(単独)?試験|独自試験|個別試験", source) and "校内単独試験" not in labels:
