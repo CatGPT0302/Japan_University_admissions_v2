@@ -7,16 +7,96 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from scripts.validator import normalize_manual_modified_fields, validate
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
 JSON_LIST_FIELDS = {"warnings_json", "manual_modified_fields"}
 JSON_DICT_FIELDS = {"field_confidence", "field_evidence", "raw_llm_json"}
 STAGING_JSON_FIELDS = JSON_LIST_FIELDS | JSON_DICT_FIELDS
+
+
+@dataclass(frozen=True)
+class DbRuntime:
+    mode: str
+    url: str
+    source: str
+    sqlite_path: str
+    persistent: bool
+    warning: str
+
+
+def _build_pg_url_from_parts() -> tuple[str, str]:
+    host = os.environ.get("PGHOST", "").strip()
+    database = os.environ.get("PGDATABASE", "").strip()
+    user = os.environ.get("PGUSER", "").strip()
+    password = os.environ.get("PGPASSWORD", "")
+    port = os.environ.get("PGPORT", "").strip() or "5432"
+    if not (host and database and user):
+        return "", ""
+    auth = quote(user)
+    if password:
+        auth += f":{quote(password)}"
+    return f"postgresql://{auth}@{host}:{port}/{database}", "PG* parts"
+
+
+def _resolve_database_url() -> tuple[str, str]:
+    for name in (
+        "DATABASE_URL",
+        "DATABASE_PUBLIC_URL",
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "PGDATABASE_URL",
+    ):
+        value = os.environ.get(name, "").strip()
+        if value.startswith("postgres"):
+            return value, name
+    return _build_pg_url_from_parts()
+
+
+def _sqlite_path() -> Path:
+    raw = (
+        os.environ.get("SQLITE_PATH", "").strip()
+        or os.environ.get("SQLITE_DB_PATH", "").strip()
+    )
+    if raw:
+        return Path(raw)
+    return Path(__file__).resolve().parent.parent / "database" / "admissions_v2.db"
+
+
+DATABASE_URL, DATABASE_URL_SOURCE = _resolve_database_url()
+SQLITE_PATH = _sqlite_path()
+
+
+def get_db_runtime() -> DbRuntime:
+    railway = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or os.environ.get("RAILWAY_PROJECT_ID"))
+    if DATABASE_URL and DATABASE_URL.startswith("postgres"):
+        return DbRuntime(
+            mode="postgres",
+            url=DATABASE_URL,
+            source=DATABASE_URL_SOURCE or "DATABASE_URL",
+            sqlite_path="",
+            persistent=True,
+            warning="",
+        )
+    warning = "railway_sqlite_ephemeral" if railway else ""
+    persistent = not railway
+    if railway and str(SQLITE_PATH).startswith("/data"):
+        persistent = True
+        warning = ""
+    return DbRuntime(
+        mode="sqlite",
+        url="",
+        source="sqlite-fallback",
+        sqlite_path=str(SQLITE_PATH),
+        persistent=persistent,
+        warning=warning,
+    )
 
 
 def _pg() -> bool:
@@ -43,7 +123,7 @@ def get_conn():
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
 
-    db_path = Path(__file__).resolve().parent.parent / "database" / "admissions_v2.db"
+    db_path = SQLITE_PATH
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -349,7 +429,10 @@ def init_db() -> None:
     _ensure_staging_columns(conn)
     conn.commit()
     conn.close()
-    print("DB initialised (PostgreSQL)" if _pg() else "DB initialised (SQLite)")
+    runtime = get_db_runtime()
+    print("DB initialised (PostgreSQL)" if runtime.mode == "postgres" else "DB initialised (SQLite)")
+    if runtime.warning:
+        print(f"DB warning: {runtime.warning}")
 
 
 def create_source_document(university, file_name, file_path="", pdf_url="", admission_year="") -> int:

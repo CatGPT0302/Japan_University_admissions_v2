@@ -19,6 +19,7 @@ from scripts import fetch_pdfs as fetch_pdfs  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     delete_staging_record,
+    get_db_runtime,
     get_documents as db_get_documents,
     get_document_summary as db_get_document_summary,
     get_records,
@@ -153,8 +154,15 @@ def root() -> dict[str, str]:
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "healthy"}
+def health() -> dict[str, Any]:
+    runtime = get_db_runtime()
+    return {
+        "status": "healthy",
+        "db_mode": runtime.mode,
+        "db_source": runtime.source,
+        "db_persistent": runtime.persistent,
+        "db_warning": runtime.warning,
+    }
 
 
 @app.post("/extract")
@@ -310,7 +318,17 @@ def list_records(
 
 @app.get("/stats")
 def get_stats() -> dict[str, Any]:
-    return db_get_stats()
+    runtime = get_db_runtime()
+    stats = db_get_stats()
+    stats.update(
+        {
+            "db_mode": runtime.mode,
+            "db_source": runtime.source,
+            "db_persistent": runtime.persistent,
+            "db_warning": runtime.warning,
+        }
+    )
+    return stats
 
 
 @app.get("/export/excel")
