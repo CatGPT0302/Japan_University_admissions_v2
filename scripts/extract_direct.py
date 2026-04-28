@@ -21,7 +21,13 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from scripts.db import create_source_document, init_db, insert_staging_record, update_source_document  # noqa: E402
+from scripts.db import (  # noqa: E402
+    create_source_document,
+    init_db,
+    insert_staging_record,
+    prune_duplicate_documents,
+    update_source_document,
+)
 from scripts.json_parser import extract_json_payload  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
@@ -1394,10 +1400,12 @@ def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") ->
 
     final_university = _pick_final_university(report.get("raw"), stored_university)
     update_source_document(doc_id, status=status, university=final_university)
+    duplicate_cleanup = prune_duplicate_documents(doc_id)
     return {
         "doc_id": doc_id,
         "status": status,
         "university": final_university,
+        "duplicate_cleanup": duplicate_cleanup,
         "mode": report["mode"],
         "pages": report.get("pages"),
         "records": report.get("records"),

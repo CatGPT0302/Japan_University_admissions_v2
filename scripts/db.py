@@ -465,6 +465,19 @@ def update_source_document(doc_id, **kwargs):
     conn.close()
 
 
+def _canonical_university_name(value: str | None) -> str:
+    text = str(value or "").strip()
+    for old, new in {
+        " ": "",
+        "　": "",
+        "\t": "",
+        "\n": "",
+        "稻": "稲",
+    }.items():
+        text = text.replace(old, new)
+    return text
+
+
 def insert_document_page(doc_id, page_number, image_path) -> int:
     sql = f"INSERT INTO document_pages (document_id,page_number,image_path,status) VALUES ({_ph()},{_ph()},{_ph()},'pending')"
     if _pg():
@@ -677,6 +690,86 @@ def delete_staging_record(staging_id) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+def delete_document(doc_id: int) -> dict | None:
+    conn = get_conn()
+    doc = _fetchone(conn, f"SELECT * FROM source_documents WHERE id={_ph()}", (doc_id,))
+    if not doc:
+        conn.close()
+        return None
+
+    staging_ids = [
+        row["id"]
+        for row in _fetchall(
+            conn,
+            f"SELECT id FROM admission_records_staging WHERE document_id={_ph()}",
+            (doc_id,),
+        )
+    ]
+    deleted_records = 0
+    if staging_ids:
+        placeholders = _phn(len(staging_ids))
+        cur = _execute(
+            conn,
+            f"DELETE FROM admission_records WHERE document_id={_ph()} OR source_staging_id IN ({placeholders})",
+            (doc_id, *staging_ids),
+        )
+        deleted_records = max(int(cur.rowcount or 0), 0)
+    else:
+        cur = _execute(conn, f"DELETE FROM admission_records WHERE document_id={_ph()}", (doc_id,))
+        deleted_records = max(int(cur.rowcount or 0), 0)
+
+    cur = _execute(conn, f"DELETE FROM admission_records_staging WHERE document_id={_ph()}", (doc_id,))
+    deleted_staging = max(int(cur.rowcount or 0), 0)
+    cur = _execute(conn, f"DELETE FROM document_pages WHERE document_id={_ph()}", (doc_id,))
+    deleted_pages = max(int(cur.rowcount or 0), 0)
+    _execute(conn, f"DELETE FROM source_documents WHERE id={_ph()}", (doc_id,))
+    conn.commit()
+    conn.close()
+    return {
+        "doc_id": doc_id,
+        "university": doc.get("university", ""),
+        "admission_year": doc.get("admission_year", ""),
+        "filename": doc.get("file_name", ""),
+        "deleted_records": deleted_records,
+        "deleted_staging": deleted_staging,
+        "deleted_pages": deleted_pages,
+    }
+
+
+def prune_duplicate_documents(keep_doc_id: int) -> dict:
+    conn = get_conn()
+    keep = _fetchone(conn, f"SELECT id, university, admission_year FROM source_documents WHERE id={_ph()}", (keep_doc_id,))
+    if not keep:
+        conn.close()
+        return {"kept_doc_id": keep_doc_id, "deleted_documents": []}
+
+    keep_name = _canonical_university_name(keep.get("university"))
+    keep_year = str(keep.get("admission_year") or "").strip()
+    rows = _fetchall(
+        conn,
+        f"""
+        SELECT id, university, admission_year
+        FROM source_documents
+        WHERE id <> {_ph()} AND COALESCE(admission_year,'') = {_ph()}
+        ORDER BY id DESC
+        """,
+        (keep_doc_id, keep_year),
+    )
+    conn.close()
+
+    duplicate_ids = [
+        int(row["id"])
+        for row in rows
+        if _canonical_university_name(row.get("university")) == keep_name and keep_name
+    ]
+    deleted = []
+    for duplicate_id in duplicate_ids:
+        result = delete_document(duplicate_id)
+        if result:
+            deleted.append(result)
+    return {"kept_doc_id": keep_doc_id, "deleted_documents": deleted}
 
 
 def _confirm_row(conn, row: dict, pdf_url="") -> int:

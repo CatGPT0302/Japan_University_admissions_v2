@@ -89,6 +89,17 @@ export async function getDocumentSummary(docId: number): Promise<DocumentSummary
   return data;
 }
 
+export async function deleteDocument(docId: number): Promise<{
+  status: string;
+  doc_id: number;
+  deleted_records: number;
+  deleted_staging: number;
+  deleted_pages: number;
+}> {
+  const { data } = await client.delete(`/documents/${docId}`);
+  return data;
+}
+
 export async function getStaging(docId: number): Promise<StagingRecord[]> {
   const { data } = await client.get<StagingRecord[]>(`/staging/${docId}`);
   return data;

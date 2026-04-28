@@ -18,6 +18,7 @@ from scripts import extract_direct as extract_direct  # noqa: E402
 from scripts import fetch_pdfs as fetch_pdfs  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
+    delete_document,
     delete_staging_record,
     get_db_runtime,
     get_documents as db_get_documents,
@@ -244,6 +245,14 @@ def get_document_summary(doc_id: int) -> dict[str, Any]:
     if not row:
         raise HTTPException(status_code=404, detail="document not found")
     return row
+
+
+@app.delete("/documents/{doc_id}")
+def delete_uploaded_document(doc_id: int) -> dict[str, Any]:
+    result = delete_document(doc_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="document not found")
+    return {"status": "deleted", **result}
 
 
 @app.get("/staging/{doc_id}")

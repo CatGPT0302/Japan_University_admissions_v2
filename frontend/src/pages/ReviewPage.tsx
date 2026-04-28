@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   confirmDoc,
+  deleteDocument,
   deleteStaging,
   getDocumentSummary,
   getDocuments,
@@ -89,6 +90,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [bulkReviewing, setBulkReviewing] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -199,6 +201,33 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       limit: 100,
     });
     setDocuments(docs);
+  }
+
+  async function removeDocument(doc: DocumentListItem) {
+    if (deletingDocId) return;
+    const ok = window.confirm(
+      `删除「${doc.university_name || doc.filename}」这份文档，以及它对应的 staging / records？\n本地 PDF 文件不会被删除。`,
+    );
+    if (!ok) return;
+    setDeletingDocId(doc.doc_id);
+    setErr("");
+    setMsg("");
+    try {
+      const result = await deleteDocument(doc.doc_id);
+      setDocuments((prev) => prev.filter((item) => item.doc_id !== doc.doc_id));
+      if (selectedDocId === doc.doc_id) {
+        setSelectedDocId(null);
+        setDocIdInput("");
+        setSummary(null);
+        setRows([]);
+        setSelectedRowId(null);
+      }
+      setMsg(`已删除文档：staging ${result.deleted_staging} 条，records ${result.deleted_records} 条。`);
+    } catch (error) {
+      setErr(toErrorMessage(error));
+    } finally {
+      setDeletingDocId(null);
+    }
   }
 
   async function savePatch(patch: Record<string, unknown>, successMessage: string) {
@@ -371,9 +400,14 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               {documents.map((doc) => {
                 const active = selectedDocId === doc.doc_id;
                 return (
-                  <button
+                  <div
                     key={doc.doc_id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => void loadDocument(doc.doc_id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") void loadDocument(doc.doc_id);
+                    }}
                     style={{
                       textAlign: "left",
                       padding: "12px 12px 10px",
@@ -386,12 +420,25 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                     }}
                   >
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{doc.university_name || "未命名文档"}</div>
-                    <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 4 }}>{doc.filename}</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+                      <div style={{ fontSize: 11, opacity: 0.8, wordBreak: "break-all" }}>{doc.filename}</div>
+                      <button
+                        className="btn btn-red"
+                        disabled={deletingDocId === doc.doc_id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void removeDocument(doc);
+                        }}
+                        style={{ padding: "6px 8px", fontSize: 11, flexShrink: 0 }}
+                      >
+                        {deletingDocId === doc.doc_id ? "删除中" : "删除"}
+                      </button>
+                    </div>
                     <div style={{ fontSize: 11, opacity: 0.75 }}>
                       {doc.admission_year || "—"} · staging {doc.staging_count} · confirmed {doc.confirmed_count}
                     </div>
                     <div style={{ fontSize: 10, opacity: 0.65, marginTop: 4 }}>{fmtDate(doc.created_at)}</div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
