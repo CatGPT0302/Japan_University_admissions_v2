@@ -5,11 +5,18 @@ import {
   deleteStaging,
   getDocumentSummary,
   getDocuments,
+  getQualityMetrics,
   getStaging,
   patchStaging,
   toErrorMessage,
 } from "../api/client";
-import type { DocumentListItem, DocumentSummary, RiskLevel, StagingRecord } from "../types";
+import type {
+  DocumentListItem,
+  DocumentSummary,
+  QualityMetricsResponse,
+  RiskLevel,
+  StagingRecord,
+} from "../types";
 
 interface Props {
   defaultDocId?: number | null;
@@ -77,6 +84,7 @@ function fieldValue(record: StagingRecord | undefined, key: string): string {
 export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
+  const [docQuality, setDocQuality] = useState<QualityMetricsResponse | null>(null);
   const [rows, setRows] = useState<StagingRecord[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(defaultDocId ?? null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
@@ -177,10 +185,15 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     setErr("");
     setMsg("");
     try {
-      const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
+      const [docSummary, stagingRows, quality] = await Promise.all([
+        getDocumentSummary(docId),
+        getStaging(docId),
+        getQualityMetrics(docId),
+      ]);
       setSelectedDocId(docId);
       setDocIdInput(String(docId));
       setSummary(docSummary);
+      setDocQuality(quality);
       setRows(stagingRows);
       setSelectedRowId(stagingRows[0]?.id ?? null);
       setMsg(stagingRows.length ? `已经载入 ${stagingRows.length} 条记录，可以开始按风险复查。` : "这个文档还没有 staging 记录。");
@@ -192,8 +205,13 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   }
 
   async function refreshCurrentDocument(docId: number) {
-    const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
+    const [docSummary, stagingRows, quality] = await Promise.all([
+      getDocumentSummary(docId),
+      getStaging(docId),
+      getQualityMetrics(docId),
+    ]);
     setSummary(docSummary);
+    setDocQuality(quality);
     setRows(stagingRows);
     const docs = await getDocuments({
       q: docQuery || undefined,
@@ -219,6 +237,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
         setSelectedDocId(null);
         setDocIdInput("");
         setSummary(null);
+        setDocQuality(null);
         setRows([]);
         setSelectedRowId(null);
       }
@@ -466,6 +485,37 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               <div style={{ fontSize: 12, color: "var(--ink3)" }}>选中文档后，这里会告诉你当前整体进度。</div>
             )}
           </div>
+
+          {docQuality && (
+            <div className="card" style={{ padding: 16, borderRadius: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Doc Quality Snapshot</div>
+              <div style={{ display: "grid", gap: 8, fontSize: 12, color: "var(--ink2)" }}>
+                <div>
+                  <strong style={{ color: "var(--ink)" }}>Risk:</strong> high {docQuality.risk_distribution.high || 0} / medium {docQuality.risk_distribution.medium || 0} / low {docQuality.risk_distribution.low || 0}
+                </div>
+                <div>
+                  <strong style={{ color: "var(--ink)" }}>Top Modified Fields:</strong>{" "}
+                  {(docQuality.top_modified_fields || [])
+                    .slice(0, 3)
+                    .map((item) => `${item.field}(${item.count})`)
+                    .join(", ") || "none"}
+                </div>
+                <div style={{ display: "grid", gap: 4 }}>
+                  {(docQuality.field_coverage || [])
+                    .filter((item) => item.fill_rate < 0.7)
+                    .slice(0, 4)
+                    .map((item) => (
+                      <div key={item.field}>
+                        {item.field}: fill {Math.round(item.fill_rate * 100)}% / modified {Math.round(item.modified_rate * 100)}%
+                      </div>
+                    ))}
+                  {docQuality.field_coverage.filter((item) => item.fill_rate < 0.7).length === 0 && (
+                    <div>All key fields are at least 70% covered in this doc.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
