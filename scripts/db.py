@@ -66,6 +66,9 @@ def _sqlite_path() -> Path:
     )
     if raw:
         return Path(raw)
+    volume_mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
+    if volume_mount:
+        return Path(volume_mount) / "admissions_v2.db"
     return Path(__file__).resolve().parent.parent / "database" / "admissions_v2.db"
 
 
@@ -75,6 +78,7 @@ SQLITE_PATH = _sqlite_path()
 
 def get_db_runtime() -> DbRuntime:
     railway = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or os.environ.get("RAILWAY_PROJECT_ID"))
+    volume_mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
     if DATABASE_URL and DATABASE_URL.startswith("postgres"):
         return DbRuntime(
             mode="postgres",
@@ -86,7 +90,7 @@ def get_db_runtime() -> DbRuntime:
         )
     warning = "railway_sqlite_ephemeral" if railway else ""
     persistent = not railway
-    if railway and str(SQLITE_PATH).startswith("/data"):
+    if railway and volume_mount and str(SQLITE_PATH).startswith(volume_mount):
         persistent = True
         warning = ""
     return DbRuntime(
