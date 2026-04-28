@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
@@ -475,6 +476,7 @@ def _canonical_university_name(value: str | None) -> str:
         "稻": "稲",
     }.items():
         text = text.replace(old, new)
+    text = re.sub(r"^[A-Za-z0-9_\-]+(?=[一-龥ぁ-んァ-ヴー])", "", text)
     return text
 
 

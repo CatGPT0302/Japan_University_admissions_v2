@@ -121,7 +121,12 @@ def _read_pdf_text(pdf_path: Path) -> tuple[str, dict[int, str]]:
 
 
 def _clean_university_name(value: str) -> str:
-    cleaned = re.sub(r"\s+", "", str(value or "").strip())
+    raw = str(value or "").strip()
+    match = re.search(r"([一-龥ぁ-んァ-ヴー・･ー\-\s]{2,40}大学)", raw)
+    if match:
+        raw = match.group(1)
+    cleaned = re.sub(r"\s+", "", raw)
+    cleaned = re.sub(r"^[A-Za-z0-9_\-]+(?=[一-龥ぁ-んァ-ヴー])", "", cleaned)
     if not cleaned.endswith("大学"):
         return ""
     if len(cleaned) < 3:
@@ -377,6 +382,17 @@ def _strip_eju_prefix(text: str) -> str:
     cleaned = re.sub(r"^[①-⑳⓪○●◎◯□■◆◇△▽▼▲※＊*・]+", "", cleaned)
     cleaned = re.sub(r"^\(?[0-9０-９]+\)?[\.．、 ]*", "", cleaned)
     return cleaned.strip()
+
+
+def _symbol_to_eju_value(field: str, value: str) -> str:
+    source = str(value or "").strip()
+    if not source:
+        return ""
+    if re.fullmatch(r"[○●◎◯□■▲△▽▼※＊*・\s]+", source):
+        return EJU_FIELD_LABELS.get(field, source)
+    if source in {"必須", "必要", "要", "提出必須", "受験必須"}:
+        return EJU_FIELD_LABELS.get(field, source)
+    return source
 
 
 def _extract_math_requirement(text: str) -> str:
@@ -724,7 +740,7 @@ def _normalize_eju_fields(record: dict[str, Any]) -> dict[str, Any]:
 
     for field in EJU_FIELD_LABELS:
         if str(normalized.get(field) or "").strip():
-            normalized[field] = _strip_eju_prefix(normalized.get(field) or "")
+            normalized[field] = _strip_eju_prefix(_symbol_to_eju_value(field, normalized.get(field) or ""))
 
     combined_general = " ".join(
         part for part in [
@@ -974,9 +990,8 @@ def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
         raw_evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
         raw_confidence = dict(normalized.get("field_confidence") or {}) if isinstance(normalized.get("field_confidence"), dict) else {}
         if not str(normalized.get("eju_math") or "").strip():
-            note_text = str(normalized.get("screening_method") or normalized.get("screening_schedule") or "").strip()
             normalized["eju_math"] = "数学"
-            raw_evidence["eju_math"] = {"text": note_text, "page": None}
+            raw_evidence["eju_math"] = {"text": "EJU数学に一次選考免除条件あり。原文確認。", "page": None}
             raw_confidence["eju_math"] = max(float(raw_confidence.get("eju_math") or 0.0), 0.58)
         normalized["field_evidence"] = raw_evidence
         normalized["field_confidence"] = raw_confidence
@@ -1134,9 +1149,147 @@ def _find_sparse_pages(page_map: dict[int, str], threshold: int = 200) -> list[i
     return [page_num for page_num, text in page_map.items() if len(text.strip()) < threshold]
 
 
+VISION_TABLE_HINTS = (
+    "選考方法",
+    "試験科目",
+    "必要な試験",
+    "受験科目",
+    "外部試験",
+    "日本留学試験",
+    "EJU",
+    "TOEFL",
+    "IELTS",
+    "TOEIC",
+)
+
+
+VISION_PATCH_FIELDS = [
+    "eju_japanese",
+    "eju_general",
+    "eju_math",
+    "eju_physics",
+    "eju_chemistry",
+    "eju_biology",
+    "english_requirement",
+    "screening_method",
+]
+
+
+def _find_vision_table_pages(page_map: dict[int, str]) -> list[int]:
+    pages: list[int] = []
+    for page_num, text in page_map.items():
+        stripped = text.strip()
+        has_hint = any(hint in stripped for hint in VISION_TABLE_HINTS)
+        table_signal = any(
+            token in stripped
+            for token in ["以下の表", "次の表", "下表", "上表", "表で確認", "表を確認", "一覧表"]
+        )
+        # PDF text layers often lose dense table cells while keeping only the page title.
+        if has_hint and (len(stripped) < 700 or table_signal):
+            pages.append(page_num)
+    return pages
+
+
+def _record_key(value: str) -> str:
+    text = str(value or "").strip()
+    for token in [" ", "　", "\t", "\n", "－", "-", "―"]:
+        text = text.replace(token, "")
+    return text
+
+
+def _match_patch_record(record: dict[str, Any], patch_by_key: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    faculty = _record_key(str(record.get("faculty") or ""))
+    department = _record_key(str(record.get("department") or ""))
+    for key in [department, faculty]:
+        if key and key in patch_by_key:
+            return patch_by_key[key]
+    for key, patch in patch_by_key.items():
+        if key and (key in department or key in faculty or department in key or faculty in key):
+            return patch
+    return None
+
+
+def _merge_patch_record(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(existing)
+    for field in ["faculty", "department", "_vision_page", "_vision_variant"]:
+        if not str(merged.get(field) or "").strip() and str(incoming.get(field) or "").strip():
+            merged[field] = incoming[field]
+    for field in VISION_PATCH_FIELDS:
+        if not str(merged.get(field) or "").strip() and str(incoming.get(field) or "").strip():
+            merged[field] = incoming[field]
+    warnings = list(merged.get("warnings") or [])
+    for warning in incoming.get("warnings") or []:
+        if warning and warning not in warnings:
+            warnings.append(str(warning))
+    if warnings:
+        merged["warnings"] = warnings
+    return merged
+
+
+def _merge_field_metadata(
+    record: dict[str, Any],
+    field: str,
+    value: str,
+    page_num: int,
+    evidence_text: str,
+    confidence: float = 0.74,
+) -> None:
+    field_evidence = dict(record.get("field_evidence") or {}) if isinstance(record.get("field_evidence"), dict) else {}
+    field_confidence = dict(record.get("field_confidence") or {}) if isinstance(record.get("field_confidence"), dict) else {}
+    field_evidence[field] = {
+        "text": evidence_text,
+        "page": page_num,
+    }
+    field_confidence[field] = confidence
+    record["field_evidence"] = field_evidence
+    record["field_confidence"] = field_confidence
+
+
+def _upscale_image(image, factor: float = 1.6):
+    try:
+        from PIL import Image
+
+        width, height = image.size
+        return image.resize((int(width * factor), int(height * factor)), Image.Resampling.LANCZOS)
+    except Exception:
+        return image
+
+
+def _vision_patch_image_variants(image_path: Path, out_dir: Path) -> list[tuple[str, Path]]:
+    variants: list[tuple[str, Path]] = [("full_page", image_path)]
+    try:
+        from PIL import Image
+
+        with Image.open(image_path) as img:
+            width, height = img.size
+            if width <= height * 1.15:
+                return variants
+            variants = []
+            # Wide admissions tables often put faculty names and EJU/English columns
+            # on the left half while schedules continue far right. A focused crop
+            # keeps the visual path generic without relying on university-specific rules.
+            crop_box = (0, 0, int(width * 0.64), height)
+            crop_path = out_dir / f"{image_path.stem}_exam_columns.png"
+            _upscale_image(img.crop(crop_box)).save(crop_path)
+            variants.append(("exam_columns", crop_path))
+            if height > 1000:
+                split_points = [
+                    (0, int(height * 0.43), "exam_columns_top"),
+                    (int(height * 0.36), int(height * 0.76), "exam_columns_middle"),
+                    (int(height * 0.68), height, "exam_columns_bottom"),
+                ]
+                for y1, y2, name in split_points:
+                    segment_path = out_dir / f"{image_path.stem}_{name}.png"
+                    _upscale_image(img.crop((0, y1, int(width * 0.64), y2)), 2.0).save(segment_path)
+                    variants.append((name, segment_path))
+    except Exception as exc:
+        print(f"[direct] vision_patch_crop_skipped {image_path.name}: {exc}")
+    return variants
+
+
 def _vision_patch_records(
     records: list[dict[str, Any]],
-    sparse_pages: list[int],
+    candidate_pages: list[int],
     pdf_path: Path,
     university: str,
     year: str,
@@ -1144,79 +1297,127 @@ def _vision_patch_records(
 ) -> list[dict[str, Any]]:
     """For any records where key fields are empty, re-extract sparse pages via vision
     and backfill missing values. Generic — works for any university."""
-    PATCH_FIELDS = ["english_requirement", "eju_japanese", "eju_math", "screening_method"]
-
-    empty_ratio = sum(
+    missing_field_ratio = sum(
         1 for r in records
-        if not str(r.get("english_requirement") or "").strip()
+        if any(not str(r.get(field) or "").strip() for field in VISION_PATCH_FIELDS)
     ) / max(len(records), 1)
 
-    if empty_ratio < 0.3 or not sparse_pages:
+    if missing_field_ratio <= 0 or not candidate_pages:
         return records  # quality is fine, skip
 
-    print(f"[direct] vision_patch triggered: {empty_ratio:.0%} records missing english_requirement, sparse_pages={sparse_pages}")
+    print(f"[direct] vision_patch triggered: {missing_field_ratio:.0%} records missing at least one table field, pages={candidate_pages}")
 
     out_dir = ROOT / "output_pages" / f"direct_{doc_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
-    images = render_pdf_to_images(pdf_path, out_dir)
+    images = render_pdf_to_images(pdf_path, out_dir, pages=candidate_pages)
+    images_by_page = {
+        int(path.stem.split("_")[-1]): path
+        for path in images
+        if path.stem.split("_")[-1].isdigit()
+    }
 
-    # Only render and send the sparse pages
     patch_records: list[dict[str, Any]] = []
-    for page_num in sparse_pages:
-        img_idx = page_num - 1
-        if img_idx >= len(images):
+    target_units = []
+    seen_units = set()
+    for record in records:
+        faculty = str(record.get("faculty") or "").strip()
+        department = str(record.get("department") or "").strip()
+        unit = " / ".join(part for part in [faculty, department] if part)
+        key = _record_key(unit)
+        if unit and key not in seen_units:
+            seen_units.add(key)
+            target_units.append(unit)
+    target_hint = "、".join(target_units[:80])
+    for page_num in candidate_pages:
+        image_path = images_by_page.get(page_num)
+        if not image_path:
             continue
-        image_path = images[img_idx]
-        try:
-            messages = [
-                {"role": "system", "content": _build_system_prompt()},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": (
-                                f"[Info] university={university} year={year} mode=vision_patch page={page_num}\n"
-                                "このページは表が画像化されています。"
-                                "学部・学科ごとの英語外部試験要件・EJU要件を中心に抽出してください。"
-                                "各レコードに faculty と english_requirement を必ず含めてください。"
-                            ),
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": _data_url_from_image(image_path)},
-                        },
-                    ],
-                },
-            ]
-            result = _call_openai(messages, VISION_MODEL, max_tokens=6000, token_param="max_tokens")
-            patch_records.extend(result.get("records") or [])
-            print(f"[direct] vision_patch page={page_num}: got {len(result.get('records') or [])} records")
-        except Exception as e:
-            print(f"[direct] vision_patch_failed page={page_num}: {e}")
-
+        for variant_name, variant_path in _vision_patch_image_variants(image_path, out_dir):
+            try:
+                messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a conservative admissions table reader. Return strict JSON only. "
+                            "Do not invent dates, deadlines, scores, faculties, departments, or requirements."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"[Info] university={university} year={year} mode=vision_patch page={page_num} variant={variant_name}\n"
+                                    "このページは学部別の試験科目・選考方法・日程表の可能性があります。"
+                                    "文字抽出では表のセルや記号が欠落しやすいため、画像から表を読んでください。"
+                                    "学部・学科ごとの日本留学試験(EJU)科目、英語外部資格試験、選考方法を抽出してください。"
+                                    f"抽出対象は既存候補にある募集単位だけです: {target_hint}。"
+                                    "候補にない学部・学科は出力しないでください。"
+                                    "表のヘッダーに記号の意味がある場合は必ず従ってください。"
+                                    "○や●が必須を示す列は該当する科目名を値にしてください。"
+                                    "▲が『いずれか提出必須』、□が任意・選択条件を示す場合は、必要な補足を warnings に入れてください。"
+                                    "EJU科目は eju_japanese/eju_general/eju_math/eju_physics/eju_chemistry/eju_biology に分けてください。"
+                                    "数学は可能なら 数学(コース1), 数学(コース2), 数学(コース1または2) のように書いてください。"
+                                    "英語外部資格試験は TOEFL/IELTS/TOEIC など試験名だけを入れ、学習歴や提出書類は入れないでください。"
+                                    "この補抽では application_period/deadline_rule/eju_session/screening_schedule/result_date/enrollment_period は空欄でよいです。"
+                                    "表に明記されていない日付や締切は絶対に作らないでください。"
+                                    "表が複数行に分かれる場合も、募集単位ごとに1 recordを返してください。"
+                                    "読み取れないセルは推測せず空欄にしてください。"
+                                    "返却形式は {\"records\":[{\"faculty\":\"\",\"department\":\"\",\"eju_japanese\":\"\",\"eju_general\":\"\",\"eju_math\":\"\",\"eju_physics\":\"\",\"eju_chemistry\":\"\",\"eju_biology\":\"\",\"english_requirement\":\"\",\"screening_method\":\"\",\"warnings\":[]}]} のみ。"
+                                ),
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": _data_url_from_image(variant_path)},
+                            },
+                        ],
+                    },
+                ]
+                result = _call_openai(messages, VISION_MODEL, max_tokens=8000, token_param="max_tokens")
+                for patch_record in result.get("records") or []:
+                    tagged = dict(patch_record)
+                    tagged["_vision_page"] = page_num
+                    tagged["_vision_variant"] = variant_name
+                    patch_records.append(tagged)
+                print(f"[direct] vision_patch page={page_num} variant={variant_name}: got {len(result.get('records') or [])} records")
+            except Exception as e:
+                print(f"[direct] vision_patch_failed page={page_num} variant={variant_name}: {e}")
     if not patch_records:
         return records
 
-    # Build lookup: faculty -> patch record
-    patch_by_faculty: dict[str, dict[str, Any]] = {}
+    patch_by_key: dict[str, dict[str, Any]] = {}
     for pr in patch_records:
-        faculty = str(pr.get("faculty") or "").strip()
-        has_signal = any(str(pr.get(field) or "").strip() for field in PATCH_FIELDS)
-        if faculty and has_signal:
-            patch_by_faculty[faculty] = pr
+        has_signal = any(str(pr.get(field) or "").strip() for field in VISION_PATCH_FIELDS)
+        if not has_signal:
+            continue
+        for key_field in ["department", "faculty"]:
+            key = _record_key(str(pr.get(key_field) or ""))
+            if key:
+                patch_by_key[key] = _merge_patch_record(patch_by_key.get(key, {}), pr)
 
-    # Backfill empty fields in existing records
     patched = []
     for rec in records:
-        faculty = str(rec.get("faculty") or "").strip()
-        pr = patch_by_faculty.get(faculty)
+        pr = _match_patch_record(rec, patch_by_key)
         if pr:
-            for field in PATCH_FIELDS:
-                if not str(rec.get(field) or "").strip() and str(pr.get(field) or "").strip():
-                    rec[field] = pr[field]
-                    print(f"[direct] patched {faculty}.{field} = {pr[field]!r}")
-        patched.append(rec)
+            page_num = int(pr.get("_vision_page") or pr.get("page_number") or pr.get("page") or candidate_pages[0])
+            evidence_text = str((pr.get("field_evidence") or {}).get("eju_japanese", {}).get("text") if isinstance(pr.get("field_evidence"), dict) else "") or f"vision table page {page_num}"
+            for field in VISION_PATCH_FIELDS:
+                patch_value = str(pr.get(field) or "").strip()
+                if not patch_value:
+                    continue
+                current_value = str(rec.get(field) or "").strip()
+                if not current_value:
+                    rec[field] = patch_value
+                    _merge_field_metadata(rec, field, patch_value, page_num, evidence_text)
+                    print(f"[direct] patched {rec.get('faculty')}.{field} = {patch_value!r}")
+            warnings = list(rec.get("warnings") or rec.get("warnings_json") or [])
+            for warning in pr.get("warnings") or []:
+                if warning and warning not in warnings:
+                    warnings.append(str(warning))
+            if warnings:
+                rec["warnings"] = warnings
+        patched.append(_normalize_record_noise(rec))
     return patched
 
 
@@ -1270,12 +1471,13 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
         ["application_period", "deadline_rule", "eju_session", "enrollment_period"],
     )
 
-    # Generic vision patch for image-based tables
-    sparse_pages = _find_sparse_pages(page_map)
-    if sparse_pages:
+    # Text layers are only a fast candidate path. Dense image tables often keep
+    # just the section title in text, so critical exam fields must get a vision pass.
+    candidate_pages = _find_vision_table_pages(page_map)
+    if candidate_pages:
         result["records"] = _vision_patch_records(
             result.get("records") or [],
-            sparse_pages,
+            candidate_pages,
             pdf_path,
             university,
             year,
