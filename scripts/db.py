@@ -790,6 +790,7 @@ def update_staging_record(staging_id, data) -> dict | None:
 
 def delete_staging_record(staging_id) -> bool:
     conn = get_conn()
+    _execute(conn, f"DELETE FROM correction_events WHERE staging_id={_ph()}", (staging_id,))
     _execute(conn, f"DELETE FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
     conn.commit()
     conn.close()
@@ -814,6 +815,11 @@ def delete_document(doc_id: int) -> dict | None:
     deleted_records = 0
     if staging_ids:
         placeholders = _phn(len(staging_ids))
+        _execute(
+            conn,
+            f"DELETE FROM correction_events WHERE document_id={_ph()} OR staging_id IN ({placeholders})",
+            (doc_id, *staging_ids),
+        )
         cur = _execute(
             conn,
             f"DELETE FROM admission_records WHERE document_id={_ph()} OR source_staging_id IN ({placeholders})",
@@ -821,6 +827,7 @@ def delete_document(doc_id: int) -> dict | None:
         )
         deleted_records = max(int(cur.rowcount or 0), 0)
     else:
+        _execute(conn, f"DELETE FROM correction_events WHERE document_id={_ph()}", (doc_id,))
         cur = _execute(conn, f"DELETE FROM admission_records WHERE document_id={_ph()}", (doc_id,))
         deleted_records = max(int(cur.rowcount or 0), 0)
 

@@ -517,21 +517,28 @@ def _format_date_fragment(text: str, fallback_year: int | None = None) -> tuple[
     return "", int(year_match.group(1)) if year_match else fallback_year
 
 
-def _normalize_date_expression(value: str, mode: str = "list") -> str:
+def _normalize_date_expression(value: str, mode: str = "list", strict_date_only: bool = False) -> str:
     source = str(value or "").translate(FULLWIDTH_ASCII_TRANS).strip()
     if not source:
         return ""
+
     normalized_tokens = [match.group(0).strip() for match in NORMALIZED_DATE_TOKEN_RE.finditer(source)]
     normalized_tokens = list(dict.fromkeys(token for token in normalized_tokens if token))
-    if not normalized_tokens:
+
+    if not normalized_tokens and not strict_date_only:
         normalized_tokens = [match.group(0).strip() for match in NORMALIZED_MONTH_PHASE_TOKEN_RE.finditer(source)]
         normalized_tokens = list(dict.fromkeys(token for token in normalized_tokens if token))
+
+    if strict_date_only and normalized_tokens:
+        normalized_tokens = [token for token in normalized_tokens if re.fullmatch(r"\d{4}/\d{2}/\d{2}", token)]
+
     if normalized_tokens:
         if mode == "range" and len(normalized_tokens) >= 2:
             return f"{normalized_tokens[0]} - {normalized_tokens[-1]}"
         if len(normalized_tokens) == 1:
             return normalized_tokens[0]
         return " / ".join(normalized_tokens[:6])
+
     fragments = [match.group(0).strip() for match in DATE_FRAGMENT_RE.finditer(source)]
     formatted: list[str] = []
     current_year: int | None = None
@@ -539,18 +546,24 @@ def _normalize_date_expression(value: str, mode: str = "list") -> str:
         normalized, current_year = _format_date_fragment(fragment, current_year)
         if normalized and normalized not in formatted:
             formatted.append(normalized)
-    phases = list(dict.fromkeys(match.group(1).strip() for match in MONTH_PHASE_RE.finditer(source)))
-    if phases:
-        for phase in phases:
-            normalized, current_year = _format_date_fragment(phase, current_year)
-            if normalized and normalized not in formatted:
-                formatted.append(normalized)
+
+    if not strict_date_only:
+        phases = list(dict.fromkeys(match.group(1).strip() for match in MONTH_PHASE_RE.finditer(source)))
+        if phases:
+            for phase in phases:
+                normalized, current_year = _format_date_fragment(phase, current_year)
+                if normalized and normalized not in formatted:
+                    formatted.append(normalized)
+
     if not formatted:
         return ""
+
     dated = [item for item in formatted if re.match(r"\d{4}/\d{2}/\d{2}$", item)]
     phased = [item for item in formatted if item not in dated]
     dated = sorted(dated)
-    formatted = dated + phased
+    formatted = dated if strict_date_only else (dated + phased)
+    if not formatted:
+        return ""
     if mode == "range" and len(formatted) >= 2:
         return f"{formatted[0]} - {formatted[-1]}"
     if len(formatted) == 1:
@@ -607,6 +620,19 @@ def _normalize_eju_session_value(value: str) -> str:
     source = str(value or "").translate(FULLWIDTH_ASCII_TRANS).strip()
     if not source:
         return ""
+    normalized_dates = _normalize_date_expression(source, mode="list", strict_date_only=True)
+    if normalized_dates:
+        return normalized_dates
+
+    # If source has year/month without day, normalize to YYYY/MM/01 for date-only display.
+    ym_tokens: list[str] = []
+    for y, m in re.findall(r"(20\d{2})\s*[年/.-]\s*(\d{1,2})\s*月?", source):
+        token = f"{int(y):04d}/{int(m):02d}/01"
+        if token not in ym_tokens:
+            ym_tokens.append(token)
+    if ym_tokens:
+        return " / ".join(ym_tokens[:4])
+
     round_matches = re.findall(r"第\s*([12１２])\s*回", source)
     rounds: list[str] = []
     for round_no in round_matches:
@@ -637,15 +663,16 @@ def _normalize_screening_method_value(value: str) -> str:
     if not source:
         return ""
     labels: list[str] = []
-    for needle, label in SCREENING_METHOD_LABELS:
-        if needle in source and label not in labels:
-            labels.append(label)
-    if "書類審査" in source and "書類選考" not in labels:
-        labels.append("書類選考")
-    if any(token in source for token in ["個別学力検査", "筆記試験"]) and "学力試験" not in labels:
+    if "小論文" in source and "小論文" not in labels:
+        labels.append("小論文")
+    if re.search(r"校内.{0,8}(単独)?試験|独自試験|個別試験", source) and "校内単独試験" not in labels:
+        labels.append("校内単独試験")
+    if any(token in source for token in ["学力試験", "個別学力検査", "筆記試験"]) and "学力試験" not in labels:
         labels.append("学力試験")
-    if "面談" in source and "面接" not in labels:
+    if any(token in source for token in ["面接", "面談"]) and "面接" not in labels:
         labels.append("面接")
+    if any(token in source for token in ["口頭試問", "口述試験"]) and "口頭試問" not in labels:
+        labels.append("口頭試問")
     return " / ".join(labels)
 
 
@@ -965,15 +992,15 @@ def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
     screening_schedule_source = str((raw_evidence.get("screening_schedule") or {}).get("text") or normalized.get("screening_schedule") or "")
     result_date_source = str((raw_evidence.get("result_date") or {}).get("text") or normalized.get("result_date") or "")
 
-    application_period = _normalize_date_expression(application_source, mode="range")
+    application_period = _normalize_date_expression(application_source, mode="range", strict_date_only=True)
     normalized["application_period"] = application_period
-    enrollment_period = _normalize_date_expression(enrollment_source, mode="range")
+    enrollment_period = _normalize_date_expression(enrollment_source, mode="range", strict_date_only=True)
     normalized["enrollment_period"] = enrollment_period
     eju_session = _normalize_eju_session_value(eju_session_source)
     normalized["eju_session"] = eju_session
-    screening_schedule = _normalize_screening_schedule_value(screening_schedule_source)
+    screening_schedule = _normalize_date_expression(screening_schedule_source, mode="list", strict_date_only=True)
     normalized["screening_schedule"] = screening_schedule
-    result_date = _normalize_result_date_value(result_date_source)
+    result_date = _normalize_date_expression(result_date_source, mode="list", strict_date_only=True)
     normalized["result_date"] = result_date
     screening_method = _normalize_screening_method_value(screening_method_source)
     normalized["screening_method"] = screening_method
@@ -988,16 +1015,6 @@ def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
     english = str(normalized.get("english_requirement") or "").strip()
     if english:
         normalized["english_requirement"] = re.sub(r"[、,]?\s*志望理由書等", "", english).strip(" 、,/")
-    if str(normalized.get("university") or "").strip() == "早稲田大学" and str(normalized.get("faculty") or "").strip() == "人間科学部":
-        raw_evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
-        raw_confidence = dict(normalized.get("field_confidence") or {}) if isinstance(normalized.get("field_confidence"), dict) else {}
-        if not str(normalized.get("eju_math") or "").strip():
-            normalized["eju_math"] = "数学"
-            raw_evidence["eju_math"] = {"text": "EJU数学に一次選考免除条件あり。原文確認。", "page": None}
-            raw_confidence["eju_math"] = max(float(raw_confidence.get("eju_math") or 0.0), 0.58)
-        normalized["field_evidence"] = raw_evidence
-        normalized["field_confidence"] = raw_confidence
-        _append_record_note(normalized, "EJU数学に一次選考免除条件あり。原文確認。")
     return normalized
 
 
