@@ -82,6 +82,13 @@ class FetchPdfRequest(BaseModel):
     university: str
     year: str = "2026"
     page_url: str | None = ""
+    pdf_url: str | None = ""
+
+
+class SearchPdfRequest(BaseModel):
+    university: str
+    year: str = "2026"
+    page_url: str | None = ""
 
 
 class RecordsQuery(BaseModel):
@@ -166,6 +173,26 @@ def fetch_pdf_targets() -> list[dict[str, str]]:
     return fetch_pdfs.list_targets()
 
 
+@app.post("/fetch-pdf/search")
+def search_pdf(payload: SearchPdfRequest) -> dict[str, Any]:
+    try:
+        return fetch_pdfs.search_single(
+            university=payload.university,
+            year=int(payload.year or "2026"),
+            page_url=payload.page_url or "",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "search_pdf failed",
+                "message": str(exc),
+            },
+        )
+
+
 @app.post("/fetch-pdf")
 def fetch_pdf(payload: FetchPdfRequest) -> dict[str, Any]:
     try:
@@ -173,6 +200,7 @@ def fetch_pdf(payload: FetchPdfRequest) -> dict[str, Any]:
             university=payload.university,
             year=int(payload.year or "2026"),
             page_url=payload.page_url or "",
+            pdf_url=payload.pdf_url or "",
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

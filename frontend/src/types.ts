@@ -5,6 +5,21 @@ export interface FetchPdfTarget {
   url: string;
 }
 
+export interface FetchPdfCandidate {
+  title: string;
+  pdf_url: string;
+  page_url: string;
+  query: string;
+  score: number;
+}
+
+export interface FetchPdfSearchResponse {
+  university: string;
+  query: string;
+  status: string;
+  candidates: FetchPdfCandidate[];
+}
+
 export interface FetchPdfResponse {
   university: string;
   status: string;

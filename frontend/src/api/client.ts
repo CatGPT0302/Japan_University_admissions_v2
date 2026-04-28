@@ -6,6 +6,7 @@ import type {
   DocumentSummary,
   ExtractResponse,
   FetchPdfResponse,
+  FetchPdfSearchResponse,
   FetchPdfTarget,
   StagingRecord,
   StatsResponse,
@@ -54,10 +55,20 @@ export async function getFetchTargets(): Promise<FetchPdfTarget[]> {
   return data;
 }
 
+export async function searchFetchPdf(payload: {
+  university: string;
+  year: string;
+  page_url?: string;
+}): Promise<FetchPdfSearchResponse> {
+  const { data } = await client.post<FetchPdfSearchResponse>("/fetch-pdf/search", payload);
+  return data;
+}
+
 export async function fetchPdf(payload: {
   university: string;
   year: string;
   page_url?: string;
+  pdf_url?: string;
 }): Promise<FetchPdfResponse> {
   const { data } = await client.post<FetchPdfResponse>("/fetch-pdf", payload);
   return data;
