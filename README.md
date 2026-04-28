@@ -104,6 +104,33 @@ Use `data/pdf_source_registry.template.csv` as the starting template for a real 
 
 When a registry entry matches a university and year, the system will prefer that maintained source before falling back to open-web search.
 
+## Quality Ops Endpoints
+
+These endpoints are intended for quality control and operational monitoring:
+
+- `GET /metrics/quality`
+  - Returns field coverage, field-level manual-modification rates, risk distribution, and confidence calibration buckets.
+  - Optional query: `doc_id=<int>` for document-level metrics.
+- `GET /metrics/corrections`
+  - Returns correction events generated from human `PATCH /staging/{id}` updates.
+  - Optional query: `doc_id=<int>`, `limit=<int>`.
+- `GET /fetch-pdf/probe?year=2026`
+  - Probes maintained target pages and reports possible new PDF candidates not yet in the registry.
+
+## Golden Sample Regression
+
+Run lightweight regression reporting:
+
+```powershell
+python scripts/regression_golden_samples.py
+```
+
+Optional full rerun and report save:
+
+```powershell
+python scripts/regression_golden_samples.py --run-extract --save-json .\demo\golden_report.json
+```
+
 ## Documentation
 
 - `docs/handoff.md`
