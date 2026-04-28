@@ -87,12 +87,19 @@ Use `.env.example` in the project root and `frontend/.env.example` for the front
 
 Required:
 
-- `OPENAI_API_KEY`
+- `OPENAI_API_KEY` (or `LLM_API_KEY`)
 
 Optional:
 
 - `OPENAI_TEXT_MODEL`
 - `OPENAI_VISION_MODEL`
+- `OPENAI_BASE_URL` or `LLM_BASE_URL` (OpenAI-compatible base URL)
+- `OPENAI_COMPAT_URL` or `LLM_COMPAT_URL` (full chat completions URL; higher priority than base URL)
+
+Compatibility resolution order:
+
+- API key: `LLM_API_KEY` -> `OPENAI_API_KEY`
+- Endpoint: `OPENAI_COMPAT_URL` -> `LLM_COMPAT_URL` -> `OPENAI_URL` -> `OPENAI_BASE_URL` -> `LLM_BASE_URL` -> official OpenAI default
 
 ## PDF Source Registry
 

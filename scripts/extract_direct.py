@@ -34,7 +34,7 @@ from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.validator import CRITICAL_FIELDS, validate  # noqa: E402
 
 PROMPT_PATH = ROOT / "prompts" / "vision_prompt.md"
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+DEFAULT_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 DEFAULT_TEXT_MODEL = "gpt-5.4-mini"
 DEFAULT_VISION_MODEL = "gpt-4o-mini"
 AUTO_UNIVERSITY_PLACEHOLDER = "待识别"
@@ -79,21 +79,6 @@ def _load_prompt() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8")
 
 
-def _load_api_key() -> str:
-    key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not key:
-        env_path = ROOT / ".env"
-        if env_path.exists():
-            for line in env_path.read_text(encoding="utf-8-sig").splitlines():
-                line = line.strip()
-                if line.startswith("OPENAI_API_KEY="):
-                    key = line.split("=", 1)[1].strip()
-                    break
-    if not key:
-        raise RuntimeError("OPENAI_API_KEY not set")
-    return key
-
-
 def _load_env_value(name: str, default: str = "") -> str:
     value = os.environ.get(name, "").strip()
     if value:
@@ -108,6 +93,62 @@ def _load_env_value(name: str, default: str = "") -> str:
                     return v
                 break
     return default
+
+
+def _load_first_env(names: list[str], default: str = "") -> str:
+    for name in names:
+        value = _load_env_value(name, "")
+        if value:
+            return value
+    return default
+
+
+def _load_api_key() -> str:
+    key = _load_first_env(
+        [
+            "LLM_API_KEY",
+            "OPENAI_API_KEY",
+        ],
+        "",
+    )
+    if not key:
+        raise RuntimeError("API key not set (expected LLM_API_KEY or OPENAI_API_KEY)")
+    return key
+
+
+def _resolve_chat_completions_url() -> str:
+    explicit = _load_first_env(
+        [
+            "OPENAI_COMPAT_URL",
+            "LLM_COMPAT_URL",
+            "OPENAI_URL",
+        ],
+        "",
+    ).strip()
+    if explicit:
+        url = explicit.rstrip("/")
+        if url.endswith("/chat/completions"):
+            return url
+        if url.endswith("/v1"):
+            return url + "/chat/completions"
+        return url + "/v1/chat/completions"
+
+    base = _load_first_env(
+        [
+            "OPENAI_BASE_URL",
+            "LLM_BASE_URL",
+        ],
+        "",
+    ).strip()
+    if base:
+        url = base.rstrip("/")
+        if url.endswith("/chat/completions"):
+            return url
+        if url.endswith("/v1"):
+            return url + "/chat/completions"
+        return url + "/v1/chat/completions"
+
+    return DEFAULT_CHAT_COMPLETIONS_URL
 
 
 TEXT_MODEL = _load_env_value("OPENAI_TEXT_MODEL", DEFAULT_TEXT_MODEL)
@@ -221,6 +262,7 @@ def _call_openai(
     token_param: str = "max_tokens",
 ) -> dict[str, Any]:
     api_key = _load_api_key()
+    api_url = _resolve_chat_completions_url()
     payload = {
         "model": model,
         "messages": messages,
@@ -228,7 +270,7 @@ def _call_openai(
         token_param: max_tokens,
     }
     req = urllib_request.Request(
-        OPENAI_URL,
+        api_url,
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
@@ -247,9 +289,9 @@ def _call_openai(
             body = e.read().decode("utf-8", errors="replace")
             if e.code == 429 and attempt < 2:
                 time.sleep(2.0 + attempt * 2.0)
-                last_error = RuntimeError(f"OpenAI API error {e.code}: {body}")
+                last_error = RuntimeError(f"LLM API error {e.code}: {body}")
                 continue
-            raise RuntimeError(f"OpenAI API error {e.code}: {body}") from e
+            raise RuntimeError(f"LLM API error {e.code}: {body}") from e
         except Exception as e:
             last_error = e
             if attempt < 2:
@@ -259,7 +301,7 @@ def _call_openai(
     else:
         if last_error:
             raise last_error
-        raise RuntimeError("OpenAI request failed")
+        raise RuntimeError("LLM request failed")
 
     choice = raw["choices"][0]
     text = choice["message"]["content"]
