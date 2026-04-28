@@ -633,6 +633,16 @@ def _normalize_eju_session_value(value: str) -> str:
     if ym_tokens:
         return " / ".join(ym_tokens[:4])
 
+    # Fallback for "2025年度第1回/第2回" style: map rounds to common months.
+    year_round_tokens: list[str] = []
+    for year, round_no in re.findall(r"(20\d{2})\s*年度\s*第\s*([12１２])\s*回", source):
+        month = "06" if round_no.translate(str.maketrans("１２", "12")) == "1" else "11"
+        token = f"{int(year):04d}/{month}/01"
+        if token not in year_round_tokens:
+            year_round_tokens.append(token)
+    if year_round_tokens:
+        return " / ".join(year_round_tokens[:4])
+
     round_matches = re.findall(r"第\s*([12１２])\s*回", source)
     rounds: list[str] = []
     for round_no in round_matches:
