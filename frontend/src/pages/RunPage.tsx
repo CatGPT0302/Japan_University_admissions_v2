@@ -489,50 +489,68 @@ export default function RunPage({ onDone }: Props) {
       </div>
 
       {sourceMode === "upload" && (
-        <div
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            handleFile(event.dataTransfer.files[0]);
-          }}
-          style={{
-            border: `2px dashed ${dragging ? "#93c5fd" : file ? "#86efac" : "#d6d3d1"}`,
-            borderRadius: 22,
-            padding: "42px 24px",
-            textAlign: "center",
-            background: dragging ? "#eff6ff" : file ? "#f0fdf4" : "#ffffff",
-            cursor: "pointer",
-            transition: "all 0.2s",
-            marginBottom: 20,
-            boxShadow: "0 10px 22px rgba(15, 23, 42, 0.04)",
-          }}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf"
-            style={{ display: "none" }}
-            onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
-          />
-          <div style={{ fontSize: 28, marginBottom: 10 }}>{file ? "已就绪" : "PDF"}</div>
-          {file ? (
-            <>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>{file.name}</div>
-              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink2)" }}>确认后我会直接上传并开始抽取。</div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>把 PDF 拖到这里</div>
-              <div style={{ fontSize: 13, color: "var(--ink3)" }}>或者点一下，从本地挑一个文件</div>
-            </>
-          )}
-        </div>
+        <>
+          <div
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              handleFile(event.dataTransfer.files[0]);
+            }}
+            style={{
+              border: `2px dashed ${dragging ? "#93c5fd" : file ? "#86efac" : "#d6d3d1"}`,
+              borderRadius: 22,
+              padding: "42px 24px",
+              textAlign: "center",
+              background: dragging ? "#eff6ff" : file ? "#f0fdf4" : "#ffffff",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              marginBottom: 16,
+              boxShadow: "0 10px 22px rgba(15, 23, 42, 0.04)",
+            }}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf"
+              style={{ display: "none" }}
+              onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
+            />
+            <div style={{ fontSize: 28, marginBottom: 10 }}>{file ? "已选中" : "PDF"}</div>
+            {file ? (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>{file.name}</div>
+                <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink2)" }}>文件已经选好。下一步点下面按钮，才会正式上传并开始抽取。</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>把 PDF 拖到这里</div>
+                <div style={{ fontSize: 13, color: "var(--ink3)" }}>或者点一下，从本地挑一个文件</div>
+              </>
+            )}
+          </div>
+
+          <div className="card" style={{ padding: 20, borderRadius: 22, marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>本地 PDF 处理</div>
+                <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.7 }}>
+                  {file
+                    ? `当前会用 ${file.name} 进入抽取。`
+                    : "先选一份 PDF，再从这里正式开始处理。"}
+                </div>
+              </div>
+              <button className="btn btn-primary" disabled={!readyToUpload} onClick={() => void runUpload()}>
+                {step === "uploading" || step === "extracting" ? "正在处理..." : "用这份 PDF 开始处理"}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {sourceMode === "search" && (
