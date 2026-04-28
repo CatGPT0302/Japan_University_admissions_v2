@@ -410,6 +410,30 @@ def _extract_math_requirement(text: str) -> str:
     return "数学"
 
 
+def _normalize_eju_subject_value(field: str, value: str) -> str:
+    source = str(value or "").strip()
+    if not source:
+        return ""
+    label = EJU_FIELD_LABELS.get(field, "")
+    if field == "eju_japanese":
+        return "日本語" if "日本語" in source else source
+    if field == "eju_general":
+        return "総合科目" if "総合科目" in source else source
+    if field == "eju_math":
+        if "数学" not in source:
+            return source
+        if re.search(r"コース\s*[12１２].*コース\s*[12１２]", source) or re.search(r"コース\s*[1１]\s*または\s*[2２]", source):
+            return "数学(コース1または2)"
+        if re.search(r"コース\s*[2２]", source):
+            return "数学(コース2)"
+        if re.search(r"コース\s*[1１]", source):
+            return "数学(コース1)"
+        return "数学"
+    if field in {"eju_physics", "eju_chemistry", "eju_biology"} and label and label in source:
+        return label
+    return source
+
+
 def _append_record_note(record: dict[str, Any], note: str) -> None:
     if not note:
         return
@@ -766,7 +790,8 @@ def _normalize_eju_fields(record: dict[str, Any]) -> dict[str, Any]:
 
     for field in EJU_FIELD_LABELS:
         if str(normalized.get(field) or "").strip():
-            normalized[field] = _strip_eju_prefix(_symbol_to_eju_value(field, normalized.get(field) or ""))
+            canonical = _strip_eju_prefix(_symbol_to_eju_value(field, normalized.get(field) or ""))
+            normalized[field] = _normalize_eju_subject_value(field, canonical)
 
     combined_general = " ".join(
         part for part in [
