@@ -470,6 +470,35 @@ def _remove_record_notes(record: dict[str, Any], prefixes: list[str]) -> None:
     record["warnings_json"] = deduped
 
 
+def _is_placeholder_record(record: dict[str, Any]) -> bool:
+    # Guardrail for quota/interruption artifacts that return shell rows only.
+    key_fields = [
+        "application_period",
+        "deadline_rule",
+        "eju_session",
+        "eju_japanese",
+        "eju_general",
+        "eju_math",
+        "eju_physics",
+        "eju_chemistry",
+        "eju_biology",
+        "english_requirement",
+        "screening_method",
+        "screening_schedule",
+        "result_date",
+        "enrollment_period",
+    ]
+    if any(str(record.get(field) or "").strip() for field in key_fields):
+        return False
+    conf = 0.0
+    try:
+        conf = float(record.get("confidence") or 0.0)
+    except Exception:
+        conf = 0.0
+    warnings = " ".join(str(w) for w in (record.get("warnings") or []))
+    return conf <= 0.05 or ("Missing critical fields" in warnings)
+
+
 def _extract_english_labels(text: str) -> list[str]:
     source = str(text or "")
     labels: list[str] = []
@@ -953,6 +982,8 @@ def _insert_result(
     top_univ = university or str(result.get("university") or "").strip()
     top_year = year or str(result.get("admission_year") or "").strip()
     for rec in result.get("records") or []:
+        if _is_placeholder_record(rec):
+            continue
         validated = _prepare_record(rec, page_map, default_page, top_univ, top_year)
         page_number = validated.get("page_number") or default_page
         insert_staging_record(doc_id, page_number, validated)
@@ -1589,6 +1620,8 @@ def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) ->
                 result = _filter_non_private_student_records(result)
             records = result.get("records") or []
             for rec in records:
+                if _is_placeholder_record(rec):
+                    continue
                 validated = _prepare_record(
                     rec,
                     {page_num: page_map.get(page_num, "")},
