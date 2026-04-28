@@ -523,6 +523,7 @@ def update_staging_record(staging_id, data) -> dict | None:
     )
 
     trackable_fields = {
+        "university",
         "application_period",
         "deadline_rule",
         "eju_session",
@@ -571,6 +572,12 @@ def update_staging_record(staging_id, data) -> dict | None:
     sets = ", ".join(f"{key}={_ph()}" for key in fields)
     conn = get_conn()
     _execute(conn, f"UPDATE admission_records_staging SET {sets} WHERE id={_ph()}", (*fields.values(), staging_id))
+    if "university" in patch and str(merged.get("university") or "").strip():
+        _execute(
+            conn,
+            f"UPDATE source_documents SET university={_ph()}, updated_at={_ph()} WHERE id={_ph()}",
+            (str(merged.get("university") or "").strip(), merged["updated_at"], merged["document_id"]),
+        )
     conn.commit()
     row = _fetchone(conn, f"SELECT * FROM admission_records_staging WHERE id={_ph()}", (staging_id,))
     conn.close()

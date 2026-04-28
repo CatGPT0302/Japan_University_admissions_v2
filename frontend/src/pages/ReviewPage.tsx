@@ -18,6 +18,7 @@ interface Props {
 type RiskFilter = "all" | RiskLevel;
 
 const REVIEW_FIELDS = [
+  { key: "university", label: "大学名", span: 2, critical: false },
   { key: "faculty", label: "学部", span: 1, critical: false },
   { key: "department", label: "学科 / 专攻", span: 1, critical: false },
   { key: "application_period", label: "出愿期间", span: 2, critical: true },
