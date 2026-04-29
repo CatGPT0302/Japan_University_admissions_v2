@@ -55,10 +55,10 @@ Final acceptance rules and future-agent backend/frontend prompts are documented 
 
 ## Current Status
 
-- The cloud demo and review workflow are available
+- The project is now focused on local-first delivery
 - The technical direction is validated
 - The current bottleneck is extraction quality and source-PDF stability, not UI availability
-- The system is suitable for controlled demos and validation, but it is not a general-purpose production service
+- The system is suitable for controlled local demos and validation, but it is not a general-purpose production service
 
 ## Repository Components
 
@@ -94,6 +94,8 @@ npm run dev
 ```
 
 Open `http://localhost:5173`.
+
+For delivery and daily local use, see `LOCAL_DELIVERY.md`. The local frontend should point to `http://127.0.0.1:8000`, not Railway or Vercel.
 
 ### MVP Extraction And Export
 

@@ -17,7 +17,7 @@ import type {
 } from "../types";
 
 const envBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
-const BASE_URL = envBaseUrl || "";
+const BASE_URL = envBaseUrl || "http://127.0.0.1:8000";
 
 const client = axios.create({
   baseURL: BASE_URL,
