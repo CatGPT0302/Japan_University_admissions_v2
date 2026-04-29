@@ -30,6 +30,18 @@ This project is not a pure OCR or PDF vision engine project.
 
 The goal is to use LLM- and agent-assisted reading to extract key admission information from PDFs and structure it into human-verifiable workflows for staging, confirmation, and export.
 
+The frozen MVP delivery scope is:
+
+```text
+募集要項 PDF
+→ extract_fields.py
+→ normalize_fields.py
+→ staging / confirmed records
+→ export_excel.py standard Excel master table
+```
+
+Final acceptance rules and future-agent backend/frontend prompts are documented in `docs/FINAL_ACCEPTANCE_AND_AGENT_PROMPTS.md`.
+
 ## Input / Output
 
 - Input: Japanese university admission PDFs
@@ -82,6 +94,32 @@ npm run dev
 ```
 
 Open `http://localhost:5173`.
+
+### MVP Extraction And Export
+
+Extract fields from any 募集要項 PDF:
+
+```powershell
+python scripts/extract_fields.py <pdf_path> --output output.json
+```
+
+Export the normalized fixed-column TSV:
+
+```powershell
+python scripts/export_tsv.py output.json --output admissions_standard.tsv
+```
+
+Export the polished Excel master table:
+
+```powershell
+python scripts/export_excel.py output.json --output admissions_standard.xlsx
+```
+
+Export confirmed records from the current database:
+
+```powershell
+python scripts/export_excel.py --from-db --output admissions_master.xlsx
+```
 
 ## Environment
 

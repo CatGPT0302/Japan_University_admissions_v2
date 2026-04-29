@@ -33,6 +33,7 @@ from scripts.db import (  # noqa: E402
     insert_staging_record,
     update_staging_record,
 )
+from scripts.export_excel import export_excel_bytes_from_records  # noqa: E402
 from scripts.validator import validate  # noqa: E402
 
 INPUT_DIR = ROOT / "input_pdfs"
@@ -372,64 +373,20 @@ def export_excel(
     year: int | None = None,
     faculty: str | None = None,
 ) -> StreamingResponse:
-    """Export confirmed records as .xlsx file."""
+    """Export confirmed records as the standard admissions master workbook."""
     import io
-
-    try:
-        from openpyxl import Workbook
-        from openpyxl.styles import Alignment, Font, PatternFill
-    except ImportError:
-        raise HTTPException(status_code=500, detail="openpyxl not installed: pip install openpyxl")
 
     rows = get_records(university=university, year=year, faculty=faculty, limit=10000, offset=0)
     if not rows:
         raise HTTPException(status_code=404, detail="No records found for the given filters")
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "募集要項"
-
-    # Header columns
-    columns = [
-        ("id", 6),
-        ("university", 18),
-        ("admission_year", 10),
-        ("faculty", 20),
-        ("department", 24),
-        ("admission_period", 12),
-        ("application_period", 22),
-        ("english_requirement", 30),
-        ("screening_method", 24),
-        ("result_date", 16),
-        ("prefecture", 10),
-        ("campus", 14),
-    ]
-    header_font = Font(bold=True, color="FFFFFF", size=11)
-    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
-
-    for col_idx, (col_name, width) in enumerate(columns, start=1):
-        cell = ws.cell(row=1, column=col_idx, value=col_name)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center")
-        ws.column_dimensions[cell.column_letter].width = width
-
-    # Data rows
-    for row_idx, record in enumerate(rows, start=2):
-        for col_idx, (col_name, _) in enumerate(columns, start=1):
-            cell = ws.cell(row=row_idx, column=col_idx, value=record.get(col_name, ""))
-            cell.alignment = Alignment(wrap_text=True, vertical="top")
-
-    ws.auto_filter.ref = ws.dimensions
-    ws.freeze_panes = "A2"
-
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
+    try:
+        content, _count = export_excel_bytes_from_records(rows)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
     filename = "admissions_v2_export.xlsx"
     return StreamingResponse(
-        buf,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.xml",
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

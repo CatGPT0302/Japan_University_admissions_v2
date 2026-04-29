@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 from datetime import datetime
@@ -40,6 +41,10 @@ def _normalized_from_args(input_path: Path | None, from_db: bool) -> dict[str, A
     if input_path is None:
         raise ValueError("input JSON is required unless --from-db is used")
     return load_and_normalize(input_path)
+
+
+def _normalize_records(records: list[dict[str, Any]]) -> dict[str, Any]:
+    return normalize_extraction_result({"records": records})
 
 
 def _column_widths() -> dict[str, float]:
@@ -156,22 +161,50 @@ def _build_mapping_sheet(wb) -> None:
     ws.column_dimensions["B"].width = 28
 
 
-def export_excel(input_path: Path | None, output_path: Path, *, from_db: bool = False) -> dict[str, int | str]:
+def build_excel_workbook_from_normalized(normalized: dict[str, Any]):
     try:
         from openpyxl import Workbook
     except ImportError as exc:
         raise RuntimeError("openpyxl is required for Excel export") from exc
 
-    normalized = _normalized_from_args(input_path, from_db)
     records = normalized.get("records") or []
     wb = Workbook()
     ws = wb.active
     _style_results_sheet(ws, records)
     _build_readme_sheet(wb)
     _build_mapping_sheet(wb)
+    return wb, len(records)
+
+
+def build_excel_workbook(input_path: Path | None = None, *, from_db: bool = False):
+    normalized = _normalized_from_args(input_path, from_db)
+    return build_excel_workbook_from_normalized(normalized)
+
+
+def build_excel_workbook_from_records(records: list[dict[str, Any]]):
+    normalized = _normalize_records(records)
+    return build_excel_workbook_from_normalized(normalized)
+
+
+def export_excel_bytes_from_records(records: list[dict[str, Any]]) -> tuple[bytes, int]:
+    wb, count = build_excel_workbook_from_records(records)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue(), count
+
+
+def export_excel_bytes(*, from_db: bool = False) -> tuple[bytes, int]:
+    wb, count = build_excel_workbook(None, from_db=from_db)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue(), count
+
+
+def export_excel(input_path: Path | None, output_path: Path, *, from_db: bool = False) -> dict[str, int | str]:
+    wb, count = build_excel_workbook(input_path, from_db=from_db)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_path)
-    return {"output": str(output_path), "records": len(records)}
+    return {"output": str(output_path), "records": count}
 
 
 def main() -> int:

@@ -1036,8 +1036,9 @@ def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -
     params.extend([limit, offset])
     sql = (
         "SELECT id,university,admission_year,faculty,department,"
-        "admission_period,application_period,deadline_rule,eju_session,eju_japanese,english_requirement,"
-        "screening_method,result_date,prefecture,campus "
+        "admission_period,application_period,deadline_rule,eju_session,eju_japanese,eju_general,"
+        "eju_math,eju_physics,eju_chemistry,eju_biology,english_requirement,"
+        "screening_method,screening_schedule,result_date,enrollment_period,prefecture,campus "
         f"FROM admission_records {where} ORDER BY id DESC LIMIT {_ph()} OFFSET {_ph()}"
     )
     conn = get_conn()
