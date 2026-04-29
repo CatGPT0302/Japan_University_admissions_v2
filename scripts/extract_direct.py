@@ -894,6 +894,32 @@ def _normalize_eju_fields(record: dict[str, Any]) -> dict[str, Any]:
             canonical = _strip_eju_prefix(_symbol_to_eju_value(field, normalized.get(field) or ""))
             normalized[field] = _normalize_eju_subject_value(field, canonical)
 
+    # Some model outputs pack all EJU requirements into eju_japanese as a numbered list.
+    # Example: "①日本語②総合科目、数学(コース1または2)..." .
+    # Split the mixed content back into dedicated fields and keep eju_japanese as "日本語".
+    jp_source = " ".join(
+        part
+        for part in [
+            str(normalized.get("eju_japanese") or "").strip(),
+            str(_get_evidence("eju_japanese").get("text") or "").strip(),
+        ]
+        if part
+    )
+    if "日本語" in jp_source and any(token in jp_source for token in ["総合科目", "数学", "理科", "物理", "化学", "生物"]):
+        _set_field("eju_japanese", "日本語", jp_source, 0.9)
+        if "総合科目" in jp_source and not str(normalized.get("eju_general") or "").strip():
+            _set_field("eju_general", "総合科目", jp_source, 0.84)
+        if "数学" in jp_source and not str(normalized.get("eju_math") or "").strip():
+            _set_field("eju_math", _extract_math_requirement(jp_source), jp_source, 0.82)
+        if "物理" in jp_source and not str(normalized.get("eju_physics") or "").strip():
+            _set_field("eju_physics", "物理", jp_source, 0.82)
+        if "化学" in jp_source and not str(normalized.get("eju_chemistry") or "").strip():
+            _set_field("eju_chemistry", "化学", jp_source, 0.82)
+        if "生物" in jp_source and not str(normalized.get("eju_biology") or "").strip():
+            _set_field("eju_biology", "生物", jp_source, 0.82)
+        if "理科" in jp_source and not any(token in jp_source for token in ["物理", "化学", "生物"]):
+            _append_record_note(normalized, f"EJU理科存在選択条件: {jp_source[:120]}")
+
     combined_general = " ".join(
         part for part in [
             str(normalized.get("eju_general") or "").strip(),

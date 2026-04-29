@@ -206,7 +206,6 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       <section className="hero-panel">
         <div className="split-row">
           <div>
-            <div className="section-kicker">Review</div>
             <h2 className="section-title">复核</h2>
           </div>
           <div className="hero-metrics">
