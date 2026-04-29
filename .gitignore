@@ -35,4 +35,8 @@ data/*index*.csv
 *_raw_log.txt
 *_raw_response.json.txt
 upload_resp.json
+demo/*_standard.tsv
+demo/*_standard.xlsx
+demo/*_extract.json
+demo/*_extract_noimg.json
 Japan_University_admissions_v2/
