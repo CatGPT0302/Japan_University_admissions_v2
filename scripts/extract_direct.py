@@ -905,13 +905,27 @@ def _normalize_eju_fields(record: dict[str, Any]) -> dict[str, Any]:
         if not str(normalized.get("eju_math") or "").strip():
             _set_field("eju_math", _extract_math_requirement(combined_general), combined_general, 0.78)
 
+    # Include eju_general text as science source as many PDFs express science
+    # requirements only as "理科（物理・化学）" without filling per-subject cells.
     combined_science = " ".join(
-        part for field in SCIENCE_FIELDS
+        part
+        for field in SCIENCE_FIELDS
         for part in [
             str(normalized.get(field) or "").strip(),
             str(_get_evidence(field).get("text") or "").strip(),
-        ] if part
+        ]
+        if part
     )
+    general_science_source = " ".join(
+        part
+        for part in [
+            str(normalized.get("eju_general") or "").strip(),
+            str(_get_evidence("eju_general").get("text") or "").strip(),
+        ]
+        if part
+    )
+    if general_science_source:
+        combined_science = f"{combined_science} {general_science_source}".strip()
     if "理科" in combined_science:
         explicit_fields = [field for field in SCIENCE_FIELDS if EJU_FIELD_LABELS[field] in combined_science]
         if explicit_fields:
@@ -1107,8 +1121,64 @@ def _normalize_keio_record(record: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _backfill_science_from_general(record: dict[str, Any]) -> dict[str, Any]:
+    """Backfill EJU science split fields when general text carries science details.
+
+    Many PDFs only state science requirements in one phrase like
+    "理科（物理・化学）" and leave per-subject cells empty.
+    """
+    normalized = dict(record)
+    evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
+    confidence = dict(normalized.get("field_confidence") or {}) if isinstance(normalized.get("field_confidence"), dict) else {}
+
+    general_source = " ".join(
+        part
+        for part in [
+            str(normalized.get("eju_general") or "").strip(),
+            str((evidence.get("eju_general") or {}).get("text") or "").strip(),
+            str(normalized.get("_raw_eju_general_source") or "").strip(),
+        ]
+        if part
+    )
+    if not general_source:
+        return normalized
+
+    has_science_context = ("\u7406\u79d1" in general_source) or any(
+        token in general_source for token in ["\u7269\u7406", "\u5316\u5b66", "\u751f\u7269"]
+    )
+    if not has_science_context:
+        return normalized
+
+    for field, label in [("eju_physics", "\u7269\u7406"), ("eju_chemistry", "\u5316\u5b66"), ("eju_biology", "\u751f\u7269")]:
+        if label in general_source and not str(normalized.get(field) or "").strip():
+            normalized[field] = label
+            evidence[field] = {"text": general_source, "page": (evidence.get("eju_general") or {}).get("page")}
+            confidence[field] = max(float(confidence.get(field) or 0.0), 0.82)
+
+    if re.search(r"\u3044\u305a\u308c\u304b[1\uff11]\u79d1\u76ee|[1\uff11]\u79d1\u76ee\u3092\u9078\u629e|\u304b\u30891\u79d1\u76ee|\u304b\u3089\uff11\u79d1\u76ee", general_source):
+        _append_record_note(normalized, f"EJU理科存在选択条件: {general_source[:120]}")
+
+    normalized["field_evidence"] = evidence
+    normalized["field_confidence"] = confidence
+    return normalized
+
+
 def _normalize_record_noise(record: dict[str, Any]) -> dict[str, Any]:
+    raw_evidence_source = dict(record.get("field_evidence") or {}) if isinstance(record.get("field_evidence"), dict) else {}
+    raw_general_source = " ".join(
+        part
+        for part in [
+            str(record.get("eju_general") or "").strip(),
+            str((raw_evidence_source.get("eju_general") or {}).get("text") or "").strip(),
+        ]
+        if part
+    )
+
     normalized = _normalize_english_requirement(_normalize_eju_fields(record))
+    if raw_general_source:
+        normalized["_raw_eju_general_source"] = raw_general_source
+    normalized = _backfill_science_from_general(normalized)
+    normalized.pop("_raw_eju_general_source", None)
     raw_evidence = dict(normalized.get("field_evidence") or {}) if isinstance(normalized.get("field_evidence"), dict) else {}
     application_source = str(normalized.get("application_period") or (raw_evidence.get("application_period") or {}).get("text") or "")
     enrollment_source = str(normalized.get("enrollment_period") or (raw_evidence.get("enrollment_period") or {}).get("text") or "")

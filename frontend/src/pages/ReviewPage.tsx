@@ -1,22 +1,15 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   confirmDoc,
   deleteDocument,
-  deleteStaging,
   getDocumentSummary,
   getDocuments,
-  getQualityMetrics,
   getStaging,
   patchStaging,
   toErrorMessage,
 } from "../api/client";
-import type {
-  DocumentListItem,
-  DocumentSummary,
-  QualityMetricsResponse,
-  RiskLevel,
-  StagingRecord,
-} from "../types";
+import { PieSummary, TreemapSummary } from "../components/DashboardCharts";
+import type { DocumentListItem, DocumentSummary, RiskLevel, StagingRecord } from "../types";
 
 interface Props {
   defaultDocId?: number | null;
@@ -26,57 +19,41 @@ interface Props {
 type RiskFilter = "all" | RiskLevel;
 
 const REVIEW_FIELDS = [
-  { key: "university", label: "University", span: 2, critical: false },
-  { key: "faculty", label: "Faculty", span: 1, critical: false },
-  { key: "department", label: "Department / Major", span: 1, critical: false },
-  { key: "application_period", label: "Application Period", span: 2, critical: true },
-  { key: "deadline_rule", label: "Deadline Rule", span: 1, critical: true },
-  { key: "eju_session", label: "EJU Session", span: 1, critical: true },
-  { key: "eju_japanese", label: "EJU Japanese", span: 1, critical: true },
-  { key: "eju_general", label: "EJU General", span: 1, critical: true },
-  { key: "eju_math", label: "EJU Math", span: 1, critical: true },
-  { key: "eju_physics", label: "EJU Physics", span: 1, critical: true },
-  { key: "eju_chemistry", label: "EJU Chemistry", span: 1, critical: true },
-  { key: "eju_biology", label: "EJU Biology", span: 1, critical: true },
-  { key: "english_requirement", label: "English Requirement", span: 2, critical: true },
-  { key: "screening_method", label: "Screening Method", span: 2, critical: true },
-  { key: "screening_schedule", label: "Screening Schedule", span: 2, critical: true },
-  { key: "result_date", label: "Result Date", span: 2, critical: true },
-  { key: "enrollment_period", label: "Enrollment Period", span: 2, critical: true },
-  { key: "prefecture", label: "Prefecture", span: 1, critical: false },
-  { key: "campus", label: "Campus", span: 1, critical: false },
+  { key: "admission_period", label: "出愿时期", span: 2 },
+  { key: "eju_japanese", label: "EJU 日语", span: 1 },
+  { key: "eju_general", label: "EJU 综合科目", span: 1 },
+  { key: "eju_math", label: "EJU 数学", span: 1 },
+  { key: "eju_physics", label: "EJU 物理", span: 1 },
+  { key: "eju_chemistry", label: "EJU 化学", span: 1 },
+  { key: "eju_biology", label: "EJU 生物", span: 1 },
+  { key: "prefecture", label: "都道府县", span: 1 },
+  { key: "campus", label: "校区", span: 1 },
+  { key: "university", label: "学校名称", span: 2 },
+  { key: "faculty", label: "学部", span: 1 },
+  { key: "department", label: "学科 / 专业", span: 1 },
+  { key: "application_period", label: "出愿期间", span: 2 },
+  { key: "deadline_rule", label: "截止规则", span: 1 },
+  { key: "eju_session", label: "EJU 场次", span: 1 },
+  { key: "english_requirement", label: "英语要求", span: 2 },
+  { key: "screening_method", label: "选考方式", span: 2 },
+  { key: "screening_schedule", label: "选考日程", span: 2 },
+  { key: "result_date", label: "结果发表日", span: 1 },
+  { key: "enrollment_period", label: "入学手续期间", span: 1 },
 ] as const;
 
-function riskRank(risk: RiskLevel | undefined): number {
-  if (risk === "high") return 0;
-  if (risk === "medium") return 1;
-  return 2;
+function riskText(risk: RiskLevel | undefined) {
+  if (risk === "high") return "高风险";
+  if (risk === "medium") return "中风险";
+  return "低风险";
 }
 
-function riskLabel(risk: RiskLevel | undefined): string {
-  if (risk === "high") return "High risk";
-  if (risk === "medium") return "Medium risk";
-  return "Low risk";
-}
-
-function riskDescription(risk: RiskLevel | undefined): string {
-  if (risk === "high") return "Critical fields are low-confidence or inconsistent. Resolve this row before mass confirmation.";
-  if (risk === "medium") return "Most values look usable, but there are still a few fields worth validating manually.";
-  return "This row looks stable. It can usually be reviewed quickly after the higher-risk queue is cleared.";
-}
-
-function riskBadgeClass(risk: RiskLevel | undefined): string {
+function riskBadge(risk: RiskLevel | undefined) {
   if (risk === "high") return "badge badge-red";
   if (risk === "medium") return "badge badge-amber";
   return "badge badge-green";
 }
 
-function fmtDate(value?: string | null): string {
-  if (!value) return "Not available";
-  return value.replace("T", " ").slice(0, 16);
-}
-
-function fieldValue(record: StagingRecord | undefined, key: string): string {
+function fieldValue(record: StagingRecord | undefined, key: string) {
   if (!record) return "";
   return String(((record as unknown as Record<string, unknown>)[key]) ?? "");
 }
@@ -84,11 +61,9 @@ function fieldValue(record: StagingRecord | undefined, key: string): string {
 export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
-  const [docQuality, setDocQuality] = useState<QualityMetricsResponse | null>(null);
   const [rows, setRows] = useState<StagingRecord[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(defaultDocId ?? null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
-  const [docIdInput, setDocIdInput] = useState(defaultDocId ? String(defaultDocId) : "");
   const [docQuery, setDocQuery] = useState("");
   const [docYear, setDocYear] = useState("");
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
@@ -97,75 +72,45 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [loadingRows, setLoadingRows] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [bulkReviewing, setBulkReviewing] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    void loadDocuments();
+    void refreshDocuments();
   }, []);
 
   useEffect(() => {
-    if (defaultDocId) {
-      setSelectedDocId(defaultDocId);
-      setDocIdInput(String(defaultDocId));
-      void loadDocument(defaultDocId);
-    }
+    if (defaultDocId) void openDocument(defaultDocId);
   }, [defaultDocId]);
 
-  const orderedRows = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      const riskCmp = riskRank(a.risk_level) - riskRank(b.risk_level);
-      if (riskCmp !== 0) return riskCmp;
-      const reviewCmp = Number(a.is_reviewed || 0) - Number(b.is_reviewed || 0);
-      if (reviewCmp !== 0) return reviewCmp;
-      return Number(a.confidence ?? 0) - Number(b.confidence ?? 0);
-    });
-  }, [rows]);
-
   const filteredRows = useMemo(() => {
-    if (riskFilter === "all") return orderedRows;
-    return orderedRows.filter((row) => row.risk_level === riskFilter);
-  }, [orderedRows, riskFilter]);
+    const sorted = [...rows].sort((a, b) => {
+      const rank = (value?: RiskLevel) => (value === "high" ? 0 : value === "medium" ? 1 : 2);
+      return rank(a.risk_level) - rank(b.risk_level);
+    });
+    return riskFilter === "all" ? sorted : sorted.filter((row) => row.risk_level === riskFilter);
+  }, [riskFilter, rows]);
 
-  const currentRow = useMemo(() => {
-    if (!filteredRows.length) return undefined;
-    return filteredRows.find((row) => row.id === selectedRowId) ?? filteredRows[0];
-  }, [filteredRows, selectedRowId]);
-
-  useEffect(() => {
-    if (currentRow) {
-      setSelectedRowId(currentRow.id);
-    } else {
-      setSelectedRowId(null);
-    }
-  }, [currentRow?.id]);
+  const selectedRow = useMemo(() => rows.find((row) => row.id === selectedRowId) ?? null, [rows, selectedRowId]);
 
   useEffect(() => {
-    if (!currentRow) return;
+    if (!selectedRow) return;
     const nextDraft: Record<string, string> = {};
-    for (const field of REVIEW_FIELDS) {
-      nextDraft[field.key] = fieldValue(currentRow, field.key);
-    }
+    for (const field of REVIEW_FIELDS) nextDraft[field.key] = fieldValue(selectedRow, field.key);
     setDraft(nextDraft);
-    setMsg("");
-    setErr("");
-  }, [currentRow?.id]);
+  }, [selectedRow]);
 
-  const metrics = useMemo(() => {
-    const high = rows.filter((row) => row.risk_level === "high").length;
-    const medium = rows.filter((row) => row.risk_level === "medium").length;
-    const low = rows.filter((row) => row.risk_level === "low").length;
-    const reviewed = rows.filter((row) => Number(row.is_reviewed)).length;
-    return { high, medium, low, reviewed, total: rows.length };
-  }, [rows]);
+  const reviewedCount = rows.filter((row) => Number(row.is_reviewed)).length;
+  const pendingHighRisk = rows.some((row) => row.risk_level === "high" && !Number(row.is_reviewed));
+  const riskCounts = {
+    high: rows.filter((row) => row.risk_level === "high").length,
+    medium: rows.filter((row) => row.risk_level === "medium").length,
+    low: rows.filter((row) => row.risk_level === "low").length,
+  };
 
-  const blockingHighRisk = rows.some((row) => row.risk_level === "high" && !Number(row.is_reviewed));
-
-  async function loadDocuments() {
+  async function refreshDocuments() {
     setLoadingDocs(true);
-    setErr("");
     try {
       const data = await getDocuments({
         q: docQuery || undefined,
@@ -173,411 +118,204 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
         limit: 100,
       });
       setDocuments(data);
-    } catch (error) {
-      setErr(toErrorMessage(error));
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
     } finally {
       setLoadingDocs(false);
     }
   }
 
-  async function loadDocument(docId: number) {
+  async function openDocument(docId: number) {
     setLoadingRows(true);
-    setErr("");
-    setMsg("");
+    setError("");
+    setMessage("");
     try {
-      const [docSummary, stagingRows, quality] = await Promise.all([
-        getDocumentSummary(docId),
-        getStaging(docId),
-        getQualityMetrics(docId),
-      ]);
+      const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
       setSelectedDocId(docId);
-      setDocIdInput(String(docId));
       setSummary(docSummary);
-      setDocQuality(quality);
       setRows(stagingRows);
-      setSelectedRowId(stagingRows[0]?.id ?? null);
-      setMsg(
-        stagingRows.length
-          ? `Loaded ${stagingRows.length} row(s). The queue is now sorted so the riskiest items surface first.`
-          : "This document does not have staging rows yet.",
-      );
-    } catch (error) {
-      setErr(toErrorMessage(error));
+      setSelectedRowId(null);
+      setRiskFilter("all");
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
     } finally {
       setLoadingRows(false);
     }
   }
 
-  async function refreshCurrentDocument(docId: number) {
-    const [docSummary, stagingRows, quality] = await Promise.all([
-      getDocumentSummary(docId),
-      getStaging(docId),
-      getQualityMetrics(docId),
-    ]);
-    setSummary(docSummary);
-    setDocQuality(quality);
-    setRows(stagingRows);
-    const docs = await getDocuments({
-      q: docQuery || undefined,
-      year: docYear || undefined,
-      limit: 100,
-    });
-    setDocuments(docs);
-  }
-
-  async function removeDocument(doc: DocumentListItem) {
-    if (deletingDocId) return;
-    const ok = window.confirm(
-      `Delete document "${doc.university_name || doc.filename}" and its staging/confirmed records? Local PDF files are not deleted.`,
-    );
-    if (!ok) return;
+  async function deleteCurrentDocument(doc: DocumentListItem) {
+    const confirmed = window.confirm(`删除“${doc.university_name || doc.filename}”及其对应记录？`);
+    if (!confirmed) return;
     setDeletingDocId(doc.doc_id);
-    setErr("");
-    setMsg("");
     try {
-      const result = await deleteDocument(doc.doc_id);
-      setDocuments((prev) => prev.filter((item) => item.doc_id !== doc.doc_id));
+      await deleteDocument(doc.doc_id);
       if (selectedDocId === doc.doc_id) {
         setSelectedDocId(null);
-        setDocIdInput("");
         setSummary(null);
-        setDocQuality(null);
         setRows([]);
         setSelectedRowId(null);
       }
-      setMsg(`Deleted document. Removed ${result.deleted_staging} staging row(s) and ${result.deleted_records} confirmed row(s).`);
-    } catch (error) {
-      setErr(toErrorMessage(error));
+      await refreshDocuments();
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
     } finally {
       setDeletingDocId(null);
     }
   }
 
-  async function savePatch(patch: Record<string, unknown>, successMessage: string) {
-    if (!currentRow || saving) return;
+  async function saveCurrent(markReviewed: boolean, goNext: boolean) {
+    if (!selectedRow) return;
     setSaving(true);
-    setErr("");
-    setMsg("");
+    setError("");
     try {
-      const updated = await patchStaging(currentRow.id, patch);
-      setRows((prev) => prev.map((item) => (item.id === currentRow.id ? updated : item)));
-      setMsg(successMessage);
-    } catch (error) {
-      setErr(toErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function removeCurrent() {
-    if (!currentRow || saving) return;
-    setSaving(true);
-    setErr("");
-    setMsg("");
-    try {
-      await deleteStaging(currentRow.id);
-      const nextRows = rows.filter((item) => item.id !== currentRow.id);
+      const updated = await patchStaging(selectedRow.id, {
+        ...draft,
+        ...(markReviewed ? { is_reviewed: 1, needs_review: 0 } : {}),
+      });
+      const nextRows = rows.map((row) => (row.id === selectedRow.id ? updated : row));
       setRows(nextRows);
-      setSelectedRowId(nextRows[0]?.id ?? null);
-      setMsg("The selected staging row was removed.");
-      if (selectedDocId) await refreshCurrentDocument(selectedDocId);
-    } catch (error) {
-      setErr(toErrorMessage(error));
+      setMessage(markReviewed ? "已保存并标记为已复核。" : "修改已保存。");
+      if (goNext) {
+        const nextPending = filteredRows.find((row) => row.id !== selectedRow.id && !Number(row.is_reviewed));
+        setSelectedRowId(nextPending?.id ?? null);
+      }
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
     } finally {
       setSaving(false);
     }
   }
 
   async function confirmCurrentDocument() {
-    if (!selectedDocId || confirming || blockingHighRisk) return;
+    if (!selectedDocId || pendingHighRisk) return;
     setConfirming(true);
-    setErr("");
-    setMsg("");
+    setError("");
     try {
-      const result = await confirmDoc(selectedDocId);
-      await refreshCurrentDocument(selectedDocId);
-      setMsg(`Confirmation completed. ${result.confirmed} row(s) inserted, ${result.skipped} skipped.`);
-      setTimeout(() => onDone(), 1200);
-    } catch (error) {
-      setErr(toErrorMessage(error));
+      await confirmDoc(selectedDocId);
+      setMessage("这份文档已经确认入库。");
+      onDone();
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
     } finally {
       setConfirming(false);
     }
   }
 
-  async function bulkMarkLowRiskReviewed() {
-    if (!selectedDocId || bulkReviewing) return;
-    const targets = rows.filter((row) => row.risk_level === "low" && !Number(row.is_reviewed));
-    if (!targets.length) {
-      setMsg("There are no low-risk rows waiting for bulk review.");
-      return;
-    }
-
-    setBulkReviewing(true);
-    setErr("");
-    setMsg("");
-    try {
-      await Promise.all(
-        targets.map((row) =>
-          patchStaging(row.id, {
-            is_reviewed: 1,
-            needs_review: 0,
-          }),
-        ),
-      );
-      await refreshCurrentDocument(selectedDocId);
-      setMsg(`Marked ${targets.length} low-risk row(s) as reviewed.`);
-    } catch (error) {
-      setErr(toErrorMessage(error));
-    } finally {
-      setBulkReviewing(false);
-    }
-  }
-
-  function updateDraft(field: string, value: string) {
-    setDraft((prev) => ({ ...prev, [field]: value }));
-  }
-
-  const statusTitle = !selectedDocId
-    ? "Choose a document and the queue will organize itself for you"
-    : blockingHighRisk
-      ? `${metrics.high} high-risk row(s) still need attention before confirmation`
-      : `${metrics.total} row(s) are loaded and the review queue is in a healthy state`;
-
-  const statusDescription = !selectedDocId
-    ? "This screen now presents the review workflow like an operations desk: document selection on the left, risk-guided record review in the center, and a fast queue on the right."
-    : blockingHighRisk
-      ? "High risk usually means critical fields have weak evidence or low confidence. Resolve those rows first so confirmation stays safe."
-      : metrics.low > 0
-        ? `There are ${metrics.low} low-risk row(s) that can usually be reviewed in bulk once the priority queue is clear.`
-        : "The document is ready for a final pass before confirmation into records.";
-
   return (
     <div className="page-shell">
       <section className="hero-panel">
-        <div className="hero-grid">
+        <div className="split-row">
           <div>
-            <div className="section-eyebrow">Step 2 · Review</div>
-            <h2 className="section-title">Risk-guided review queue</h2>
-            <p className="section-copy">
-              The review stage now behaves like a professional internal SaaS workspace: triage documents, surface risky rows first,
-              inspect evidence snippets inline, and only unlock confirmation after the highest-risk items are reviewed.
-            </p>
+            <div className="section-kicker">Review</div>
+            <h2 className="section-title">复核</h2>
           </div>
-
-          <div className="progress-stack">
-            <div className="mini-stat">
-              <span className="mini-stat-label">Selected document</span>
-              <span className="mini-stat-value">{selectedDocId ? `#${selectedDocId}` : "None"}</span>
+          <div className="hero-metrics">
+            <div className="metric-card">
+              <span className="metric-label">文档</span>
+              <strong className="metric-value">{documents.length}</strong>
             </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Reviewed rows</span>
-              <span className="mini-stat-value">{metrics.reviewed}/{metrics.total}</span>
+            <div className="metric-card">
+              <span className="metric-label">待复核</span>
+              <strong className="metric-value">{Math.max(rows.length - reviewedCount, 0)}</strong>
             </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Confirmation gate</span>
-              <span className="mini-stat-value">{blockingHighRisk ? "Locked" : "Available"}</span>
+            <div className="metric-card">
+              <span className="metric-label">高风险</span>
+              <strong className="metric-value">{riskCounts.high}</strong>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={`tone-banner ${blockingHighRisk ? "warning" : selectedDocId ? "success" : "neutral"}`}>
-        <div>
-          <h3 className="tone-title">{statusTitle}</h3>
-          <p className="tone-copy">{statusDescription}</p>
-        </div>
-        <div className="status-grid">
-          <div className="status-pill">
-            <span>High risk</span>
-            <strong>{metrics.high}</strong>
-          </div>
-          <div className="status-pill">
-            <span>Medium risk</span>
-            <strong>{metrics.medium}</strong>
-          </div>
-          <div className="status-pill">
-            <span>Low risk</span>
-            <strong>{metrics.low}</strong>
-          </div>
-          <div className="status-pill">
-            <span>Reviewed</span>
-            <strong>{metrics.reviewed}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="doc-layout">
+      <section className="content-grid">
         <aside className="sidebar-panel">
-          <div className="panel">
+          <div className="toolbar-shell">
+            <div className="sidebar-section-label">入口</div>
             <div className="split-row" style={{ marginBottom: 12 }}>
               <div>
-                <h3 className="panel-title">Document tray</h3>
-                <p className="panel-copy">Filter documents, open by ID, and keep the intake backlog manageable.</p>
+                <h3 className="panel-title">文档列表</h3>
               </div>
-              <span className="badge badge-gray">{documents.length} loaded</span>
+              <span className="badge badge-gray">{documents.length} 份</span>
             </div>
 
-            <div className="input-grid" style={{ marginBottom: 10 }}>
+            <div className="list-stack">
               <label className="field-wrap">
-                <span className="field-label">Search documents</span>
-                <input className="field" value={docQuery} onChange={(event) => setDocQuery(event.target.value)} placeholder="University / file / URL" />
+                <span className="field-label">搜索</span>
+                <input className="field" value={docQuery} onChange={(event) => setDocQuery(event.target.value)} placeholder="学校或文件名" />
               </label>
               <label className="field-wrap">
-                <span className="field-label">Year</span>
+                <span className="field-label">年份</span>
                 <input className="field" value={docYear} onChange={(event) => setDocYear(event.target.value)} placeholder="2026" />
               </label>
-            </div>
-
-            <div className="inline-actions" style={{ marginBottom: 10 }}>
-              <button className="btn btn-primary" onClick={() => void loadDocuments()} type="button">
-                {loadingDocs ? "Loading..." : "Refresh tray"}
+              <button className="btn btn-primary" onClick={() => void refreshDocuments()} type="button">
+                {loadingDocs ? "刷新中..." : "刷新列表"}
               </button>
+            </div>
+          </div>
+
+          <div className="document-list">
+            {documents.map((doc) => (
               <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  const docId = Number(docIdInput);
-                  if (docId) void loadDocument(docId);
-                }}
+                key={doc.doc_id}
+                className={`item-card${selectedDocId === doc.doc_id ? " is-active" : ""}`}
+                onClick={() => void openDocument(doc.doc_id)}
                 type="button"
               >
-                Open by ID
-              </button>
-            </div>
-
-            <label className="field-wrap" style={{ marginBottom: 14 }}>
-              <span className="field-label">Document ID</span>
-              <input
-                className="field"
-                value={docIdInput}
-                onChange={(event) => setDocIdInput(event.target.value)}
-                placeholder="Enter a doc_id"
-              />
-            </label>
-
-            <div className="list-stack" style={{ maxHeight: 520, overflowY: "auto" }}>
-              {documents.map((doc) => {
-                const active = selectedDocId === doc.doc_id;
-                return (
+                <div className="item-card-topline">
+                  <span className="badge badge-gray">#{doc.doc_id}</span>
+                  <span className="badge badge-blue">{doc.admission_year || "未标注年份"}</span>
+                </div>
+                <h4 className="item-title">{doc.university_name || "未命名文档"}</h4>
+                <p className="item-subtitle">{doc.filename}</p>
+                <div className="item-meta">
+                  <span className="badge badge-gray">staging {doc.staging_count}</span>
+                  <span className="badge badge-gray">confirmed {doc.confirmed_count}</span>
+                </div>
+                <div className="inline-actions" style={{ marginTop: 12 }}>
                   <button
-                    key={doc.doc_id}
-                    className={`doc-card${active ? " is-active" : ""}`}
-                    onClick={() => void loadDocument(doc.doc_id)}
+                    className="btn btn-red"
+                    disabled={deletingDocId === doc.doc_id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void deleteCurrentDocument(doc);
+                    }}
                     type="button"
                   >
-                    <div className="queue-head">
-                      <div>
-                        <h4 className="doc-title">{doc.university_name || "Unnamed document"}</h4>
-                        <div className="doc-meta">{doc.filename}</div>
-                      </div>
-                      <span className="badge badge-gray">#{doc.doc_id}</span>
-                    </div>
-
-                    <div className="doc-meta" style={{ marginTop: 10 }}>
-                      {doc.admission_year || "No year"} · staging {doc.staging_count} · confirmed {doc.confirmed_count}
-                    </div>
-                    <div className="doc-meta">{fmtDate(doc.created_at)}</div>
-
-                    <div className="inline-actions" style={{ marginTop: 12 }}>
-                      <button
-                        className="btn btn-red"
-                        disabled={deletingDocId === doc.doc_id}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void removeDocument(doc);
-                        }}
-                        type="button"
-                      >
-                        {deletingDocId === doc.doc_id ? "Deleting..." : "Delete"}
-                      </button>
-                    </div>
+                    {deletingDocId === doc.doc_id ? "删除中..." : "删除"}
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              </button>
+            ))}
           </div>
-
-          <div className="panel">
-            <h3 className="panel-title">Document summary</h3>
-            {summary ? (
-              <div className="list-stack">
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                  <div className="field-label">University</div>
-                  <div className="muted-text">{summary.university_name || "Unknown"}</div>
-                </div>
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                  <div className="field-label">Status snapshot</div>
-                  <div className="muted-text">
-                    {summary.status || "Unknown"} · staging {summary.staging_count} · review {summary.review_count ?? 0} · confirmed {summary.confirmed_count}
-                  </div>
-                </div>
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                  <div className="field-label">Average confidence</div>
-                  <div className="muted-text">{summary.avg_confidence?.toFixed(2) ?? "0.00"}</div>
-                </div>
-                {summary.source_url && (
-                  <a href={summary.source_url} target="_blank" rel="noreferrer" className="btn btn-ghost">
-                    Open original source
-                  </a>
-                )}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h4 className="empty-title">No document selected</h4>
-                <p className="empty-copy">Choose a document to populate its quality snapshot and review queue.</p>
-              </div>
-            )}
-          </div>
-
-          {docQuality && (
-            <div className="panel">
-              <h3 className="panel-title">Quality snapshot</h3>
-              <div className="list-stack">
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                  <div className="field-label">Risk distribution</div>
-                  <div className="muted-text">
-                    High {docQuality.risk_distribution.high || 0} · Medium {docQuality.risk_distribution.medium || 0} · Low {docQuality.risk_distribution.low || 0}
-                  </div>
-                </div>
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                  <div className="field-label">Most edited fields</div>
-                  <div className="muted-text">
-                    {(docQuality.top_modified_fields || [])
-                      .slice(0, 3)
-                      .map((item) => `${item.field} (${item.count})`)
-                      .join(", ") || "No manual edits captured yet."}
-                  </div>
-                </div>
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                  <div className="field-label">Coverage alerts</div>
-                  <div className="muted-text">
-                    {docQuality.field_coverage
-                      .filter((item) => item.fill_rate < 0.7)
-                      .slice(0, 3)
-                      .map((item) => `${item.field} ${Math.round(item.fill_rate * 100)}%`)
-                      .join(" · ") || "No low-coverage key fields in this snapshot."}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </aside>
 
-        <section className="record-shell">
-          <div className="toolbar-shell">
-            <div className="toolbar-row">
-              <div>
-                <h3 className="panel-title">Review controls</h3>
-                <p className="panel-copy">
-                  The queue is sorted by high → medium → low risk. Confirmation only unlocks when high-risk rows are not left unreviewed.
-                </p>
+        <div className="item-detail">
+          {error && <div className="message-box error">{error}</div>}
+
+          {!selectedDocId && (
+            <div className="empty-state">
+              <h3 className="panel-title">请选择文档</h3>
+            </div>
+          )}
+
+          {selectedDocId && !selectedRow && (
+            <div className="detail-shell">
+              <div className="detail-header">
+                <div>
+                  <h3 className="panel-title">{summary?.university_name || "记录队列"}</h3>
+                </div>
+                <div className="item-meta">
+                  <span className="badge badge-gray">共 {rows.length} 条</span>
+                  <span className="badge badge-blue">已复核 {reviewedCount}</span>
+                  {loadingRows && <span className="badge badge-gray">加载中...</span>}
+                </div>
               </div>
-              <div className="inline-actions">
+
+              <div className="inline-actions" style={{ marginBottom: 6 }}>
                 {[
-                  { key: "all" as RiskFilter, label: `All ${metrics.total}` },
-                  { key: "high" as RiskFilter, label: `High ${metrics.high}` },
-                  { key: "medium" as RiskFilter, label: `Medium ${metrics.medium}` },
-                  { key: "low" as RiskFilter, label: `Low ${metrics.low}` },
+                  { key: "all" as RiskFilter, label: `全部 ${rows.length}` },
+                  { key: "high" as RiskFilter, label: `高风险 ${riskCounts.high}` },
+                  { key: "medium" as RiskFilter, label: `中风险 ${riskCounts.medium}` },
+                  { key: "low" as RiskFilter, label: `低风险 ${riskCounts.low}` },
                 ].map((item) => (
                   <button
                     key={item.key}
@@ -589,224 +327,106 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div className="toolbar-flex" style={{ marginTop: 14 }}>
-              <div className="inline-actions">
-                <button className="btn btn-ghost" onClick={() => void bulkMarkLowRiskReviewed()} disabled={bulkReviewing} type="button">
-                  {bulkReviewing ? "Marking..." : "Mark low-risk rows reviewed"}
-                </button>
-                <span className="badge badge-gray">Reviewed {metrics.reviewed}/{metrics.total}</span>
-              </div>
+              <TreemapSummary
+                title="风险分布"
+                data={[
+                  { label: "高风险", value: riskCounts.high, color: "linear-gradient(135deg, rgba(239,68,68,.82), rgba(185,28,28,.92))" },
+                  { label: "中风险", value: riskCounts.medium, color: "linear-gradient(135deg, rgba(245,158,11,.78), rgba(180,83,9,.9))" },
+                  { label: "低风险", value: riskCounts.low, color: "linear-gradient(135deg, rgba(16,185,129,.78), rgba(4,120,87,.9))" },
+                ]}
+              />
 
-              <button
-                className="btn btn-green"
-                onClick={() => void confirmCurrentDocument()}
-                disabled={!selectedDocId || confirming || !rows.length || blockingHighRisk}
-                type="button"
-              >
-                {confirming ? "Confirming..." : "Confirm into records"}
-              </button>
-            </div>
-          </div>
-
-          <div className="metric-grid">
-            {[
-              { label: "High risk", value: metrics.high, copy: "Immediate review priority", className: "badge badge-red" },
-              { label: "Medium risk", value: metrics.medium, copy: "Needs targeted validation", className: "badge badge-amber" },
-              { label: "Low risk", value: metrics.low, copy: "Eligible for quick pass", className: "badge badge-green" },
-              { label: "Reviewed", value: metrics.reviewed, copy: "Human-reviewed rows", className: "badge badge-blue" },
-            ].map((card) => (
-              <div key={card.label} className="metric-card">
-                <div className="split-row" style={{ marginBottom: 8 }}>
-                  <div className="metric-label">{card.label}</div>
-                  <span className={card.className}>{card.label}</span>
-                </div>
-                <div className="metric-value">{card.value}</div>
-                <div className="metric-copy">{card.copy}</div>
-              </div>
-            ))}
-          </div>
-
-          {msg && <div className="message-box info">{msg}</div>}
-          {err && <div className="message-box error">{err}</div>}
-
-          {!currentRow && !loadingRows && (
-            <div className="empty-state">
-              <h3 className="empty-title">No review row selected</h3>
-              <p className="empty-copy">Pick a document from the tray and the system will route you to the most important row first.</p>
-            </div>
-          )}
-
-          {currentRow && (
-            <div className="review-layout">
-              <div className="panel">
-                <div className="toolbar-flex" style={{ marginBottom: 18 }}>
-                  <div>
-                    <span className={riskBadgeClass(currentRow.risk_level)}>{riskLabel(currentRow.risk_level)}</span>
-                    <h3 className="panel-title" style={{ marginTop: 10 }}>
-                      Review row #{currentRow.id}
-                    </h3>
-                    <p className="panel-copy">{riskDescription(currentRow.risk_level)}</p>
-                  </div>
-
-                  <div className="list-stack" style={{ minWidth: 200 }}>
-                    <span className="badge badge-gray">Confidence {Number(currentRow.confidence ?? 0).toFixed(2)}</span>
-                    <span className={Number(currentRow.is_reviewed) ? "badge badge-green" : "badge badge-amber"}>
-                      {Number(currentRow.is_reviewed) ? "Reviewed" : "Needs review"}
-                    </span>
-                    <span className="badge badge-gray">Page {currentRow.page_number ?? "—"}</span>
-                    <span className="badge badge-gray">Reviewed at {fmtDate(currentRow.reviewed_at)}</span>
-                  </div>
-                </div>
-
-                <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.92)", border: "1px solid rgba(148, 163, 184, 0.18)", marginBottom: 18 }}>
-                  <strong style={{ display: "block", marginBottom: 6 }}>Review guidance</strong>
-                  <span className="helper-text" style={{ color: "var(--ink2)" }}>
-                    Critical fields show stronger warnings when confidence is weak. Evidence snippets stay beside the fields they support so reviewers do not need to jump around the interface.
-                  </span>
-                </div>
-
-                <div className="field-grid">
-                  {REVIEW_FIELDS.map((field) => {
-                    const confidence = Number(currentRow.field_confidence?.[field.key] ?? 0);
-                    const evidence = currentRow.field_evidence?.[field.key];
-                    const modified = (currentRow.manual_modified_fields || []).includes(field.key);
-                    const shouldWarn = field.critical && confidence < 0.8;
-                    const textarea = field.span === 2;
-                    const inputStyle: CSSProperties = textarea
-                      ? { minHeight: 96 }
-                      : {};
-
-                    return (
-                      <div
-                        key={field.key}
-                        className={`review-field${field.span === 2 ? " is-span-2" : ""}${field.critical ? " is-critical" : ""}${shouldWarn ? " is-warning" : ""}`}
-                      >
-                        <div className="field-header">
-                          <span className="field-name">{field.label}</span>
-                          <div className="inline-actions">
-                            {field.critical && (
-                              <span className={shouldWarn ? "badge badge-red" : "badge badge-blue"}>
-                                {shouldWarn ? "Priority check" : `Confidence ${confidence.toFixed(2)}`}
-                              </span>
-                            )}
-                            {modified && <span className="badge badge-green">Manually edited</span>}
-                          </div>
-                        </div>
-
-                        {textarea ? (
-                          <textarea
-                            value={draft[field.key] || ""}
-                            onChange={(event) => updateDraft(field.key, event.target.value)}
-                            className="field-textarea"
-                            style={inputStyle}
-                          />
-                        ) : (
-                          <input
-                            value={draft[field.key] || ""}
-                            onChange={(event) => updateDraft(field.key, event.target.value)}
-                            className="field"
-                            style={inputStyle}
-                          />
-                        )}
-
-                        {field.critical && evidence?.text && (
-                          <div className="evidence-box">
-                            <div className="field-label">Evidence snippet {evidence.page ? `(p.${evidence.page})` : ""}</div>
-                            <div className="muted-text">{evidence.text}</div>
-                          </div>
-                        )}
+              <div className="document-list">
+                {filteredRows.map((row) => (
+                  <button key={row.id} className="item-card" onClick={() => setSelectedRowId(row.id)} type="button">
+                    <div className="detail-header">
+                      <div>
+                        <h4 className="item-title">{row.faculty || row.department || `记录 #${row.id}`}</h4>
+                        <p className="item-subtitle">{row.department || row.university || "进入详情"}</p>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {(currentRow.warnings_json || []).length > 0 && (
-                  <div className="warning-box" style={{ marginTop: 18 }}>
-                    <h4 className="warning-title">System warnings</h4>
-                    <div className="warning-stack">
-                      {(currentRow.warnings_json || []).map((warning, index) => (
-                        <div key={`${warning}-${index}`} className="muted-text">
-                          • {warning}
-                        </div>
-                      ))}
+                      <div className="item-meta">
+                        <span className={riskBadge(row.risk_level)}>{riskText(row.risk_level)}</span>
+                        <span className="badge badge-gray">置信度 {Number(row.confidence ?? 0).toFixed(2)}</span>
+                        <span className={Number(row.is_reviewed) ? "badge badge-green" : "badge badge-amber"}>
+                          {Number(row.is_reviewed) ? "已复核" : "待复核"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-                <div className="inline-actions" style={{ marginTop: 18 }}>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => void savePatch({ ...draft, is_reviewed: 1 }, "Changes saved and the row was marked reviewed.")}
-                    disabled={saving}
-                    type="button"
-                  >
-                    Save
+          {selectedDocId && selectedRow && (
+            <div className="detail-shell">
+              <div className="detail-header">
+                <div>
+                  <button className="btn btn-ghost detail-back" onClick={() => setSelectedRowId(null)} type="button">
+                    返回列表
                   </button>
-                  <button
-                    className="btn btn-amber"
-                    onClick={() => void savePatch({ is_reviewed: 1, reviewed_at: "" }, "This row was marked reviewed.")}
-                    disabled={saving}
-                    type="button"
-                  >
-                    Mark reviewed
-                  </button>
-                  <button
-                    className="btn btn-green"
-                    onClick={() => void savePatch({ ...draft, is_reviewed: 1, needs_review: 0 }, "Changes saved and the row is now marked reviewed.")}
-                    disabled={saving}
-                    type="button"
-                  >
-                    Save and close risk
-                  </button>
-                  <button className="btn btn-red" onClick={() => void removeCurrent()} disabled={saving} type="button">
-                    Delete row
-                  </button>
+                  <h3 className="panel-title" style={{ marginTop: 12 }}>
+                    复核详情
+                  </h3>
+                  <p className="secondary-note">
+                    {summary?.university_name || "当前文档"} · {riskText(selectedRow.risk_level)}
+                  </p>
+                </div>
+                <div className="item-meta">
+                  <span className={riskBadge(selectedRow.risk_level)}>{riskText(selectedRow.risk_level)}</span>
+                  <span className="badge badge-gray">页码 {selectedRow.page_number ?? "—"}</span>
                 </div>
               </div>
 
-              <aside className="panel">
-                <div className="split-row" style={{ marginBottom: 12 }}>
-                  <div>
-                    <h3 className="panel-title">Queue</h3>
-                    <p className="panel-copy">Work top-to-bottom to keep the review motion steady.</p>
+              <PieSummary
+                title="复核进度"
+                totalLabel="完成度"
+                totalValue={rows.length ? `${Math.round((reviewedCount / rows.length) * 100)}%` : "0%"}
+                data={[
+                  { label: "已复核", value: reviewedCount, color: "#111827" },
+                  { label: "未复核", value: Math.max(rows.length - reviewedCount, 0), color: "#60a5fa" },
+                ]}
+              />
+
+              <div className="detail-grid" style={{ marginTop: 16 }}>
+                {REVIEW_FIELDS.map((field) => (
+                  <div key={field.key} className={`detail-field${field.span === 2 ? " is-span-2" : ""}`}>
+                    <span className="detail-label">{field.label}</span>
+                    <textarea
+                      className="field-textarea"
+                      style={field.span === 2 ? undefined : { minHeight: 72 }}
+                      value={draft[field.key] || ""}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                    />
+                    {selectedRow.field_evidence?.[field.key]?.text && (
+                      <div className="evidence-snippet">
+                        <span className="field-label">证据</span>
+                        <div>{selectedRow.field_evidence[field.key]?.text}</div>
+                      </div>
+                    )}
                   </div>
-                  <span className="badge badge-gray">{riskFilter === "all" ? "All risks" : riskLabel(riskFilter)}</span>
-                </div>
+                ))}
+              </div>
 
-                <div className="list-stack" style={{ maxHeight: 760, overflowY: "auto" }}>
-                  {filteredRows.map((row) => {
-                    const active = row.id === currentRow.id;
-                    return (
-                      <button
-                        key={row.id}
-                        className={`queue-card${active ? " is-active" : ""}`}
-                        onClick={() => setSelectedRowId(row.id)}
-                        type="button"
-                      >
-                        <div className="queue-head">
-                          <div>
-                            <h4 className="queue-title">{row.faculty || row.department || `Row #${row.id}`}</h4>
-                            <div className="queue-meta">{row.department || row.university || "Unlabeled row"}</div>
-                          </div>
-                          <span className={riskBadgeClass(row.risk_level)}>{riskLabel(row.risk_level)}</span>
-                        </div>
+              {message && !error && <div className="message-box info">{message}</div>}
 
-                        <div className="queue-meta" style={{ marginTop: 8 }}>
-                          Confidence {Number(row.confidence ?? 0).toFixed(2)}
-                        </div>
-                        <div className="queue-meta">
-                          {Number(row.is_reviewed) ? "Reviewed" : "Needs review"} · {Number(row.is_confirmed) ? "Confirmed" : "Not confirmed"}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </aside>
+              <div className="inline-actions">
+                <button className="btn btn-ghost" disabled={saving} onClick={() => void saveCurrent(false, false)} type="button">
+                  仅保存
+                </button>
+                <button className="btn btn-amber" disabled={saving} onClick={() => void saveCurrent(true, true)} type="button">
+                  保存并下一条
+                </button>
+                <button className="btn btn-green" disabled={confirming || pendingHighRisk} onClick={() => void confirmCurrentDocument()} type="button">
+                  {confirming ? "入库中..." : "确认整份文档入库"}
+                </button>
+              </div>
+
+              {pendingHighRisk && <div className="secondary-note">仍有高风险记录未复核，当前不能直接入库。</div>}
             </div>
           )}
-        </section>
+        </div>
       </section>
     </div>
   );

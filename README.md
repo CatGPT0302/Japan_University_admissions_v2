@@ -22,6 +22,8 @@ The codebase, extraction workflow, review workflow, confidence/evidence/risk log
 
 Third-party datasets or organization-specific templates, if any, must not be committed to this repository.
 
+Field governance baseline is documented in `FIELD_HIGHEST_PRINCIPLE.md` and must be followed for extraction and review UI updates.
+
 ## Project Positioning
 
 This project is not a pure OCR or PDF vision engine project.
