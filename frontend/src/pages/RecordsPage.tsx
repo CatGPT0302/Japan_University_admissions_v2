@@ -12,9 +12,18 @@ const RECORD_FIELDS: Array<{ key: keyof ConfirmedRecord; label: string; span?: 1
   { key: "deadline_rule", label: "截止规则" },
   { key: "eju_session", label: "EJU 场次" },
   { key: "eju_japanese", label: "EJU 日语" },
+  { key: "eju_general", label: "EJU 综合科目" },
+  { key: "eju_math", label: "EJU 数学" },
+  { key: "eju_physics", label: "EJU 物理" },
+  { key: "eju_chemistry", label: "EJU 化学" },
+  { key: "eju_biology", label: "EJU 生物" },
   { key: "english_requirement", label: "英语要求", span: 2 },
   { key: "screening_method", label: "选考方式", span: 2 },
+  { key: "screening_schedule", label: "选考日程", span: 2 },
   { key: "result_date", label: "结果发布日期" },
+  { key: "enrollment_period", label: "入学手续期间" },
+  { key: "prefecture", label: "都道府县" },
+  { key: "campus", label: "校区" },
 ];
 
 export default function RecordsPage() {
@@ -68,7 +77,7 @@ export default function RecordsPage() {
           <div>
             <div className="section-kicker">记录</div>
             <h2 className="section-title">查看已确认档案</h2>
-            <p className="section-copy">筛选结果后直接进入二级详情，保持查询、浏览和导出在同一工作区完成。</p>
+          <p className="section-copy">查询已确认数据，并导出完整主表。</p>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">
@@ -178,7 +187,7 @@ export default function RecordsPage() {
                 <div>
                   <div className="card-kicker">记录列表</div>
                   <h3 className="panel-title">已确认内容</h3>
-                  <p className="panel-copy">左键进入每条记录的二级详情。</p>
+            <p className="panel-copy">点击记录查看完整字段。</p>
                 </div>
                 <div className="item-meta">
                   <span className="badge badge-gray">总记录 {stats?.total_records ?? "—"}</span>

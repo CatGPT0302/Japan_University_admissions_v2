@@ -29,6 +29,7 @@ from scripts.db import (  # noqa: E402
 from scripts.json_parser import extract_json_payload  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
+from scripts.runtime_paths import rendered_pages_dir  # noqa: E402
 from scripts.validator import normalize_field_evidence, validate  # noqa: E402
 
 PROMPT_PATH = ROOT / "prompts" / "field_extraction_prompt.md"
@@ -1292,7 +1293,7 @@ def _extract_symbol_rows(
 ) -> list[dict[str, Any]]:
     if not table_pages:
         return []
-    image_dir = ROOT / "output_pages" / f"extract_fields_symbol_rows_{pdf_path.stem}"
+    image_dir = rendered_pages_dir() / f"extract_fields_symbol_rows_{pdf_path.stem}"
     rendered = _render_candidate_images(pdf_path, image_dir, table_pages)
     symbol_rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str, int | None, str]] = set()
@@ -1375,7 +1376,7 @@ def _table_patch_records(
 ) -> list[dict[str, Any]]:
     if not table_pages:
         return []
-    image_dir = ROOT / "output_pages" / f"extract_fields_table_patch_{pdf_path.stem}"
+    image_dir = rendered_pages_dir() / f"extract_fields_table_patch_{pdf_path.stem}"
     rendered = _render_candidate_images(pdf_path, image_dir, table_pages)
     patched: list[dict[str, Any]] = []
     for image_path in rendered:
@@ -1456,7 +1457,7 @@ def extract_fields(
 
     image_paths: list[Path] = []
     if use_images and candidate_pages:
-        image_dir = ROOT / "output_pages" / f"extract_fields_{pdf_path.stem}"
+        image_dir = rendered_pages_dir() / f"extract_fields_{pdf_path.stem}"
         image_paths = _render_candidate_images(pdf_path, image_dir, candidate_pages[:max_images])
         for image_path in image_paths[:max_images]:
             content.append({"type": "image_url", "image_url": {"url": _image_data_url(image_path)}})

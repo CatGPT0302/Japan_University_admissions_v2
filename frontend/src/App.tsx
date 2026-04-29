@@ -31,9 +31,9 @@ export default function App() {
     <div className="app-shell app-shell-product">
       <aside className="sidebar product-sidebar">
         <div className="product-brand">
-          <div className="brand-overline">工作台</div>
-          <h1 className="brand-title">案头</h1>
-          <p className="brand-subtitle">导入、人工复核、记录</p>
+          <div className="brand-overline">本地工具</div>
+          <h1 className="brand-title">格致大学募集要項抽取系统</h1>
+          <p className="brand-subtitle">PDF 导入、人工复核、Excel 导出</p>
         </div>
 
         <div className="sidebar-section">

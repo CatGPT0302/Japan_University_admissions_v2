@@ -181,6 +181,7 @@ a {
 .message-box,
 .empty-state,
 .dropzone,
+.progress-card,
 .summary-box {
   position: relative;
   background:
@@ -200,6 +201,7 @@ a {
 .item-card::before,
 .chart-panel::before,
 .dropzone::before,
+.progress-card::before,
 .summary-box::before {
   content: "";
   position: absolute;
@@ -214,8 +216,53 @@ a {
 .detail-shell,
 .chart-panel,
 .dropzone,
+.progress-card,
 .summary-box {
   border-radius: var(--radius-xxl);
+}
+
+.progress-card {
+  padding: 22px;
+}
+
+.progress-track {
+  position: relative;
+  height: 12px;
+  margin-top: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 6%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f172a, #2563eb 52%, #0f766e);
+  transition: width 280ms ease;
+}
+
+.progress-card.is-running .progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.36), transparent);
+  animation: progress-shimmer 1.2s linear infinite;
+}
+
+.progress-card.is-error .progress-fill {
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+}
+
+@keyframes progress-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .sidebar-card {
@@ -807,6 +854,58 @@ a {
   color: var(--text);
 }
 
+.review-compare-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.92fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.review-form-panel {
+  min-width: 0;
+}
+
+.pdf-preview-panel {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.1);
+}
+
+.pdf-preview-header,
+.pdf-preview-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pdf-preview-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.pdf-preview-scroll {
+  height: min(72vh, 760px);
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #f8fafc;
+}
+
+.pdf-preview-image {
+  display: block;
+  min-width: 100%;
+  height: auto;
+  transform-origin: top left;
+}
+
 .evidence-snippet {
   margin-top: 12px;
   padding: 12px 14px;
@@ -1052,10 +1151,15 @@ a {
 @media (max-width: 1180px) {
   .content-grid,
   .detail-grid,
+  .review-compare-grid,
   .pie-layout,
   .hero-metrics,
   .results-grid {
     grid-template-columns: 1fr;
+  }
+
+  .pdf-preview-panel {
+    position: static;
   }
 }
 

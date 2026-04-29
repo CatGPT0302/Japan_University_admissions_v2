@@ -13,8 +13,10 @@ from urllib.parse import parse_qs, urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from scripts.runtime_paths import uploads_dir
+
 ROOT = Path(__file__).resolve().parent.parent
-INPUT_DIR = ROOT / "input_pdfs"
+INPUT_DIR = uploads_dir()
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 PRIVATE_REGISTRY = ROOT / "private_data" / "pdf_source_registry.csv"

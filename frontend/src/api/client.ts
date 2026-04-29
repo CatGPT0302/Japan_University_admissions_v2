@@ -99,6 +99,16 @@ export async function getDocumentSummary(docId: number): Promise<DocumentSummary
   return data;
 }
 
+export function documentPdfUrl(docId: number, pageNumber?: number | null): string {
+  const page = pageNumber ? `#page=${pageNumber}` : "";
+  return `${BASE_URL}/documents/${docId}/pdf${page}`;
+}
+
+export function documentPageImageUrl(docId: number, pageNumber?: number | null, zoom = 1): string {
+  const page = Math.max(Number(pageNumber || 1), 1);
+  return `${BASE_URL}/documents/${docId}/page-image?page=${page}&zoom=${zoom}`;
+}
+
 export async function deleteDocument(docId: number): Promise<{
   status: string;
   doc_id: number;

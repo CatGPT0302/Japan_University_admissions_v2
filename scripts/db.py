@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+from scripts.runtime_paths import sqlite_path
 from scripts.validator import normalize_manual_modified_fields, validate
 
 JSON_LIST_FIELDS = {"warnings_json", "manual_modified_fields"}
@@ -107,7 +108,7 @@ def _sqlite_path() -> Path:
     volume_mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
     if volume_mount:
         return Path(volume_mount) / "admissions_v2.db"
-    return Path(__file__).resolve().parent.parent / "database" / "admissions_v2.db"
+    return sqlite_path()
 
 
 DATABASE_URL, DATABASE_URL_SOURCE = _resolve_database_url()
@@ -1332,6 +1333,17 @@ def get_document_summary(doc_id: int) -> dict | None:
     conn.close()
     if row and row.get("avg_confidence") is not None:
         row["avg_confidence"] = float(row["avg_confidence"] or 0)
+    return row
+
+
+def get_document_file(doc_id: int) -> dict | None:
+    conn = get_conn()
+    row = _fetchone(
+        conn,
+        f"SELECT id AS doc_id, file_name AS filename, file_path FROM source_documents WHERE id = {_ph()}",
+        (doc_id,),
+    )
+    conn.close()
     return row
 
 

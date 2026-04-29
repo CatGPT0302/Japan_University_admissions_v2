@@ -8,7 +8,8 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,6 +23,7 @@ from scripts.db import (  # noqa: E402
     delete_staging_record,
     get_correction_events as db_get_correction_events,
     get_db_runtime,
+    get_document_file as db_get_document_file,
     get_documents as db_get_documents,
     get_document_summary as db_get_document_summary,
     get_quality_metrics as db_get_quality_metrics,
@@ -34,10 +36,14 @@ from scripts.db import (  # noqa: E402
     update_staging_record,
 )
 from scripts.export_excel import export_excel_bytes_from_records  # noqa: E402
+from scripts.pdf_render import render_pdf_to_images  # noqa: E402
+from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.validator import validate  # noqa: E402
 
-INPUT_DIR = ROOT / "input_pdfs"
+ensure_runtime_dirs()
+INPUT_DIR = uploads_dir()
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
+FRONTEND_DIST_DIR = frontend_dist_dir()
 
 
 def _cors_origins() -> list[str]:
@@ -59,7 +65,7 @@ def _cors_origins() -> list[str]:
         origins.add(f"https://{vercel_url.rstrip('/')}")
     return sorted(origins)
 
-app = FastAPI(title="admissions_v2 API", version="1.0")
+app = FastAPI(title="格致大学募集要項抽取系统 API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
@@ -152,8 +158,11 @@ async def upload_pdf(file: UploadFile = File(...)) -> dict[str, str]:
     }
 
 
-@app.get("/")
-def root() -> dict[str, str]:
+@app.get("/", response_model=None)
+def root() -> Any:
+    index_path = FRONTEND_DIST_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
     return {"status": "ok", "service": "admissions_v2"}
 
 
@@ -262,6 +271,46 @@ def get_document_summary(doc_id: int) -> dict[str, Any]:
     if not row:
         raise HTTPException(status_code=404, detail="document not found")
     return row
+
+
+@app.get("/documents/{doc_id}/pdf")
+def get_document_pdf(doc_id: int) -> FileResponse:
+    pdf_path = _document_pdf_path(doc_id)
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline"},
+    )
+
+
+@app.get("/documents/{doc_id}/page-image")
+def get_document_page_image(doc_id: int, page: int = 1) -> FileResponse:
+    pdf_path = _document_pdf_path(doc_id)
+    page_num = max(int(page or 1), 1)
+    out_dir = rendered_pages_dir() / f"preview_{doc_id}"
+    image_path = out_dir / f"page_{page_num:03d}.png"
+    if not image_path.exists():
+        rendered = render_pdf_to_images(pdf_path, out_dir, dpi=180, pages=[page_num])
+        if not rendered:
+            raise HTTPException(status_code=404, detail="PDF page not found")
+        image_path = rendered[0]
+    return FileResponse(image_path, media_type="image/png")
+
+
+def _document_pdf_path(doc_id: int) -> Path:
+    row = db_get_document_file(doc_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="document not found")
+    raw_path = str(row.get("file_path") or "").strip()
+    filename = str(row.get("filename") or f"document_{doc_id}.pdf")
+    candidates = []
+    if raw_path:
+        candidates.append(Path(raw_path))
+    candidates.append(INPUT_DIR / filename)
+    pdf_path = next((path for path in candidates if path.exists() and path.is_file()), None)
+    if not pdf_path:
+        raise HTTPException(status_code=404, detail="PDF file not found")
+    return pdf_path
 
 
 @app.delete("/documents/{doc_id}")
@@ -390,3 +439,8 @@ def export_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+assets_dir = FRONTEND_DIST_DIR / "assets"
+if assets_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")

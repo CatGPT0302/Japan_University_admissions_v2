@@ -199,9 +199,16 @@ export interface ConfirmedRecord {
   deadline_rule?: string;
   eju_session?: string;
   eju_japanese?: string;
+  eju_general?: string;
+  eju_math?: string;
+  eju_physics?: string;
+  eju_chemistry?: string;
+  eju_biology?: string;
   english_requirement?: string;
   screening_method?: string;
+  screening_schedule?: string;
   result_date?: string;
+  enrollment_period?: string;
   prefecture?: string;
   campus?: string;
 }

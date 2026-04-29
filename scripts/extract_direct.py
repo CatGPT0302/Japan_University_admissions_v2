@@ -31,6 +31,7 @@ from scripts.db import (  # noqa: E402
 from scripts.json_parser import extract_json_payload  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
+from scripts.runtime_paths import rendered_pages_dir  # noqa: E402
 from scripts.validator import CRITICAL_FIELDS, validate  # noqa: E402
 
 PROMPT_PATH = ROOT / "prompts" / "vision_prompt.md"
@@ -1553,7 +1554,7 @@ def _vision_patch_records(
         f"pages={prioritized_pages} (cap={VISION_PATCH_MAX_PAGES})"
     )
 
-    out_dir = ROOT / "output_pages" / f"direct_{doc_id}"
+    out_dir = rendered_pages_dir() / f"direct_{doc_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
     _ensure_time_budget(deadline_ts, "vision_patch.render")
     images = render_pdf_to_images(pdf_path, out_dir, pages=prioritized_pages)
@@ -1786,7 +1787,7 @@ def _run_vision_path(
     year: str,
     deadline_ts: float | None = None,
 ) -> dict[str, Any]:
-    out_dir = ROOT / "output_pages" / f"direct_{doc_id}"
+    out_dir = rendered_pages_dir() / f"direct_{doc_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
     _ensure_time_budget(deadline_ts, "vision_path.render")
     images = render_pdf_to_images(pdf_path, out_dir)

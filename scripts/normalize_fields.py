@@ -151,33 +151,60 @@ def normalize_deadline_rule(record: dict[str, Any]) -> dict[str, Any]:
         for field in ("deadline_rule", "application_period", "requirements_note")
         if _s(r.get(field))
     )
+    deadline_date = _deadline_date(r)
     labels: list[str] = []
-    if "必着" in source or "到着" in source:
-        labels.append("出願期限までに必着")
-    if "消印有効" in source:
-        labels.append("消印有効")
-    if "TAO" in source:
-        labels.append("TAO期間内完了")
-    if "UCARO" in source or "オンライン" in source or "アップロード" in source:
-        labels.append("オンライン出願期間内完了")
-    if any(token in source for token in ("TOEFL", "IELTS", "TOEIC", "直送")):
-        labels.append("外部試験スコアは出願期限までに直送・到着必須")
-    if "支払" in source or "支払い" in source or "入学検定料" in source:
-        labels.append("入学検定料支払い期限内完了")
+    if "消印" in source:
+        labels.append(f"{deadline_date} 为止消印有效")
+    if any(token in source for token in ("必着", "到着", "期限内到着", "直送", "提出期限", "TAO", "UCARO", "オンライン", "アップロード", "支払", "支払い", "入学検定料")):
+        labels.append(f"{deadline_date} 为止必着")
     r["deadline_rule"] = " / ".join(dict.fromkeys(labels)) if labels else _s(r.get("deadline_rule"))
     return r
 
 
+def _date_tokens_from_text(value: Any) -> list[str]:
+    normalized = _normalize_date_text(value)
+    return re.findall(r"20\d{2}/\d{2}/\d{2}", normalized)
+
+
+def _deadline_date(record: dict[str, Any]) -> str:
+    for field in ("deadline_rule", "application_period", "requirements_note"):
+        tokens = _date_tokens_from_text(record.get(field))
+        if tokens:
+            return tokens[-1]
+    return "要確認"
+
+
 def _normalize_eju_session(value: Any) -> str:
-    text = _s(value).translate(str.maketrans("１２", "12"))
+    text = _s(value).translate(str.maketrans("０１２３４５６７８９", "0123456789"))
     if not text:
         return "要確認"
-    rounds: list[str] = []
-    if re.search(r"第\s*1\s*回|第一回|6月|7月", text):
-        rounds.append("第一回")
-    if re.search(r"第\s*2\s*回|第二回|11月", text):
-        rounds.append("第二回")
-    return " / ".join(dict.fromkeys(rounds)) if rounds else text
+    pairs: list[str] = []
+
+    def add_pair(year: str | None, round_no: str) -> None:
+        label = f"{year}年第{round_no}回" if year else f"第{round_no}回"
+        if label not in pairs:
+            pairs.append(label)
+
+    for year, round_no in re.findall(r"(20\d{2})年.{0,12}?第\s*([12])\s*回", text):
+        add_pair(year, round_no)
+    for year, month in re.findall(r"(20\d{2})年\s*(6|7|11|12)月", text):
+        add_pair(year, "1" if month in {"6", "7"} else "2")
+
+    if not pairs:
+        years = re.findall(r"20\d{2}", text)
+        round_numbers: list[str] = []
+        if re.search(r"第\s*1\s*回|第一回|6月|7月", text):
+            round_numbers.append("1")
+        if re.search(r"第\s*2\s*回|第二回|11月|12月", text):
+            round_numbers.append("2")
+        if len(years) == 1:
+            for round_no in round_numbers:
+                add_pair(years[0], round_no)
+        elif round_numbers:
+            for round_no in round_numbers:
+                add_pair(None, round_no)
+
+    return " / ".join(pairs[:4]) if pairs else "要確認"
 
 
 def _eju_base_display(value: Any, label: str) -> str:
@@ -264,12 +291,14 @@ def normalize_eju_display(record: dict[str, Any]) -> dict[str, Any]:
 def _extract_english_labels(value: Any) -> list[str]:
     text = _s(value)
     labels: list[str] = []
-    if re.search(r"TOEFL", text, re.IGNORECASE):
-        labels.append("TOEFL iBT")
-    if re.search(r"IELTS", text, re.IGNORECASE):
-        labels.append("IELTS Academic Module")
-    if re.search(r"TOEIC", text, re.IGNORECASE):
-        labels.append("TOEIC L&R")
+    for pattern, label in (
+        (r"TOEFL(?:\s*iBT)?", "TOEFL iBT"),
+        (r"IELTS(?:\s*Academic(?:\s*Module)?)?", "IELTS Academic Module"),
+        (r"TOEIC(?:\s*L&R)?", "TOEIC L&R"),
+    ):
+        item = _english_label_with_score(text, pattern, label)
+        if item:
+            labels.append(item)
     if "英検" in text:
         labels.append("英検")
     if "ドイツ語" in text:
@@ -277,6 +306,18 @@ def _extract_english_labels(value: Any) -> list[str]:
     if "フランス語" in text:
         labels.append("フランス語")
     return list(dict.fromkeys(labels))
+
+
+def _english_label_with_score(text: str, keyword_pattern: str, label: str) -> str | None:
+    if not re.search(keyword_pattern, text, re.IGNORECASE):
+        return None
+    for match in re.finditer(keyword_pattern, text, re.IGNORECASE):
+        window = text[match.start() : min(len(text), match.end() + 56)]
+        score = re.search(r"(\d{2,3}\s*点以上|\d{2,3}\s*以上|\d(?:\.\d)?\s*以上|スコア\s*\d{2,3})", window)
+        if score:
+            compact_score = re.sub(r"\s+", "", score.group(1))
+            return f"{label} {compact_score}"
+    return label
 
 
 def normalize_english_requirement(record: dict[str, Any]) -> dict[str, Any]:
@@ -351,6 +392,38 @@ def _requirements_note(record: dict[str, Any]) -> str:
     return " / ".join(dict.fromkeys(values))
 
 
+def normalize_screening_method(record: dict[str, Any]) -> dict[str, Any]:
+    r = dict(record)
+    source = _s(r.get("screening_method"))
+    if not source:
+        r["screening_method"] = "要確認"
+        return r
+
+    labels: list[str] = []
+    patterns = [
+        ("書類選考", r"書類選考|書類審査|出願書類"),
+        ("小論文", r"小論文"),
+        ("筆記試験", r"筆記試験"),
+        ("面接試験", r"面接試験"),
+        ("面接", r"(?<!オンライン)面接(?!試験)"),
+        ("口頭試問", r"口頭試問"),
+        ("実技", r"実技"),
+        ("オンライン面接", r"オンライン面接"),
+    ]
+    for label, pattern in patterns:
+        if re.search(pattern, source):
+            labels.append(label)
+
+    if labels:
+        r["screening_method"] = " / ".join(dict.fromkeys(labels))
+    elif "学力試験" in source or "試験" in source:
+        r["screening_method"] = "要確認"
+        _append_warning(r, "選考方法が総称のみのため、原文で書類選考・筆記試験・面接等の具体内容を確認してください")
+    else:
+        r["screening_method"] = source
+    return r
+
+
 def normalize_record(record: dict[str, Any], top_level: dict[str, Any] | None = None) -> dict[str, Any]:
     top = top_level or {}
     r = dict(record)
@@ -358,6 +431,7 @@ def normalize_record(record: dict[str, Any], top_level: dict[str, Any] | None = 
     r = normalize_deadline_rule(r)
     r = normalize_eju_display(r)
     r = normalize_english_requirement(r)
+    r = normalize_screening_method(r)
 
     output = {column: "" for column in EXCEL_COLUMNS}
     output["大学名"] = _s(r.get("university")) or _s(top.get("university"))

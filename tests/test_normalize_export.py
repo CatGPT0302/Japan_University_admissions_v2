@@ -55,7 +55,7 @@ class NormalizeExportTest(unittest.TestCase):
         self.assertEqual(records[3]["総合科目"], "〇")
         self.assertEqual(records[0]["英語外部資格試験"], "TOEFL iBT / IELTS Academic Module")
         self.assertNotIn("日本語", records[3]["英語外部資格試験"])
-        self.assertIn("外部試験スコア", records[0]["必着/消印"])
+        self.assertEqual(records[0]["必着/消印"], "2026/06/18 为止必着")
 
     def test_export_tsv_uses_fixed_columns(self) -> None:
         payload = {
@@ -91,6 +91,38 @@ class NormalizeExportTest(unittest.TestCase):
         self.assertEqual(rows[1][9], "〇")
         self.assertEqual(rows[1][10], "-")
         self.assertEqual(rows[1][14], "要確認")
+
+    def test_normalize_tightens_sessions_english_scores_and_screening(self) -> None:
+        from scripts.normalize_fields import normalize_extraction_result
+
+        payload = {
+            "university": "サンプル大学",
+            "admission_year": "2027年度",
+            "records": [
+                {
+                    "faculty": "人間科学部",
+                    "department": "学科一括",
+                    "application_period": "2026年6月1日～2026年6月18日",
+                    "deadline_rule": "2026年6月18日必着",
+                    "eju_session": "2025年11月回または2026年6月回",
+                    "english_requirement": "TOEFL iBT 80点以上、IELTS 6.0以上",
+                    "screening_method": "書類選考、筆記試験、面接試験",
+                },
+                {
+                    "faculty": "文化構想学部",
+                    "department": "学部一括",
+                    "screening_method": "学力試験",
+                },
+            ],
+        }
+
+        records = normalize_extraction_result(payload)["records"]
+
+        self.assertEqual(records[0]["必着/消印"], "2026/06/18 为止必着")
+        self.assertEqual(records[0]["EJUの実施回"], "2025年第2回 / 2026年第1回")
+        self.assertEqual(records[0]["英語外部資格試験"], "TOEFL iBT 80点以上 / IELTS Academic Module 6.0以上")
+        self.assertEqual(records[0]["選考方法"], "書類選考 / 筆記試験 / 面接試験")
+        self.assertEqual(records[1]["選考方法"], "要確認")
 
     def test_export_excel_creates_polished_workbook(self) -> None:
         from openpyxl import load_workbook

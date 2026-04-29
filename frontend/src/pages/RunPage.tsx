@@ -42,6 +42,26 @@ function stepText(step: Step) {
   return "等待开始";
 }
 
+function stepProgress(step: Step) {
+  if (step === "searching") return 20;
+  if (step === "downloading") return 38;
+  if (step === "uploading") return 32;
+  if (step === "extracting") return 72;
+  if (step === "done") return 100;
+  if (step === "error") return 100;
+  return 0;
+}
+
+function stepDetail(step: Step) {
+  if (step === "searching") return "正在查找募集要項 PDF 候选。";
+  if (step === "downloading") return "正在下载 PDF 并保存到本地数据目录。";
+  if (step === "uploading") return "正在上传并登记 PDF 文件。";
+  if (step === "extracting") return "AI 正在读取 PDF、抽取字段并写入待复核区。复杂 PDF 可能需要几分钟。";
+  if (step === "done") return "处理完成，可以进入人工复核。";
+  if (step === "error") return "处理未完成，请查看错误信息后重试。";
+  return "选择来源后开始处理。";
+}
+
 function sourceKindText(candidate: FetchPdfCandidate) {
   if (candidate.source_kind === "registry_pdf") return "登记 PDF";
   if (candidate.source_kind === "registry_page_pdf") return "来源页 PDF";
@@ -252,6 +272,7 @@ export default function RunPage({ onDone }: Props) {
 
   const busy = step === "searching" || step === "downloading" || step === "uploading" || step === "extracting";
   const selectedCandidate = candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
+  const progress = stepProgress(step);
 
   const runSummary = useMemo(
     () => [
@@ -269,7 +290,7 @@ export default function RunPage({ onDone }: Props) {
           <div>
             <div className="section-kicker">导入</div>
             <h2 className="section-title">整理新的招生来源</h2>
-            <p className="section-copy">从本地文件、检索结果或指定链接开始，完成后进入人工复核。</p>
+          <p className="section-copy">导入募集要项，整理完成后进入复核。</p>
           </div>
           <div className="hero-metrics">
             {runSummary.map((item) => (
@@ -289,7 +310,7 @@ export default function RunPage({ onDone }: Props) {
             <div className="split-row" style={{ marginBottom: 12 }}>
               <div>
                 <h3 className="panel-title">导入方式</h3>
-                <p className="panel-copy">选择来源后开始整理。</p>
+            <p className="panel-copy">选择一种导入方式。</p>
               </div>
               <button className="btn btn-ghost" onClick={clearAll} type="button">
                 清空
@@ -431,6 +452,24 @@ export default function RunPage({ onDone }: Props) {
         </aside>
 
         <div className="item-detail">
+          {(busy || step === "done" || step === "error") && (
+            <section className={`progress-card${busy ? " is-running" : ""}${step === "error" ? " is-error" : ""}`}>
+              <div className="split-row">
+                <div>
+                  <div className="card-kicker">处理进度</div>
+                  <h3 className="panel-title">{stepText(step)}</h3>
+                  <p className="panel-copy">{stepDetail(step)}</p>
+                </div>
+                <span className={step === "error" ? "badge badge-red" : step === "done" ? "badge badge-green" : "badge badge-blue"}>
+                  {progress}%
+                </span>
+              </div>
+              <div className="progress-track" aria-label="PDF 处理进度">
+                <div className="progress-fill" style={{ width: `${progress}%` }} />
+              </div>
+            </section>
+          )}
+
           {sourceMode === "upload" && (
             <section
               className={`dropzone${dragging ? " is-dragging" : ""}${file ? " is-filled" : ""}`}
@@ -463,7 +502,7 @@ export default function RunPage({ onDone }: Props) {
             <section className="detail-shell">
               <div className="detail-header">
                 <div>
-                  <div className="card-kicker">来源检查</div>
+              <div className="card-kicker">结果预览</div>
                   <h3 className="panel-title">已更新来源概况</h3>
                 </div>
                 <span className="badge badge-gray">{probeResult.checked_at}</span>
@@ -491,7 +530,7 @@ export default function RunPage({ onDone }: Props) {
             <section className="detail-shell">
               <div className="detail-header">
                 <div>
-                  <div className="card-kicker">候选来源</div>
+              <div className="card-kicker">可用文件</div>
                   <h3 className="panel-title">选择要处理的 PDF</h3>
                 </div>
                 <span className="badge badge-gray">{candidates.length} 条</span>
@@ -522,7 +561,7 @@ export default function RunPage({ onDone }: Props) {
 
                       <div className="summary-box summary-box-inline">
                         <div className="field-label">PDF 地址</div>
-                        <div className="secondary-note mono">{candidate.pdf_url}</div>
+                    <div className="secondary-note">点击后先预览，再开始整理。</div>
                       </div>
 
                       <div className="inline-actions">
@@ -538,7 +577,7 @@ export default function RunPage({ onDone }: Props) {
                 <div className="summary-box summary-box-feature">
                   <div className="field-label">已选来源</div>
                   <div className="summary-title">{selectedCandidate.title || "候选来源"}</div>
-                  <p className="secondary-note">{selectedCandidate.page_url || selectedCandidate.pdf_url}</p>
+              <p className="secondary-note">确认无误后开始整理。</p>
                   <div className="inline-actions">
                     <button className="btn btn-primary" disabled={busy} onClick={() => void processPdfCandidate(selectedCandidate)} type="button">
                       {busy ? "处理中..." : "处理当前来源"}
@@ -596,7 +635,7 @@ export default function RunPage({ onDone }: Props) {
             <div className="empty-state empty-state-quiet">
               <div className="card-kicker">等待导入</div>
               <h3 className="panel-title">从左侧选择一种入口</h3>
-              <p className="panel-copy">检索、指定链接或上传文件后，右侧会显示可处理内容。</p>
+            <p className="panel-copy">导入文件后，这里会显示下一步。</p>
             </div>
           )}
 

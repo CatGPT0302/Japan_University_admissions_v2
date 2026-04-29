@@ -2,13 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   confirmDoc,
   deleteDocument,
+  documentPageImageUrl,
+  documentPdfUrl,
   getDocumentSummary,
   getDocuments,
   getStaging,
   patchStaging,
   toErrorMessage,
 } from "../api/client";
-import { PieSummary, TreemapSummary } from "../components/DashboardCharts";
+import { TreemapSummary } from "../components/DashboardCharts";
 import type { DocumentListItem, DocumentSummary, RiskLevel, StagingRecord } from "../types";
 
 interface Props {
@@ -58,6 +60,11 @@ function fieldValue(record: StagingRecord | undefined, key: string) {
   return String(((record as unknown as Record<string, unknown>)[key]) ?? "");
 }
 
+function sortRowsByRisk(input: StagingRecord[]) {
+  const rank = (value?: RiskLevel) => (value === "high" ? 0 : value === "medium" ? 1 : 2);
+  return [...input].sort((a, b) => rank(a.risk_level) - rank(b.risk_level));
+}
+
 export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
@@ -75,6 +82,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [pdfZoom, setPdfZoom] = useState(1);
 
   useEffect(() => {
     void refreshDocuments();
@@ -85,10 +93,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   }, [defaultDocId]);
 
   const filteredRows = useMemo(() => {
-    const sorted = [...rows].sort((a, b) => {
-      const rank = (value?: RiskLevel) => (value === "high" ? 0 : value === "medium" ? 1 : 2);
-      return rank(a.risk_level) - rank(b.risk_level);
-    });
+    const sorted = sortRowsByRisk(rows);
     return riskFilter === "all" ? sorted : sorted.filter((row) => row.risk_level === riskFilter);
   }, [riskFilter, rows]);
 
@@ -99,6 +104,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     const nextDraft: Record<string, string> = {};
     for (const field of REVIEW_FIELDS) nextDraft[field.key] = fieldValue(selectedRow, field.key);
     setDraft(nextDraft);
+    setPdfZoom(1);
   }, [selectedRow]);
 
   const reviewedCount = rows.filter((row) => Number(row.is_reviewed)).length;
@@ -134,7 +140,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       setSelectedDocId(docId);
       setSummary(docSummary);
       setRows(stagingRows);
-      setSelectedRowId(null);
+      setSelectedRowId(sortRowsByRisk(stagingRows)[0]?.id ?? null);
       setRiskFilter("all");
     } catch (nextError) {
       setError(toErrorMessage(nextError));
@@ -188,6 +194,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
 
   async function confirmCurrentDocument() {
     if (!selectedDocId || pendingHighRisk) return;
+    const confirmed = window.confirm(
+      `确认将“${summary?.university_name || "当前文档"}”写入正式库？\n\n请确认关键字段已经检查完毕。`,
+    );
+    if (!confirmed) return;
     setConfirming(true);
     setError("");
     try {
@@ -208,7 +218,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
           <div>
             <div className="section-kicker">人工复核</div>
             <h2 className="section-title">逐条校对待确认内容</h2>
-            <p className="section-copy">先选文档，再进入记录队列；每条内容都可以直接进入二级详情处理。</p>
+            <p className="section-copy">选择文档后，直接校对字段并对照原文。</p>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">
@@ -234,7 +244,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
             <div className="split-row" style={{ marginBottom: 12 }}>
               <div>
                 <h3 className="panel-title">文档列表</h3>
-                <p className="panel-copy">从左侧选择一份文档开始复核。</p>
+                <p className="panel-copy">选择一份文档开始。</p>
               </div>
               <span className="badge badge-gray">{documents.length} 份</span>
             </div>
@@ -263,7 +273,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 type="button"
               >
                 <div className="item-card-topline">
-                  <span className="badge badge-gray">#{doc.doc_id}</span>
+                  <span className="badge badge-gray">文档</span>
                   <span className="badge badge-blue">{doc.admission_year || "未标注年份"}</span>
                 </div>
                 <h4 className="item-title">{doc.university_name || "未命名文档"}</h4>
@@ -297,7 +307,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
             <div className="empty-state empty-state-quiet">
               <div className="card-kicker">等待选择</div>
               <h3 className="panel-title">请选择一份文档</h3>
-              <p className="panel-copy">文档打开后，右侧会展示当前队列和二级详情入口。</p>
+              <p className="panel-copy">文档打开后会显示待校对记录。</p>
             </div>
           )}
 
@@ -307,7 +317,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 <div>
                   <div className="card-kicker">记录队列</div>
                   <h3 className="panel-title">{summary?.university_name || "人工复核队列"}</h3>
-                  <p className="panel-copy">从高风险开始，左键进入每条记录的二级详情。</p>
+                  <p className="panel-copy">建议先处理高风险记录。</p>
                 </div>
                 <div className="item-meta">
                   <span className="badge badge-gray">共 {rows.length} 条</span>
@@ -354,7 +364,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                       </div>
                       <div className="item-meta">
                         <span className={riskBadge(row.risk_level)}>{riskText(row.risk_level)}</span>
-                        <span className="badge badge-gray">置信度 {Number(row.confidence ?? 0).toFixed(2)}</span>
+                        <span className="badge badge-gray">可靠度 {Number(row.confidence ?? 0).toFixed(2)}</span>
                         <span className={Number(row.is_reviewed) ? "badge badge-green" : "badge badge-amber"}>
                           {Number(row.is_reviewed) ? "已复核" : "待复核"}
                         </span>
@@ -387,35 +397,57 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 </div>
               </div>
 
-              <PieSummary
-                title="复核进度"
-                subtitle="当前文档的处理进度。"
-                totalLabel="完成度"
-                totalValue={rows.length ? `${Math.round((reviewedCount / rows.length) * 100)}%` : "0%"}
-                data={[
-                  { label: "已复核", value: reviewedCount, color: "#111827" },
-                  { label: "待复核", value: Math.max(rows.length - reviewedCount, 0), color: "rgba(59, 130, 246, 0.78)" },
-                ]}
-              />
-
-              <div className="detail-grid detail-grid-forms">
-                {REVIEW_FIELDS.map((field) => (
-                  <div key={field.key} className={`detail-field${field.span === 2 ? " is-span-2" : ""}`}>
-                    <span className="detail-label">{field.label}</span>
-                    <textarea
-                      className="field-textarea"
-                      style={field.span === 2 ? undefined : { minHeight: 88 }}
-                      value={draft[field.key] || ""}
-                      onChange={(event) => setDraft((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                    />
-                    {selectedRow.field_evidence?.[field.key]?.text && (
-                      <div className="evidence-snippet">
-                        <span className="field-label">证据</span>
-                        <div>{selectedRow.field_evidence[field.key]?.text}</div>
+              <div className="review-compare-grid">
+                <div className="review-form-panel">
+                  <div className="detail-grid detail-grid-forms">
+                    {REVIEW_FIELDS.map((field) => (
+                      <div key={field.key} className={`detail-field${field.span === 2 ? " is-span-2" : ""}`}>
+                        <span className="detail-label">{field.label}</span>
+                        <textarea
+                          className="field-textarea"
+                          style={field.span === 2 ? undefined : { minHeight: 88 }}
+                          value={draft[field.key] || ""}
+                          onChange={(event) => setDraft((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                        />
+                        {selectedRow.field_evidence?.[field.key]?.text && (
+                          <div className="evidence-snippet">
+                        <span className="field-label">原文</span>
+                            <div>{selectedRow.field_evidence[field.key]?.text}</div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                <aside className="pdf-preview-panel">
+                  <div className="pdf-preview-header">
+                    <div>
+                      <div className="card-kicker">原文对照</div>
+                      <h3 className="panel-title">PDF 页面</h3>
+                    </div>
+                    <span className="badge badge-gray">页码 {selectedRow.page_number ?? "—"}</span>
+                  </div>
+                  <div className="pdf-preview-actions">
+                    <button className="btn btn-ghost" type="button" onClick={() => setPdfZoom((value) => Math.max(0.75, value - 0.25))}>
+                      缩小
+                    </button>
+                    <button className="btn btn-ghost" type="button" onClick={() => setPdfZoom((value) => Math.min(2, value + 0.25))}>
+                      放大
+                    </button>
+                    <button className="btn btn-primary" type="button" onClick={() => window.open(documentPdfUrl(selectedDocId, selectedRow.page_number), "_blank")}>
+                      新窗口打开
+                    </button>
+                  </div>
+                  <div className="pdf-preview-scroll">
+                    <img
+                      className="pdf-preview-image"
+                      style={{ width: `${pdfZoom * 100}%` }}
+                      alt="PDF 原文页面"
+                      src={documentPageImageUrl(selectedDocId, selectedRow.page_number, pdfZoom)}
+                    />
+                  </div>
+                </aside>
               </div>
 
               {message && !error && <div className="message-box info">{message}</div>}

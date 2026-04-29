@@ -65,17 +65,20 @@ Field rules:
 4. Enumerate all visible faculty / department rows within the admissions target scope. Do not stop after the first few rows.
 5. Do not collapse multiple rows into one record just because they share a page or faculty family.
 6. If one visible table row lists multiple departments under the same requirement set, keep them in one record and join the department names instead of splitting them into separate records.
-7. `deadline_rule` is critical. Capture rules such as 必着, 消印有効, 期限内到着, TAO完了, 直送期限, upload deadline, payment deadline when available.
-8. Do not invent EJU subjects.
-9. Do not copy English-test requirements into EJU fields.
-10. Do not copy EJU subjects into `english_requirement`.
-11. If a field is unclear, leave it empty and add a short warning.
-12. If a row mainly comes from a complex table or image, set `needs_review` to true.
-13. `confidence` means how safe the row is for human review, not writing confidence.
-14. `field_evidence` should contain the shortest useful supporting snippet you can find for each populated field.
-15. If page number is unclear, use null.
-16. `screening_schedule`, `result_date`, and `enrollment_period` should prefer clean date or date-range text.
-17. The output is staging data, not final truth.
+7. `deadline_rule` is critical. Prefer a concise final form: `YYYY/MM/DD 为止必着` or `YYYY/MM/DD 为止消印有效`. If the source says 到着, 期限内到着, 直送, TAO完了, upload deadline, or payment deadline, treat it as 必着 unless it explicitly says 消印.
+8. `eju_session` may only refer to EJU 第1回 / 第2回 with year when available, such as `2026年第1回`, `2026年第2回`, or up to four recent rounds joined with `/`.
+9. Do not invent EJU subjects.
+10. Do not copy English-test requirements into EJU fields.
+11. Do not copy EJU subjects into `english_requirement`.
+12. English requirements must preserve score thresholds when visible, such as `TOEFL iBT 80点以上` or `IELTS 6.0以上`; extracting the effective requirement snippet is better than dropping scores.
+13. `screening_method` must preserve concrete methods from the source: 書類選考, 筆記試験, 面接試験, 小論文, 口頭試問, 実技. Do not write only a vague label such as 学力試験 when the source gives specific methods.
+14. If a field is unclear, leave it empty and add a short warning.
+15. If a row mainly comes from a complex table or image, set `needs_review` to true.
+16. `confidence` means how safe the row is for human review, not writing confidence.
+17. `field_evidence` should contain the shortest useful supporting snippet you can find for each populated field.
+18. If page number is unclear, use null.
+19. `screening_schedule`, `result_date`, and `enrollment_period` should prefer clean date or date-range text.
+20. The output is staging data, not final truth.
 
 Table-heavy PDF rules:
 18. Full-page visual context is primary evidence for wide admissions tables.
