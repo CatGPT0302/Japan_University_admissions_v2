@@ -153,6 +153,30 @@ def _resolve_chat_completions_url() -> str:
 
 TEXT_MODEL = _load_env_value("OPENAI_TEXT_MODEL", DEFAULT_TEXT_MODEL)
 VISION_MODEL = _load_env_value("OPENAI_VISION_MODEL", DEFAULT_VISION_MODEL)
+EXTRACT_MAX_SECONDS = int(_load_env_value("EXTRACT_MAX_SECONDS", "0") or "0")
+VISION_PATCH_MAX_PAGES = int(_load_env_value("VISION_PATCH_MAX_PAGES", "4") or "4")
+VISION_PATCH_MAX_VARIANTS = int(_load_env_value("VISION_PATCH_MAX_VARIANTS", "2") or "2")
+VISION_PATCH_MIN_RATIO = float(_load_env_value("VISION_PATCH_MIN_RATIO", "0.35") or "0.35")
+
+
+def _remaining_seconds(deadline_ts: float | None) -> float | None:
+    if not deadline_ts:
+        return None
+    return max(0.0, deadline_ts - time.monotonic())
+
+
+def _ensure_time_budget(deadline_ts: float | None, stage: str) -> None:
+    remaining = _remaining_seconds(deadline_ts)
+    if remaining is not None and remaining <= 0:
+        raise TimeoutError(f"time budget exceeded at {stage}")
+
+
+def _request_timeout(deadline_ts: float | None, default_timeout: int = 240) -> int:
+    remaining = _remaining_seconds(deadline_ts)
+    if remaining is None:
+        return default_timeout
+    # Leave a small buffer for parsing / DB write.
+    return max(20, min(default_timeout, int(max(1.0, remaining - 4.0))))
 
 
 def _read_pdf_text(pdf_path: Path) -> tuple[str, dict[int, str]]:
@@ -260,6 +284,7 @@ def _call_openai(
     model: str,
     max_tokens: int = 12000,
     token_param: str = "max_tokens",
+    request_timeout: int = 240,
 ) -> dict[str, Any]:
     api_key = _load_api_key()
     api_url = _resolve_chat_completions_url()
@@ -280,21 +305,22 @@ def _call_openai(
     )
 
     last_error: Exception | None = None
-    for attempt in range(3):
+    max_attempts = 1 if request_timeout <= 40 else 3
+    for attempt in range(max_attempts):
         try:
-            with urllib_request.urlopen(req, timeout=240) as resp:
+            with urllib_request.urlopen(req, timeout=request_timeout) as resp:
                 raw = json.loads(resp.read().decode("utf-8"))
             break
         except HTTPError as e:
             body = e.read().decode("utf-8", errors="replace")
-            if e.code == 429 and attempt < 2:
+            if e.code == 429 and attempt < (max_attempts - 1):
                 time.sleep(2.0 + attempt * 2.0)
                 last_error = RuntimeError(f"LLM API error {e.code}: {body}")
                 continue
             raise RuntimeError(f"LLM API error {e.code}: {body}") from e
         except Exception as e:
             last_error = e
-            if attempt < 2:
+            if attempt < (max_attempts - 1):
                 time.sleep(1.5 + attempt)
                 continue
             raise
@@ -1408,10 +1434,12 @@ def _vision_patch_image_variants(image_path: Path, out_dir: Path) -> list[tuple[
 def _vision_patch_records(
     records: list[dict[str, Any]],
     candidate_pages: list[int],
+    page_map: dict[int, str],
     pdf_path: Path,
     university: str,
     year: str,
     doc_id: int,
+    deadline_ts: float | None = None,
 ) -> list[dict[str, Any]]:
     """For any records where key fields are empty, re-extract sparse pages via vision
     and backfill missing values. Generic — works for any university."""
@@ -1420,14 +1448,19 @@ def _vision_patch_records(
         if any(not str(r.get(field) or "").strip() for field in VISION_PATCH_FIELDS)
     ) / max(len(records), 1)
 
-    if missing_field_ratio <= 0 or not candidate_pages:
+    if missing_field_ratio < VISION_PATCH_MIN_RATIO or not candidate_pages:
         return records  # quality is fine, skip
 
-    print(f"[direct] vision_patch triggered: {missing_field_ratio:.0%} records missing at least one table field, pages={candidate_pages}")
+    prioritized_pages = list(candidate_pages)[: max(1, VISION_PATCH_MAX_PAGES)]
+    print(
+        f"[direct] vision_patch triggered: {missing_field_ratio:.0%} records missing table fields, "
+        f"pages={prioritized_pages} (cap={VISION_PATCH_MAX_PAGES})"
+    )
 
     out_dir = ROOT / "output_pages" / f"direct_{doc_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
-    images = render_pdf_to_images(pdf_path, out_dir, pages=candidate_pages)
+    _ensure_time_budget(deadline_ts, "vision_patch.render")
+    images = render_pdf_to_images(pdf_path, out_dir, pages=prioritized_pages)
     images_by_page = {
         int(path.stem.split("_")[-1]): path
         for path in images
@@ -1446,12 +1479,15 @@ def _vision_patch_records(
             seen_units.add(key)
             target_units.append(unit)
     target_hint = "、".join(target_units[:80])
-    for page_num in candidate_pages:
+    for page_num in prioritized_pages:
+        _ensure_time_budget(deadline_ts, f"vision_patch.page_{page_num}")
         image_path = images_by_page.get(page_num)
         if not image_path:
             continue
-        for variant_name, variant_path in _vision_patch_image_variants(image_path, out_dir):
+        variants = _vision_patch_image_variants(image_path, out_dir)[: max(1, VISION_PATCH_MAX_VARIANTS)]
+        for variant_name, variant_path in variants:
             try:
+                _ensure_time_budget(deadline_ts, f"vision_patch.call_{page_num}_{variant_name}")
                 messages = [
                     {
                         "role": "system",
@@ -1493,7 +1529,13 @@ def _vision_patch_records(
                         ],
                     },
                 ]
-                result = _call_openai(messages, VISION_MODEL, max_tokens=8000, token_param="max_tokens")
+                result = _call_openai(
+                    messages,
+                    VISION_MODEL,
+                    max_tokens=8000,
+                    token_param="max_tokens",
+                    request_timeout=_request_timeout(deadline_ts, default_timeout=120),
+                )
                 for patch_record in result.get("records") or []:
                     tagged = dict(patch_record)
                     tagged["_vision_page"] = page_num
@@ -1542,7 +1584,13 @@ def _vision_patch_records(
     return patched
 
 
-def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> dict[str, Any]:
+def _run_text_path(
+    doc_id: int,
+    pdf_path: Path,
+    university: str,
+    year: str,
+    deadline_ts: float | None = None,
+) -> dict[str, Any]:
     full_text, page_map = _read_pdf_text(pdf_path)
     text_len = len(full_text.strip())
     print(f"[direct] text_length={text_len} pages={len(page_map)}")
@@ -1576,7 +1624,14 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
             ),
         },
     ]
-    result = _call_openai(messages, TEXT_MODEL, max_tokens=12000, token_param="max_completion_tokens")
+    _ensure_time_budget(deadline_ts, "text_path.call")
+    result = _call_openai(
+        messages,
+        TEXT_MODEL,
+        max_tokens=12000,
+        token_param="max_completion_tokens",
+        request_timeout=_request_timeout(deadline_ts, default_timeout=160),
+    )
     if university == "明治大学" and str(year) == "2026" and result.get("records"):
         result["records"] = _supplement_meiji_missing_faculties(full_text, university, year, result.get("records") or [])
     if university == "早稲田大学" and str(year) == "2026" and result.get("records"):
@@ -1596,20 +1651,25 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
     # just the section title in text, so critical exam fields must get a vision pass.
     candidate_pages = _find_vision_table_pages(page_map)
     if candidate_pages:
-        result["records"] = _vision_patch_records(
-            result.get("records") or [],
-            candidate_pages,
-            pdf_path,
-            university,
-            year,
-            doc_id,
-        )
-        # Vision patch can add sparse records; run one more common-field pass
-        # so doc-level constants (like EJU session) stay complete.
-        result["records"] = _backfill_common_fields(
-            result.get("records") or [],
-            ["application_period", "deadline_rule", "eju_session", "enrollment_period"],
-        )
+        try:
+            result["records"] = _vision_patch_records(
+                result.get("records") or [],
+                candidate_pages,
+                page_map,
+                pdf_path,
+                university,
+                year,
+                doc_id,
+                deadline_ts=deadline_ts,
+            )
+            # Vision patch can add sparse records; run one more common-field pass
+            # so doc-level constants (like EJU session) stay complete.
+            result["records"] = _backfill_common_fields(
+                result.get("records") or [],
+                ["application_period", "deadline_rule", "eju_session", "enrollment_period"],
+            )
+        except TimeoutError as e:
+            print(f"[direct] vision_patch_skipped_due_to_budget: {e}")
 
     inserted = _insert_result(doc_id, result, page_map=page_map, university=university, year=year)
     return {
@@ -1623,9 +1683,16 @@ def _run_text_path(doc_id: int, pdf_path: Path, university: str, year: str) -> d
     }
 
 
-def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) -> dict[str, Any]:
+def _run_vision_path(
+    doc_id: int,
+    pdf_path: Path,
+    university: str,
+    year: str,
+    deadline_ts: float | None = None,
+) -> dict[str, Any]:
     out_dir = ROOT / "output_pages" / f"direct_{doc_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_time_budget(deadline_ts, "vision_path.render")
     images = render_pdf_to_images(pdf_path, out_dir)
     page_map = extract_text_per_page(pdf_path)
     inserted = 0
@@ -1633,6 +1700,10 @@ def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) ->
     last_raw: dict[str, Any] | None = None
 
     for page_num, image_path in enumerate(images, start=1):
+        if deadline_ts is not None and _remaining_seconds(deadline_ts) is not None and _remaining_seconds(deadline_ts) <= 0:
+            failed_pages.append({"page": page_num, "error": "time budget exceeded"})
+            print(f"[direct] vision_budget_stop at page={page_num}")
+            break
         try:
             messages = [
                 {"role": "system", "content": _build_system_prompt()},
@@ -1655,7 +1726,13 @@ def _run_vision_path(doc_id: int, pdf_path: Path, university: str, year: str) ->
                     ],
                 },
             ]
-            result = _call_openai(messages, VISION_MODEL, max_tokens=12000, token_param="max_tokens")
+            result = _call_openai(
+                messages,
+                VISION_MODEL,
+                max_tokens=12000,
+                token_param="max_tokens",
+                request_timeout=_request_timeout(deadline_ts, default_timeout=120),
+            )
             if university == "慶應義塾大学" and str(year) == "2026" and result.get("records"):
                 result["records"] = [_normalize_keio_record(r) for r in _collapse_keio_faculties(result["records"])]
             if university == "東京大学" and str(year) == "2026" and result.get("records"):
@@ -1697,7 +1774,13 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") -> dict[str, Any]:
+def run_extraction(
+    pdf_path: Path,
+    university: str,
+    year: str,
+    url: str = "",
+    max_seconds: int | None = None,
+) -> dict[str, Any]:
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
@@ -1715,19 +1798,50 @@ def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") ->
         admission_year=year,
     )
     print(f"[direct] source_document id={doc_id}")
+    effective_max_seconds = EXTRACT_MAX_SECONDS if max_seconds is None else int(max_seconds)
+    deadline_ts = time.monotonic() + effective_max_seconds if effective_max_seconds and effective_max_seconds > 0 else None
 
     full_text = preview_text
+    report: dict[str, Any]
+    failed_pages: list[dict[str, Any]] = []
     if len(full_text.strip()) > 500:
         try:
-            report = _run_text_path(doc_id, pdf_path, working_university, year)
+            report = _run_text_path(doc_id, pdf_path, working_university, year, deadline_ts=deadline_ts)
             status = "text_completed"
         except Exception as e:
             print(f"[direct] text_path_failed: {e}")
-            report = _run_vision_path(doc_id, pdf_path, working_university, year)
-            status = "vision_completed"
+            failed_pages.append({"stage": "text_path", "error": str(e)})
+            try:
+                report = _run_vision_path(doc_id, pdf_path, working_university, year, deadline_ts=deadline_ts)
+                status = "vision_completed"
+            except TimeoutError as te:
+                print(f"[direct] budget_exceeded_after_text_failure: {te}")
+                report = {
+                    "mode": "budget_stop",
+                    "pages": 0,
+                    "records": 0,
+                    "inserted": 0,
+                    "failed_pages": [],
+                    "raw": {},
+                }
+                status = "budget_exceeded"
+                failed_pages.append({"stage": "vision_path", "error": str(te)})
     else:
-        report = _run_vision_path(doc_id, pdf_path, working_university, year)
-        status = "vision_completed"
+        try:
+            report = _run_vision_path(doc_id, pdf_path, working_university, year, deadline_ts=deadline_ts)
+            status = "vision_completed"
+        except TimeoutError as te:
+            print(f"[direct] budget_exceeded_in_vision_path: {te}")
+            report = {
+                "mode": "budget_stop",
+                "pages": 0,
+                "records": 0,
+                "inserted": 0,
+                "failed_pages": [],
+                "raw": {},
+            }
+            status = "budget_exceeded"
+            failed_pages.append({"stage": "vision_path", "error": str(te)})
 
     final_university = _pick_final_university(report.get("raw"), stored_university)
     update_source_document(doc_id, status=status, university=final_university)
@@ -1741,7 +1855,8 @@ def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") ->
         "pages": report.get("pages"),
         "records": report.get("records"),
         "inserted": report.get("inserted"),
-        "failed_pages": report.get("failed_pages", []),
+        "failed_pages": failed_pages + list(report.get("failed_pages", [])),
+        "max_seconds": effective_max_seconds,
     }
 
 
