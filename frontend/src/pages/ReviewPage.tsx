@@ -37,7 +37,7 @@ const REVIEW_FIELDS = [
   { key: "english_requirement", label: "英语要求", span: 2 },
   { key: "screening_method", label: "选考方式", span: 2 },
   { key: "screening_schedule", label: "选考日程", span: 2 },
-  { key: "result_date", label: "结果发表日", span: 1 },
+  { key: "result_date", label: "结果发布日期", span: 1 },
   { key: "enrollment_period", label: "入学手续期间", span: 1 },
 ] as const;
 
@@ -174,7 +174,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       });
       const nextRows = rows.map((row) => (row.id === selectedRow.id ? updated : row));
       setRows(nextRows);
-      setMessage(markReviewed ? "已保存并标记为已复核。" : "修改已保存。");
+      setMessage(markReviewed ? "已保存，并标记为已复核。" : "修改已保存。");
       if (goNext) {
         const nextPending = filteredRows.find((row) => row.id !== selectedRow.id && !Number(row.is_reviewed));
         setSelectedRowId(nextPending?.id ?? null);
@@ -204,9 +204,11 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   return (
     <div className="page-shell">
       <section className="hero-panel">
-        <div className="split-row">
+        <div className="split-row split-row-start">
           <div>
-            <h2 className="section-title">复核</h2>
+            <div className="section-kicker">人工复核</div>
+            <h2 className="section-title">逐条校对待确认内容</h2>
+            <p className="section-copy">先选文档，再进入记录队列；每条内容都可以直接进入二级详情处理。</p>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">
@@ -214,7 +216,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               <strong className="metric-value">{documents.length}</strong>
             </div>
             <div className="metric-card">
-              <span className="metric-label">待复核</span>
+              <span className="metric-label">待处理</span>
               <strong className="metric-value">{Math.max(rows.length - reviewedCount, 0)}</strong>
             </div>
             <div className="metric-card">
@@ -232,6 +234,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
             <div className="split-row" style={{ marginBottom: 12 }}>
               <div>
                 <h3 className="panel-title">文档列表</h3>
+                <p className="panel-copy">从左侧选择一份文档开始复核。</p>
               </div>
               <span className="badge badge-gray">{documents.length} 份</span>
             </div>
@@ -266,10 +269,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 <h4 className="item-title">{doc.university_name || "未命名文档"}</h4>
                 <p className="item-subtitle">{doc.filename}</p>
                 <div className="item-meta">
-                  <span className="badge badge-gray">staging {doc.staging_count}</span>
-                  <span className="badge badge-gray">confirmed {doc.confirmed_count}</span>
+                  <span className="badge badge-gray">待复核 {doc.staging_count}</span>
+                  <span className="badge badge-gray">已入库 {doc.confirmed_count}</span>
                 </div>
-                <div className="inline-actions" style={{ marginTop: 12 }}>
+                <div className="inline-actions">
                   <button
                     className="btn btn-red"
                     disabled={deletingDocId === doc.doc_id}
@@ -291,8 +294,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
           {error && <div className="message-box error">{error}</div>}
 
           {!selectedDocId && (
-            <div className="empty-state">
-              <h3 className="panel-title">请选择文档</h3>
+            <div className="empty-state empty-state-quiet">
+              <div className="card-kicker">等待选择</div>
+              <h3 className="panel-title">请选择一份文档</h3>
+              <p className="panel-copy">文档打开后，右侧会展示当前队列和二级详情入口。</p>
             </div>
           )}
 
@@ -300,16 +305,18 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
             <div className="detail-shell">
               <div className="detail-header">
                 <div>
-                  <h3 className="panel-title">{summary?.university_name || "记录队列"}</h3>
+                  <div className="card-kicker">记录队列</div>
+                  <h3 className="panel-title">{summary?.university_name || "人工复核队列"}</h3>
+                  <p className="panel-copy">从高风险开始，左键进入每条记录的二级详情。</p>
                 </div>
                 <div className="item-meta">
                   <span className="badge badge-gray">共 {rows.length} 条</span>
                   <span className="badge badge-blue">已复核 {reviewedCount}</span>
-                  {loadingRows && <span className="badge badge-gray">加载中...</span>}
+                  {loadingRows && <span className="badge badge-gray">载入中...</span>}
                 </div>
               </div>
 
-              <div className="inline-actions" style={{ marginBottom: 6 }}>
+              <div className="inline-actions inline-actions-tight">
                 {[
                   { key: "all" as RiskFilter, label: `全部 ${rows.length}` },
                   { key: "high" as RiskFilter, label: `高风险 ${riskCounts.high}` },
@@ -329,10 +336,11 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
 
               <TreemapSummary
                 title="风险分布"
+                subtitle="优先处理高风险记录。"
                 data={[
-                  { label: "高风险", value: riskCounts.high, color: "linear-gradient(135deg, rgba(239,68,68,.82), rgba(185,28,28,.92))" },
-                  { label: "中风险", value: riskCounts.medium, color: "linear-gradient(135deg, rgba(245,158,11,.78), rgba(180,83,9,.9))" },
-                  { label: "低风险", value: riskCounts.low, color: "linear-gradient(135deg, rgba(16,185,129,.78), rgba(4,120,87,.9))" },
+                  { label: "高风险", value: riskCounts.high, color: "linear-gradient(180deg, rgba(191, 53, 53, 0.9), rgba(153, 27, 27, 0.82))" },
+                  { label: "中风险", value: riskCounts.medium, color: "linear-gradient(180deg, rgba(190, 116, 18, 0.88), rgba(146, 64, 14, 0.82))" },
+                  { label: "低风险", value: riskCounts.low, color: "linear-gradient(180deg, rgba(16, 127, 95, 0.84), rgba(6, 95, 70, 0.8))" },
                 ]}
               />
 
@@ -359,15 +367,16 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
           )}
 
           {selectedDocId && selectedRow && (
-            <div className="detail-shell">
+            <div className="detail-shell detail-shell-editing">
               <div className="detail-header">
                 <div>
                   <button className="btn btn-ghost detail-back" onClick={() => setSelectedRowId(null)} type="button">
-                    返回列表
+                    返回队列
                   </button>
-                  <h3 className="panel-title" style={{ marginTop: 12 }}>
-                    复核详情
-                  </h3>
+                  <div className="card-kicker" style={{ marginTop: 16 }}>
+                    人工复核
+                  </div>
+                  <h3 className="panel-title">记录详情</h3>
                   <p className="secondary-note">
                     {summary?.university_name || "当前文档"} · {riskText(selectedRow.risk_level)}
                   </p>
@@ -380,21 +389,22 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
 
               <PieSummary
                 title="复核进度"
+                subtitle="当前文档的处理进度。"
                 totalLabel="完成度"
                 totalValue={rows.length ? `${Math.round((reviewedCount / rows.length) * 100)}%` : "0%"}
                 data={[
                   { label: "已复核", value: reviewedCount, color: "#111827" },
-                  { label: "未复核", value: Math.max(rows.length - reviewedCount, 0), color: "#60a5fa" },
+                  { label: "待复核", value: Math.max(rows.length - reviewedCount, 0), color: "rgba(59, 130, 246, 0.78)" },
                 ]}
               />
 
-              <div className="detail-grid" style={{ marginTop: 16 }}>
+              <div className="detail-grid detail-grid-forms">
                 {REVIEW_FIELDS.map((field) => (
                   <div key={field.key} className={`detail-field${field.span === 2 ? " is-span-2" : ""}`}>
                     <span className="detail-label">{field.label}</span>
                     <textarea
                       className="field-textarea"
-                      style={field.span === 2 ? undefined : { minHeight: 72 }}
+                      style={field.span === 2 ? undefined : { minHeight: 88 }}
                       value={draft[field.key] || ""}
                       onChange={(event) => setDraft((prev) => ({ ...prev, [field.key]: event.target.value }))}
                     />
@@ -410,11 +420,11 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
 
               {message && !error && <div className="message-box info">{message}</div>}
 
-              <div className="inline-actions">
+              <div className="inline-actions inline-actions-wide">
                 <button className="btn btn-ghost" disabled={saving} onClick={() => void saveCurrent(false, false)} type="button">
-                  仅保存
+                  保存
                 </button>
-                <button className="btn btn-amber" disabled={saving} onClick={() => void saveCurrent(true, true)} type="button">
+                <button className="btn btn-primary" disabled={saving} onClick={() => void saveCurrent(true, true)} type="button">
                   保存并下一条
                 </button>
                 <button className="btn btn-green" disabled={confirming || pendingHighRisk} onClick={() => void confirmCurrentDocument()} type="button">

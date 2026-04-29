@@ -8,25 +8,14 @@ import {
   toErrorMessage,
   uploadPdf,
 } from "../api/client";
-import type {
-  FetchPdfCandidate,
-  FetchPdfProbeResponse,
-  FetchPdfTarget,
-} from "../types";
+import type { FetchPdfCandidate, FetchPdfProbeResponse, FetchPdfTarget } from "../types";
 
 interface Props {
   onDone: (docId: number) => void;
 }
 
 type SourceMode = "upload" | "search" | "direct";
-type Step =
-  | "idle"
-  | "searching"
-  | "downloading"
-  | "uploading"
-  | "extracting"
-  | "done"
-  | "error";
+type Step = "idle" | "searching" | "downloading" | "uploading" | "extracting" | "done" | "error";
 
 interface RunResult {
   doc_id: number;
@@ -37,33 +26,33 @@ interface RunResult {
   source_url?: string;
 }
 
-function modeTitle(mode: SourceMode): string {
-  if (mode === "upload") return "Local PDF upload";
-  if (mode === "search") return "Guided PDF search";
-  return "Direct PDF link";
+const MODE_META: Record<SourceMode, { label: string; hint: string }> = {
+  upload: { label: "本地上传", hint: "上传现有 PDF" },
+  search: { label: "检索来源", hint: "查找候选 PDF" },
+  direct: { label: "指定链接", hint: "直接处理地址" },
+};
+
+function stepText(step: Step) {
+  if (step === "searching") return "检索中";
+  if (step === "downloading") return "下载中";
+  if (step === "uploading") return "上传中";
+  if (step === "extracting") return "处理中";
+  if (step === "done") return "已完成";
+  if (step === "error") return "未完成";
+  return "等待开始";
 }
 
-function stepLabel(step: Step): string {
-  if (step === "searching") return "Searching";
-  if (step === "downloading") return "Downloading";
-  if (step === "uploading") return "Uploading";
-  if (step === "extracting") return "Extracting";
-  if (step === "done") return "Ready for review";
-  if (step === "error") return "Needs attention";
-  return "Waiting";
+function sourceKindText(candidate: FetchPdfCandidate) {
+  if (candidate.source_kind === "registry_pdf") return "登记 PDF";
+  if (candidate.source_kind === "registry_page_pdf") return "来源页 PDF";
+  if (candidate.source_kind === "direct_pdf") return "直链";
+  return "自动发现";
 }
 
-function candidateKindLabel(candidate: FetchPdfCandidate): string {
-  if (candidate.source_kind === "registry_pdf") return "Registry PDF";
-  if (candidate.source_kind === "registry_page_pdf") return "Registry source page";
-  if (candidate.source_kind === "direct_pdf") return "Direct PDF";
-  return "Discovered source";
-}
-
-function candidateTrustLabel(candidate: FetchPdfCandidate): string {
-  if (candidate.source_origin === "maintained_registry") return "Maintained source";
-  if (candidate.is_official) return "Likely official";
-  return "Needs manual check";
+function sourceTrustText(candidate: FetchPdfCandidate) {
+  if (candidate.source_origin === "maintained_registry") return "已维护";
+  if (candidate.is_official) return "疑似官网";
+  return "待确认";
 }
 
 export default function RunPage({ onDone }: Props) {
@@ -107,6 +96,17 @@ export default function RunPage({ onDone }: Props) {
       setSelectedCandidateUrl("");
       setSearchQuery("");
     }
+  }
+
+  function clearAll() {
+    setSelectedTarget("");
+    setFile(null);
+    setUniversity("");
+    setYear("2026");
+    setPageUrl("");
+    setPdfUrl("");
+    setProbeResult(null);
+    resetRunState();
   }
 
   function handleFile(nextFile: File | null) {
@@ -161,7 +161,7 @@ export default function RunPage({ onDone }: Props) {
         setSelectedCandidateUrl(searched.candidates[0].pdf_url);
         setStep("idle");
       } else {
-        setError("No usable PDF candidates were found. Try refining the university name, adding a source page, or switch to direct PDF mode.");
+        setError("没有找到可用的 PDF 候选，请调整条件后重试。");
         setStep("error");
       }
     } catch (nextError) {
@@ -250,572 +250,357 @@ export default function RunPage({ onDone }: Props) {
     }
   }
 
-  const busy =
-    step === "searching" ||
-    step === "downloading" ||
-    step === "uploading" ||
-    step === "extracting";
-  const readyToUpload = Boolean(file && !busy);
-  const readyToSearch = Boolean(university && !busy);
-  const selectedCandidate =
-    candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
-  const readyToConfirmCandidate = Boolean(selectedCandidate && !busy);
-  const readyToDirectRun = Boolean(university && pdfUrl && !busy);
+  const busy = step === "searching" || step === "downloading" || step === "uploading" || step === "extracting";
+  const selectedCandidate = candidates.find((item) => item.pdf_url === selectedCandidateUrl) || null;
 
-  const statusBlock = useMemo(() => {
-    if (step === "done" && result) {
-      return {
-        tone: "success" as const,
-        title: `${result.records} extracted rows are ready for review`,
-        description:
-          result.failed > 0
-            ? `${result.failed} page(s) still need attention. Send this document to Review next so the risky parts are handled first.`
-            : `The extraction completed cleanly. Move to Review to validate fields before confirmation.`,
-      };
-    }
-    if (step === "error") {
-      return {
-        tone: "danger" as const,
-        title: "This intake run needs intervention",
-        description:
-          "The source page, PDF link, or uploaded file could not be processed. Adjust the source path and retry without affecting backend data.",
-      };
-    }
-    if (step === "searching") {
-      return {
-        tone: "info" as const,
-        title: "Searching for candidate PDFs",
-        description:
-          "The system is gathering likely admissions PDFs first. Nothing is confirmed until you choose a candidate.",
-      };
-    }
-    if (step === "downloading") {
-      return {
-        tone: "info" as const,
-        title: "Fetching source PDF",
-        description:
-          "Once the file lands successfully, extraction continues automatically.",
-      };
-    }
-    if (step === "uploading") {
-      return {
-        tone: "info" as const,
-        title: "Uploading file into intake",
-        description:
-          "The PDF is being staged for extraction. No database schema or downstream records are changed here.",
-      };
-    }
-    if (step === "extracting") {
-      return {
-        tone: "info" as const,
-        title: "Normalizing fields for the review queue",
-        description:
-          "Admissions data is being turned into reviewable rows with evidence and confidence metadata.",
-      };
-    }
-    return {
-      tone: "neutral" as const,
-      title: sourceMode === "search" ? "Search, compare, then confirm one source" : "Start the next intake run",
-      description:
-        sourceMode === "upload"
-          ? "Best when operations already has the official PDF locally and wants the fastest route into staging."
-          : sourceMode === "direct"
-            ? "Best when the exact PDF URL is already known and you want to skip discovery."
-            : "Best when the source still needs to be found and compared before extraction starts.",
-    };
-  }, [result, sourceMode, step]);
-
-  const modeCards: Array<{ key: SourceMode; title: string; desc: string; kicker: string }> = [
-    {
-      key: "upload",
-      title: "Upload an official PDF",
-      desc: "Fastest path for known files. Drag in the source and let the system detect the university automatically.",
-      kicker: "Fast lane",
-    },
-    {
-      key: "search",
-      title: "Search and shortlist",
-      desc: "Use registry targets and guided search to compare candidate PDFs before one is processed.",
-      kicker: "Controlled discovery",
-    },
-    {
-      key: "direct",
-      title: "Use a direct PDF URL",
-      desc: "Paste the exact document link when the team already verified the source outside the app.",
-      kicker: "Manual precision",
-    },
-  ];
-
-  const statusToneClass = `tone-banner ${statusBlock.tone}`;
+  const runSummary = useMemo(
+    () => [
+      { label: "来源", value: MODE_META[sourceMode].label },
+      { label: "进度", value: stepText(step) },
+      { label: "年份", value: year || "未填写" },
+    ],
+    [sourceMode, step, year],
+  );
 
   return (
     <div className="page-shell">
       <section className="hero-panel">
-        <div className="hero-grid">
+        <div className="split-row split-row-start">
           <div>
-            <div className="section-eyebrow">Step 1 · Run</div>
-            <h2 className="section-title">Intake and extraction</h2>
-            <p className="section-copy">
-              Start each admissions document with a clean intake path. This view now frames the workflow like an internal
-              operations dashboard: choose the source lane, confirm the file, then hand off structured rows to Review.
-            </p>
+            <div className="section-kicker">导入</div>
+            <h2 className="section-title">整理新的招生来源</h2>
+            <p className="section-copy">从本地文件、检索结果或指定链接开始，完成后进入人工复核。</p>
           </div>
-
-          <div className="progress-stack">
-            <div className="mini-stat">
-              <span className="mini-stat-label">Current lane</span>
-              <span className="mini-stat-value">{modeTitle(sourceMode)}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Run status</span>
-              <span className="mini-stat-value">{stepLabel(step)}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Review handoff</span>
-              <span className="mini-stat-value">{result ? "Prepared" : "Pending"}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={statusToneClass}>
-        <div>
-          <h3 className="tone-title">{statusBlock.title}</h3>
-          <p className="tone-copy">{statusBlock.description}</p>
-        </div>
-        <div className="status-grid">
-          <div className="status-pill">
-            <span>Mode</span>
-            <strong>{modeTitle(sourceMode)}</strong>
-          </div>
-          <div className="status-pill">
-            <span>University</span>
-            <strong>{sourceMode === "upload" ? result?.university || "Auto detect" : university || "Not set"}</strong>
-          </div>
-          <div className="status-pill">
-            <span>Year</span>
-            <strong>{year || "Not set"}</strong>
-          </div>
-          <div className="status-pill">
-            <span>Workflow</span>
-            <strong>{stepLabel(step)}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="mode-grid">
-        {modeCards.map((item) => {
-          const active = sourceMode === item.key;
-          return (
-            <button
-              key={item.key}
-              className={`mode-card${active ? " is-active" : ""}`}
-              onClick={() => {
-                setSourceMode(item.key);
-                resetRunState();
-              }}
-              type="button"
-            >
-              <span className="mode-kicker">{item.kicker}</span>
-              <div className="mode-title">{item.title}</div>
-              <div className="mode-copy">{item.desc}</div>
-            </button>
-          );
-        })}
-      </section>
-
-      <section className="panel">
-        <div className="toolbar-flex" style={{ marginBottom: 14 }}>
-          <div>
-            <h3 className="panel-title">Source configuration</h3>
-            <p className="panel-copy">
-              Keep the source clear before extraction starts. The layout stays visual, but the backend contract remains untouched.
-            </p>
-          </div>
-          <span className="badge badge-gray">{sourceMode === "search" ? "Human approval required" : "Single source path"}</span>
-        </div>
-
-        <div className="input-grid">
-          {sourceMode === "upload" ? (
-            <div className="field-wrap input-span-2">
-              <span className="field-label">University detection</span>
-              <div className="summary-box" style={{ background: "rgba(241, 245, 249, 0.9)", border: "1px solid rgba(148, 163, 184, 0.18)" }}>
-                <strong style={{ display: "block", marginBottom: 6 }}>Auto detected from the uploaded PDF</strong>
-                <span className="helper-text" style={{ color: "var(--ink2)" }}>
-                  Upload mode is intentionally light on manual inputs so the ops team can move quickly and fix anything later in Review.
-                </span>
+          <div className="hero-metrics">
+            {runSummary.map((item) => (
+              <div key={item.label} className="metric-card">
+                <span className="metric-label">{item.label}</span>
+                <strong className="metric-value">{item.value}</strong>
               </div>
-            </div>
-          ) : (
-            <label className="field-wrap">
-              <span className="field-label">University</span>
-              <input
-                value={university}
-                onChange={(event) => {
-                  setUniversity(event.target.value);
-                  resetRunState();
-                }}
-                placeholder="Example: Meiji University"
-                className="field"
-              />
-            </label>
-          )}
-
-          <label className="field-wrap">
-            <span className="field-label">Admission year</span>
-            <input
-              value={year}
-              onChange={(event) => {
-                setYear(event.target.value);
-                resetRunState();
-              }}
-              placeholder="2026"
-              className="field"
-            />
-          </label>
-
-          {sourceMode === "search" && (
-            <>
-              <label className="field-wrap">
-                <span className="field-label">Registry shortcut</span>
-                <select
-                  value={selectedTarget}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    const matched = targets.find((item) => item.name === next);
-                    setSelectedTarget(next);
-                    if (next) setUniversity(next);
-                    setPageUrl(matched?.url || "");
-                    resetRunState();
-                  }}
-                  className="field-select"
-                >
-                  <option value="">Optional preset</option>
-                  {targets.map((target) => (
-                    <option key={target.name} value={target.name}>
-                      {target.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field-wrap">
-                <span className="field-label">Source page URL</span>
-                <input
-                  value={pageUrl}
-                  onChange={(event) => {
-                    setPageUrl(event.target.value);
-                    resetRunState();
-                  }}
-                  placeholder="Optional but improves source quality"
-                  className="field"
-                />
-              </label>
-            </>
-          )}
-
-          {sourceMode === "direct" && (
-            <>
-              <label className="field-wrap input-span-2">
-                <span className="field-label">Direct PDF URL</span>
-                <input
-                  value={pdfUrl}
-                  onChange={(event) => {
-                    setPdfUrl(event.target.value);
-                    resetRunState();
-                  }}
-                  placeholder="https://example.edu/guideline.pdf"
-                  className="field"
-                />
-              </label>
-
-              <label className="field-wrap input-span-2">
-                <span className="field-label">Origin page URL</span>
-                <input
-                  value={pageUrl}
-                  onChange={(event) => {
-                    setPageUrl(event.target.value);
-                    resetRunState();
-                  }}
-                  placeholder="Optional landing page for traceability"
-                  className="field"
-                />
-              </label>
-            </>
-          )}
+            ))}
+          </div>
         </div>
       </section>
 
-      {sourceMode === "upload" && (
-        <>
-          <section
-            className={`dropzone${dragging ? " is-dragging" : ""}${file ? " is-filled" : ""}`}
-            onClick={() => inputRef.current?.click()}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setDragging(false);
-              handleFile(event.dataTransfer.files[0]);
-            }}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".pdf"
-              style={{ display: "none" }}
-              onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
-            />
-            <div className="dropzone-icon">{file ? "✓" : "PDF"}</div>
-            <h3 className="dropzone-title">{file ? file.name : "Drop a source PDF here"}</h3>
-            <p className="dropzone-copy">
-              {file
-                ? "The file is staged locally. Use the action below to start extraction and produce review rows."
-                : "Click or drag in the official admissions PDF. Uploading only starts when you explicitly run intake."}
-            </p>
-          </section>
-
-          <section className="panel">
-            <div className="toolbar-flex">
+      <section className="content-grid">
+        <aside className="sidebar-panel">
+          <div className="toolbar-shell">
+            <div className="sidebar-section-label">入口</div>
+            <div className="split-row" style={{ marginBottom: 12 }}>
               <div>
-                <h3 className="panel-title">Upload lane action</h3>
-                <p className="panel-copy">
-                  This lane is optimized for operations teams who already have the authoritative file and want the shortest handoff into staging.
-                </p>
+                <h3 className="panel-title">导入方式</h3>
+                <p className="panel-copy">选择来源后开始整理。</p>
               </div>
-              <button className="btn btn-primary" disabled={!readyToUpload} onClick={() => void runUpload()} type="button">
-                {step === "uploading" || step === "extracting" ? "Processing..." : "Start extraction"}
+              <button className="btn btn-ghost" onClick={clearAll} type="button">
+                清空
               </button>
             </div>
-          </section>
-        </>
-      )}
 
-      {sourceMode === "search" && (
-        <section className="panel">
-          <div className="toolbar-flex" style={{ marginBottom: 16 }}>
-            <div>
-              <h3 className="panel-title">Search before processing</h3>
-              <p className="panel-copy">
-                Keep the workflow safe: shortlist candidate PDFs first, then manually choose the source that should flow into staging.
-              </p>
+            <div className="mode-switch">
+              {(["upload", "search", "direct"] as SourceMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  className={`mode-tile${sourceMode === mode ? " is-active" : ""}`}
+                  onClick={() => {
+                    setSourceMode(mode);
+                    resetRunState();
+                  }}
+                  type="button"
+                >
+                  <span className="mode-title">{MODE_META[mode].label}</span>
+                  <span className="mode-copy">{MODE_META[mode].hint}</span>
+                </button>
+              ))}
             </div>
-            <div className="inline-actions">
-              <button className="btn btn-primary" disabled={!readyToSearch} onClick={() => void runSearch()} type="button">
-                {step === "searching" ? "Searching..." : "Find candidate PDFs"}
-              </button>
-              <button className="btn btn-ghost" disabled={probeLoading || busy} onClick={() => void runProbe()} type="button">
-                {probeLoading ? "Checking..." : "Probe maintained sources"}
-              </button>
+
+            <div className="list-stack section-stack">
+              {sourceMode !== "upload" && (
+                <label className="field-wrap">
+                  <span className="field-label">学校名称</span>
+                  <input
+                    value={university}
+                    onChange={(event) => {
+                      setUniversity(event.target.value);
+                      resetRunState();
+                    }}
+                    placeholder="例如：明治大学"
+                    className="field"
+                  />
+                </label>
+              )}
+
+              <label className="field-wrap">
+                <span className="field-label">招生年份</span>
+                <input
+                  value={year}
+                  onChange={(event) => {
+                    setYear(event.target.value);
+                    resetRunState();
+                  }}
+                  placeholder="2026"
+                  className="field"
+                />
+              </label>
+
+              {sourceMode === "search" && (
+                <>
+                  <label className="field-wrap">
+                    <span className="field-label">预设学校</span>
+                    <select
+                      value={selectedTarget}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        const matched = targets.find((item) => item.name === next);
+                        setSelectedTarget(next);
+                        if (next) setUniversity(next);
+                        setPageUrl(matched?.url || "");
+                        resetRunState();
+                      }}
+                      className="field field-select"
+                    >
+                      <option value="">可选</option>
+                      {targets.map((target) => (
+                        <option key={target.name} value={target.name}>
+                          {target.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="field-wrap">
+                    <span className="field-label">来源页</span>
+                    <input
+                      value={pageUrl}
+                      onChange={(event) => {
+                        setPageUrl(event.target.value);
+                        resetRunState();
+                      }}
+                      placeholder="可选"
+                      className="field"
+                    />
+                  </label>
+
+                  <button className="btn btn-primary" disabled={!university || busy} onClick={() => void runSearch()} type="button">
+                    {step === "searching" ? "检索中..." : "检索候选 PDF"}
+                  </button>
+                  <button className="btn btn-ghost" disabled={probeLoading || busy} onClick={() => void runProbe()} type="button">
+                    {probeLoading ? "检查中..." : "检查来源"}
+                  </button>
+                </>
+              )}
+
+              {sourceMode === "direct" && (
+                <>
+                  <label className="field-wrap">
+                    <span className="field-label">PDF 链接</span>
+                    <input
+                      value={pdfUrl}
+                      onChange={(event) => {
+                        setPdfUrl(event.target.value);
+                        resetRunState();
+                      }}
+                      placeholder="https://.../guide.pdf"
+                      className="field"
+                    />
+                  </label>
+                  <label className="field-wrap">
+                    <span className="field-label">来源页</span>
+                    <input
+                      value={pageUrl}
+                      onChange={(event) => {
+                        setPageUrl(event.target.value);
+                        resetRunState();
+                      }}
+                      placeholder="可选"
+                      className="field"
+                    />
+                  </label>
+                  <button className="btn btn-primary" disabled={!university || !pdfUrl || busy} onClick={() => void runDirectPdf()} type="button">
+                    {busy ? "处理中..." : "开始处理"}
+                  </button>
+                </>
+              )}
+
+              {sourceMode === "upload" && (
+                <button className="btn btn-primary" disabled={!file || busy} onClick={() => void runUpload()} type="button">
+                  {busy ? "处理中..." : "开始处理"}
+                </button>
+              )}
             </div>
           </div>
+        </aside>
 
-          {probeResult && (
-            <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.95)", border: "1px solid rgba(148, 163, 184, 0.18)", marginBottom: 14 }}>
-              <div className="split-row" style={{ marginBottom: 8 }}>
-                <strong>Source probe summary</strong>
-                <span className="muted-text mono">{probeResult.checked_at}</span>
+        <div className="item-detail">
+          {sourceMode === "upload" && (
+            <section
+              className={`dropzone${dragging ? " is-dragging" : ""}${file ? " is-filled" : ""}`}
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                handleFile(event.dataTransfer.files[0]);
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf"
+                style={{ display: "none" }}
+                onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
+              />
+              <div className="dropzone-badge">{file ? "已选择" : "PDF"}</div>
+              <h3 className="dropzone-title">{file ? file.name : "投递招生 PDF"}</h3>
+              <p className="dropzone-copy">{file ? "文件已就绪，可以开始处理。" : "拖入文件，或点按这里选择本地 PDF。"}</p>
+            </section>
+          )}
+
+          {probeResult && sourceMode === "search" && (
+            <section className="detail-shell">
+              <div className="detail-header">
+                <div>
+                  <div className="card-kicker">来源检查</div>
+                  <h3 className="panel-title">已更新来源概况</h3>
+                </div>
+                <span className="badge badge-gray">{probeResult.checked_at}</span>
               </div>
-              <div className="status-grid" style={{ marginBottom: 12 }}>
-                <div className="status-pill">
-                  <span>Targets</span>
-                  <strong>{probeResult.target_count}</strong>
+              <div className="results-grid results-grid-quiet">
+                <div className="result-card">
+                  <span className="metric-label">目标学校</span>
+                  <strong className="metric-value">{probeResult.target_count}</strong>
                 </div>
-                <div className="status-pill">
-                  <span>New PDFs</span>
-                  <strong>{probeResult.new_candidate_count}</strong>
+                <div className="result-card">
+                  <span className="metric-label">新增候选</span>
+                  <strong className="metric-value">{probeResult.new_candidate_count}</strong>
                 </div>
-                <div className="status-pill">
-                  <span>Errors</span>
-                  <strong>{probeResult.error_count}</strong>
-                </div>
-                <div className="status-pill">
-                  <span>Year</span>
-                  <strong>{probeResult.year}</strong>
+                <div className="result-card">
+                  <span className="metric-label">异常</span>
+                  <strong className="metric-value">{probeResult.error_count}</strong>
                 </div>
               </div>
-              <div className="correction-stack">
-                {probeResult.probes
-                  .filter((item) => item.is_new_pdf_candidate || item.status === "error")
-                  .slice(0, 8)
-                  .map((item) => (
-                    <div key={`${item.university}-${item.seed_url}`} className="candidate-card">
-                      <div className="candidate-head">
+            </section>
+          )}
+
+          {searchQuery && <div className="message-box info">检索词：{searchQuery}</div>}
+
+          {sourceMode === "search" && candidates.length > 0 && (
+            <section className="detail-shell">
+              <div className="detail-header">
+                <div>
+                  <div className="card-kicker">候选来源</div>
+                  <h3 className="panel-title">选择要处理的 PDF</h3>
+                </div>
+                <span className="badge badge-gray">{candidates.length} 条</span>
+              </div>
+
+              <div className="document-list">
+                {candidates.map((candidate, index) => {
+                  const active = selectedCandidateUrl === candidate.pdf_url;
+                  return (
+                    <button
+                      key={candidate.pdf_url}
+                      className={`item-card${active ? " is-active" : ""}`}
+                      onClick={() => setSelectedCandidateUrl(candidate.pdf_url)}
+                      type="button"
+                    >
+                      <div className="detail-header">
                         <div>
-                          <h4 className="candidate-title">{item.university}</h4>
-                          <div className="candidate-meta">{item.status}</div>
+                          <h4 className="item-title">候选来源 {String(index + 1).padStart(2, "0")}</h4>
+                          <p className="item-subtitle">{candidate.title || candidate.pdf_url}</p>
                         </div>
-                        {item.top_candidate_pdf && (
-                          <a className="btn btn-ghost" href={item.top_candidate_pdf} target="_blank" rel="noreferrer">
-                            Open candidate
-                          </a>
-                        )}
+                        <div className="item-meta">
+                          <span className={candidate.is_official ? "badge badge-green" : "badge badge-amber"}>
+                            {sourceTrustText(candidate)}
+                          </span>
+                          <span className="badge badge-gray">{sourceKindText(candidate)}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                {probeResult.probes.every((item) => !item.is_new_pdf_candidate && item.status !== "error") && (
-                  <div className="empty-state">
-                    <h4 className="empty-title">No notable source changes</h4>
-                    <p className="empty-copy">The maintained source set looks stable for this probe window.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
-          {searchQuery && (
-            <div className="message-box info" style={{ marginBottom: 14 }}>
-              Search query used: <span className="mono">{searchQuery}</span>
-            </div>
-          )}
-
-          {candidates.length > 0 && (
-            <div className="candidate-stack">
-              {candidates.map((candidate, index) => {
-                const active = selectedCandidateUrl === candidate.pdf_url;
-                return (
-                  <label key={candidate.pdf_url} className={`candidate-card${active ? " is-active" : ""}`}>
-                    <div className="candidate-head">
-                      <div style={{ display: "flex", gap: 12, minWidth: 0 }}>
-                        <input
-                          type="radio"
-                          name="pdf-candidate"
-                          checked={active}
-                          onChange={() => setSelectedCandidateUrl(candidate.pdf_url)}
-                          style={{ marginTop: 2 }}
-                        />
-                        <div>
-                          <h4 className="candidate-title">Candidate {index + 1}</h4>
-                          <div className="candidate-meta">{candidate.title || candidate.pdf_url}</div>
-                        </div>
+                      <div className="summary-box summary-box-inline">
+                        <div className="field-label">PDF 地址</div>
+                        <div className="secondary-note mono">{candidate.pdf_url}</div>
                       </div>
 
                       <div className="inline-actions">
-                        <span className={candidate.is_official ? "badge badge-green" : "badge badge-amber"}>{candidateTrustLabel(candidate)}</span>
-                        <span className="badge badge-gray">{candidateKindLabel(candidate)}</span>
-                        <span className="badge badge-blue">Score {candidate.score}</span>
+                        <span className="badge badge-blue">分数 {candidate.score}</span>
+                        {candidate.host && <span className="badge badge-gray">{candidate.host}</span>}
                       </div>
-                    </div>
-
-                    <div className="info-grid" style={{ gridTemplateColumns: "1fr 1fr", marginTop: 12 }}>
-                      <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.9)", border: "1px solid rgba(148, 163, 184, 0.16)" }}>
-                        <div className="field-label">PDF URL</div>
-                        <div className="muted-text mono">{candidate.pdf_url}</div>
-                      </div>
-                      <div className="summary-box" style={{ background: "rgba(248, 250, 252, 0.9)", border: "1px solid rgba(148, 163, 184, 0.16)" }}>
-                        <div className="field-label">Source page</div>
-                        <div className="muted-text mono">{candidate.page_url || "Not provided"}</div>
-                      </div>
-                    </div>
-
-                    <div className="candidate-meta" style={{ marginTop: 10 }}>
-                      {candidate.host ? `Host: ${candidate.host}. ` : ""}
-                      {candidate.registry_note ? `Registry note: ${candidate.registry_note}` : "Manual review stays in control until you confirm this source."}
-                    </div>
-
-                    <div className="inline-actions" style={{ marginTop: 12 }}>
-                      <a
-                        href={candidate.pdf_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-ghost"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        Preview PDF
-                      </a>
-                      {candidate.page_url && candidate.page_url !== candidate.pdf_url && (
-                        <a
-                          href={candidate.page_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-ghost"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Open source page
-                        </a>
-                      )}
-                    </div>
-                  </label>
-                );
-              })}
-
-              <div className="toolbar-flex">
-                <p className="panel-copy" style={{ maxWidth: 720 }}>
-                  Candidate confirmation is the safety checkpoint in this workflow. Extraction only starts after a person explicitly approves the selected PDF.
-                </p>
-                <button
-                  className="btn btn-primary"
-                  disabled={!readyToConfirmCandidate}
-                  onClick={() => selectedCandidate && void processPdfCandidate(selectedCandidate)}
-                  type="button"
-                >
-                  {step === "downloading" || step === "extracting" ? "Processing..." : "Confirm source and extract"}
-                </button>
+                    </button>
+                  );
+                })}
               </div>
+
+              {selectedCandidate && (
+                <div className="summary-box summary-box-feature">
+                  <div className="field-label">已选来源</div>
+                  <div className="summary-title">{selectedCandidate.title || "候选来源"}</div>
+                  <p className="secondary-note">{selectedCandidate.page_url || selectedCandidate.pdf_url}</p>
+                  <div className="inline-actions">
+                    <button className="btn btn-primary" disabled={busy} onClick={() => void processPdfCandidate(selectedCandidate)} type="button">
+                      {busy ? "处理中..." : "处理当前来源"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {step === "done" && result && (
+            <section className="detail-shell detail-shell-feature">
+              <div className="detail-header">
+                <div>
+                  <div className="card-kicker">处理完成</div>
+                  <h3 className="panel-title">已整理出可复核内容</h3>
+                  <p className="secondary-note">
+                    共整理出 {result.records} 条记录
+                    {result.university ? `，识别学校为 ${result.university}` : ""}
+                    {result.failed > 0 ? `，其中 ${result.failed} 页建议重点复核。` : "。"}
+                  </p>
+                </div>
+                <span className="badge badge-green">可进入人工复核</span>
+              </div>
+
+              <div className="results-grid">
+                <div className="result-card">
+                  <span className="metric-label">记录数</span>
+                  <strong className="metric-value">{result.records}</strong>
+                </div>
+                <div className="result-card">
+                  <span className="metric-label">重点页</span>
+                  <strong className="metric-value">{result.failed}</strong>
+                </div>
+                <div className="result-card">
+                  <span className="metric-label">状态</span>
+                  <strong className="metric-value">已就绪</strong>
+                </div>
+              </div>
+
+              <div className="inline-actions">
+                <button className="btn btn-primary btn-prominent" onClick={() => onDone(result.doc_id)} type="button">
+                  进入人工复核
+                </button>
+                {result.source_url && (
+                  <a href={result.source_url} target="_blank" rel="noreferrer" className="btn btn-ghost">
+                    打开来源
+                  </a>
+                )}
+              </div>
+            </section>
+          )}
+
+          {!result && !candidates.length && sourceMode !== "upload" && !error && (
+            <div className="empty-state empty-state-quiet">
+              <div className="card-kicker">等待导入</div>
+              <h3 className="panel-title">从左侧选择一种入口</h3>
+              <p className="panel-copy">检索、指定链接或上传文件后，右侧会显示可处理内容。</p>
             </div>
           )}
-        </section>
-      )}
 
-      {sourceMode === "direct" && (
-        <section className="panel">
-          <div className="toolbar-flex">
-            <div>
-              <h3 className="panel-title">Direct source run</h3>
-              <p className="panel-copy">
-                Use this only when the team already has a verified PDF URL and wants a predictable one-step handoff into extraction.
-              </p>
-            </div>
-            <button className="btn btn-primary" disabled={!readyToDirectRun} onClick={() => void runDirectPdf()} type="button">
-              {step === "downloading" || step === "extracting" ? "Processing..." : "Process direct PDF"}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {step === "done" && result && (
-        <section className="tone-banner success">
-          <div>
-            <h3 className="tone-title">Review handoff is ready</h3>
-            <p className="tone-copy">
-              {result.records} rows were staged
-              {result.university ? ` for ${result.university}` : ""}.{" "}
-              {result.failed > 0
-                ? `${result.failed} page(s) still need closer review.`
-                : "No obvious failed pages were reported in this run."}
-            </p>
-          </div>
-          <div className="inline-actions">
-            <button className="btn btn-green" onClick={() => onDone(result.doc_id)} type="button">
-              Open Review
-            </button>
-            {result.source_url && (
-              <a href={result.source_url} target="_blank" rel="noreferrer" className="btn btn-ghost">
-                Open source
-              </a>
-            )}
-          </div>
-        </section>
-      )}
-
-      {step === "error" && (
-        <section className="message-box error">
-          {error || "This intake attempt could not be completed. Check the source inputs and retry."}
-        </section>
-      )}
-
-      <section className="panel">
-        <div className="toolbar-flex">
-          <div>
-            <h3 className="panel-title">Recommended operator flow</h3>
-            <p className="panel-copy">
-              Use upload when you already own the file, search when the source still needs human approval, and direct mode when the PDF URL is already trusted.
-            </p>
-          </div>
-          <span className="badge badge-gray">No backend logic changes</span>
+          {step === "error" && <div className="message-box error">{error || "本次处理没有成功，请检查输入后重试。"}</div>}
         </div>
       </section>
     </div>

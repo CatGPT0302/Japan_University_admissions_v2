@@ -5,16 +5,16 @@ import RecordsPage from "./pages/RecordsPage";
 import ReviewPage from "./pages/ReviewPage";
 import type { NavPage } from "./types";
 
-const NAV: Array<{
-  key: NavPage;
-  label: string;
-  caption: string;
-  short: string;
-}> = [
-  { key: "run", label: "Run Intake", caption: "Collect and extract source PDFs", short: "Run" },
-  { key: "review", label: "Review Queue", caption: "Resolve risk before confirmation", short: "Review" },
-  { key: "records", label: "Records Hub", caption: "Search, audit, and export confirmed data", short: "Records" },
+const NAV: Array<{ key: NavPage; label: string; hint: string; short: string }> = [
+  { key: "run", label: "导入", hint: "来源与处理", short: "01" },
+  { key: "review", label: "人工复核", hint: "逐条校对", short: "02" },
+  { key: "records", label: "记录", hint: "档案与导出", short: "03" },
 ];
+
+function serviceText(backendOk: boolean | null) {
+  if (backendOk === null) return "服务检查中";
+  return backendOk ? "服务正常" : "服务异常";
+}
 
 export default function App() {
   const [page, setPage] = useState<NavPage>("run");
@@ -25,59 +25,35 @@ export default function App() {
     void checkHealth().then(setBackendOk);
   }, []);
 
-  const activeNav = useMemo(
-    () => NAV.find((item) => item.key === page) ?? NAV[0],
-    [page],
-  );
-
-  const content =
-    page === "run" ? (
-      <RunPage
-        onDone={(docId) => {
-          setActiveDocId(docId);
-          setPage("review");
-        }}
-      />
-    ) : page === "review" ? (
-      <ReviewPage
-        defaultDocId={activeDocId}
-        onDone={() => {
-          setActiveDocId(null);
-          setPage("records");
-        }}
-      />
-    ) : (
-      <RecordsPage />
-    );
+  const activeItem = useMemo(() => NAV.find((item) => item.key === page) ?? NAV[0], [page]);
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-panel">
-          <div className="brand-mark">A2</div>
-          <div>
-            <div className="brand-overline">Admissions_v2</div>
-            <h1 className="brand-title">Admissions Ops</h1>
-            <p className="brand-subtitle">Internal review workspace for intake, validation, and records quality.</p>
-          </div>
+    <div className="app-shell app-shell-product">
+      <aside className="sidebar product-sidebar">
+        <div className="product-brand">
+          <div className="brand-overline">工作台</div>
+          <h1 className="brand-title">案头</h1>
+          <p className="brand-subtitle">导入、人工复核、记录</p>
         </div>
 
         <div className="sidebar-section">
-          <div className="sidebar-section-label">Workflow</div>
-          <nav className="sidebar-nav" aria-label="Primary">
-            {NAV.map((item, index) => {
-              const active = page === item.key;
+          <div className="sidebar-section-label">工作区</div>
+          <nav className="product-nav" aria-label="主导航">
+            {NAV.map((item) => {
+              const active = item.key === page;
               return (
                 <button
                   key={item.key}
-                  className={`nav-card${active ? " is-active" : ""}`}
+                  className={`workspace-tab${active ? " is-active" : ""}`}
                   onClick={() => setPage(item.key)}
                   type="button"
                 >
-                  <span className="nav-index">{index + 1}</span>
-                  <span className="nav-copy">
-                    <span className="nav-label">{item.label}</span>
-                    <span className="nav-caption">{item.caption}</span>
+                  <span className="workspace-tab-icon" aria-hidden="true">
+                    {item.short}
+                  </span>
+                  <span className="workspace-tab-copy">
+                    <span className="workspace-tab-label">{item.label}</span>
+                    <span className="workspace-tab-hint">{item.hint}</span>
                   </span>
                 </button>
               );
@@ -85,49 +61,59 @@ export default function App() {
           </nav>
         </div>
 
-        <div className="workflow-rail">
-          {NAV.map((item, index) => {
-            const active = item.key === page;
-            const completed = NAV.findIndex((nav) => nav.key === page) > index;
-            return (
-              <div key={item.key} className={`workflow-step${active ? " is-active" : ""}${completed ? " is-complete" : ""}`}>
-                <div className="workflow-dot">{index + 1}</div>
-                <div>
-                  <div className="workflow-label">{item.short}</div>
-                  <div className="workflow-meta">{completed ? "Complete" : active ? "Current" : "Pending"}</div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="sidebar-section sidebar-section-current">
+          <div className="sidebar-section-label">当前工作</div>
+          <div className="sidebar-card">
+            <div className="sidebar-card-kicker">{activeItem.short}</div>
+            <div className="sidebar-card-title">{activeItem.label}</div>
+            <p className="sidebar-card-copy">{activeItem.hint}</p>
+          </div>
         </div>
 
-        <div className="sidebar-footer">
-          <div className={`health-pill${backendOk === false ? " is-down" : ""}`}>
-            <span className="health-dot" />
-            {backendOk === null ? "Checking backend" : backendOk ? "Backend connected" : "Backend unavailable"}
-          </div>
-          <div className="sidebar-footnote">
-            Current view
-            <strong>{activeNav.label}</strong>
+        <div className="product-sidebar-footer">
+          <div className={`connection-pill${backendOk === false ? " is-down" : ""}`}>
+            <span className="connection-dot" />
+            {serviceText(backendOk)}
           </div>
         </div>
       </aside>
 
-      <div className="workspace">
-        <header className="topbar">
-          <div>
-            <div className="topbar-overline">Professional review dashboard</div>
-            <div className="topbar-title">{activeNav.label}</div>
+      <div className="workspace workspace-product">
+        <header className="workspace-header">
+          <div className="workspace-heading">
+            <div className="workspace-header-label">当前位置</div>
+            <div className="workspace-header-title">{activeItem.label}</div>
+            <p className="workspace-header-copy">{activeItem.hint}</p>
           </div>
-          <div className="topbar-badges">
-            <span className="badge badge-gray">Run → Review → Records</span>
-            <span className={`badge ${backendOk === false ? "badge-red" : "badge-green"}`}>
-              {backendOk === false ? "System attention" : "System ready"}
-            </span>
+          <div className="workspace-header-side">
+            <div className="workspace-header-meta">中等宽度自动折叠</div>
+            <div className={`connection-pill workspace-connection${backendOk === false ? " is-down" : ""}`}>
+              <span className="connection-dot" />
+              {serviceText(backendOk)}
+            </div>
           </div>
         </header>
 
-        <main className="workspace-body">{content}</main>
+        <main className="workspace-body workspace-body-product">
+          {page === "run" ? (
+            <RunPage
+              onDone={(docId) => {
+                setActiveDocId(docId);
+                setPage("review");
+              }}
+            />
+          ) : page === "review" ? (
+            <ReviewPage
+              defaultDocId={activeDocId}
+              onDone={() => {
+                setActiveDocId(null);
+                setPage("records");
+              }}
+            />
+          ) : (
+            <RecordsPage />
+          )}
+        </main>
       </div>
     </div>
   );
