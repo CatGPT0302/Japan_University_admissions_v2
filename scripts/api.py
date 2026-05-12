@@ -65,7 +65,7 @@ def _cors_origins() -> list[str]:
         origins.add(f"https://{vercel_url.rstrip('/')}")
     return sorted(origins)
 
-app = FastAPI(title="格致大学募集要項抽取系统 API", version="1.0")
+app = FastAPI(title="Japan University Admissions Extractor API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
