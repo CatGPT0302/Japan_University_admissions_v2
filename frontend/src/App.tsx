@@ -32,7 +32,7 @@ export default function App() {
       <aside className="sidebar product-sidebar">
         <div className="product-brand">
           <div className="brand-overline">本地工具</div>
-          <h1 className="brand-title">格致大学募集要項抽取系统</h1>
+          <h1 className="brand-title">日本大学募集要項抽取系统</h1>
           <p className="brand-subtitle">PDF 导入、人工复核、Excel 导出</p>
         </div>
 
