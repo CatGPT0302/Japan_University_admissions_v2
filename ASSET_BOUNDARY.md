@@ -20,13 +20,13 @@ The following are not treated as repository-owned product assets:
 
 - university lists
 - third-party indexes
-- organization-specific field templates
-- manually collected internal tables
+- custom field templates
+- manually collected non-public tables
 - private business data
 
 ## Rule
 
-External or organization-specific assets must be kept outside the public repository and loaded only as user-provided runtime data.
+External, private, or custom assets must be kept outside the public repository and loaded only as user-provided runtime data.
 
 If runtime data is needed, it should be supplied through user-managed files such as `private_data/` or another user-controlled path outside the repository.
 

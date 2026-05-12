@@ -6,9 +6,9 @@ import ReviewPage from "./pages/ReviewPage";
 import type { NavPage } from "./types";
 
 const NAV: Array<{ key: NavPage; label: string; hint: string; short: string }> = [
-  { key: "run", label: "导入", hint: "来源与处理", short: "01" },
-  { key: "review", label: "人工复核", hint: "逐条校对", short: "02" },
-  { key: "records", label: "记录", hint: "档案与导出", short: "03" },
+  { key: "run", label: "上传提取", hint: "PDF 全卷视觉读取", short: "01" },
+  { key: "review", label: "人工复核", hint: "校对 AI 初稿并确认入库", short: "02" },
+  { key: "records", label: "主表导出", hint: "查看正式库并导出 Excel", short: "03" },
 ];
 
 function serviceText(backendOk: boolean | null) {
@@ -31,9 +31,9 @@ export default function App() {
     <div className="app-shell app-shell-product">
       <aside className="sidebar product-sidebar">
         <div className="product-brand">
-          <div className="brand-overline">本地工具</div>
-          <h1 className="brand-title">日本大学募集要項抽取系统</h1>
-          <p className="brand-subtitle">PDF 导入、人工复核、Excel 导出</p>
+          <div className="brand-overline">本地工作台</div>
+          <h1 className="brand-title">招生要项抽取</h1>
+          <p className="brand-subtitle">上传 PDF，生成 AI 初稿，复核后导出统一 Excel 主表。</p>
         </div>
 
         <div className="sidebar-section">
@@ -61,15 +61,6 @@ export default function App() {
           </nav>
         </div>
 
-        <div className="sidebar-section sidebar-section-current">
-          <div className="sidebar-section-label">当前工作</div>
-          <div className="sidebar-card">
-            <div className="sidebar-card-kicker">{activeItem.short}</div>
-            <div className="sidebar-card-title">{activeItem.label}</div>
-            <p className="sidebar-card-copy">{activeItem.hint}</p>
-          </div>
-        </div>
-
         <div className="product-sidebar-footer">
           <div className={`connection-pill${backendOk === false ? " is-down" : ""}`}>
             <span className="connection-dot" />
@@ -86,7 +77,6 @@ export default function App() {
             <p className="workspace-header-copy">{activeItem.hint}</p>
           </div>
           <div className="workspace-header-side">
-            <div className="workspace-header-meta">中等宽度自动折叠</div>
             <div className={`connection-pill workspace-connection${backendOk === false ? " is-down" : ""}`}>
               <span className="connection-dot" />
               {serviceText(backendOk)}

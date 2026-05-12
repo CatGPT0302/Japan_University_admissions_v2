@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   confirmDoc,
-  deleteDocument,
   documentPageImageUrl,
-  documentPdfUrl,
   getDocumentSummary,
   getDocuments,
   getStaging,
   patchStaging,
   toErrorMessage,
 } from "../api/client";
-import { TreemapSummary } from "../components/DashboardCharts";
 import type { DocumentListItem, DocumentSummary, RiskLevel, StagingRecord } from "../types";
 
 interface Props {
@@ -18,51 +15,45 @@ interface Props {
   onDone: () => void;
 }
 
-type RiskFilter = "all" | RiskLevel;
-
 const REVIEW_FIELDS = [
-  { key: "admission_period", label: "出愿时期", span: 2 },
-  { key: "eju_japanese", label: "EJU 日语", span: 1 },
-  { key: "eju_general", label: "EJU 综合科目", span: 1 },
-  { key: "eju_math", label: "EJU 数学", span: 1 },
-  { key: "eju_physics", label: "EJU 物理", span: 1 },
-  { key: "eju_chemistry", label: "EJU 化学", span: 1 },
-  { key: "eju_biology", label: "EJU 生物", span: 1 },
-  { key: "prefecture", label: "都道府县", span: 1 },
-  { key: "campus", label: "校区", span: 1 },
-  { key: "university", label: "学校名称", span: 2 },
-  { key: "faculty", label: "学部", span: 1 },
-  { key: "department", label: "学科 / 专业", span: 1 },
-  { key: "application_period", label: "出愿期间", span: 2 },
-  { key: "deadline_rule", label: "截止规则", span: 1 },
-  { key: "eju_session", label: "EJU 场次", span: 1 },
-  { key: "english_requirement", label: "英语要求", span: 2 },
-  { key: "screening_method", label: "选考方式", span: 2 },
-  { key: "screening_schedule", label: "选考日程", span: 2 },
-  { key: "result_date", label: "结果发布日期", span: 1 },
-  { key: "enrollment_period", label: "入学手续期间", span: 1 },
+  ["university", "大学名称"],
+  ["admission_year", "入学年度"],
+  ["admission_period", "入学时期"],
+  ["faculty", "学部"],
+  ["department", "学科/专业"],
+  ["application_period", "出愿期间"],
+  ["deadline_rule", "截止规则"],
+  ["eju_session", "EJU场次"],
+  ["eju_japanese", "EJU日语"],
+  ["eju_general", "EJU综合科目"],
+  ["eju_math", "EJU数学"],
+  ["eju_physics", "EJU物理"],
+  ["eju_chemistry", "EJU化学"],
+  ["eju_biology", "EJU生物"],
+  ["english_requirement", "英语要求"],
+  ["screening_method", "选考方式"],
+  ["screening_schedule", "选考日程"],
+  ["result_date", "合格发表日"],
+  ["enrollment_period", "入学手续期间"],
+  ["prefecture", "都道府县"],
+  ["campus", "校区"],
 ] as const;
 
-function riskText(risk: RiskLevel | undefined) {
+function riskText(risk?: RiskLevel) {
   if (risk === "high") return "高风险";
-  if (risk === "medium") return "中风险";
-  return "低风险";
+  if (risk === "low") return "低风险";
+  return "中风险";
 }
 
-function riskBadge(risk: RiskLevel | undefined) {
+function riskClass(risk?: RiskLevel) {
   if (risk === "high") return "badge badge-red";
-  if (risk === "medium") return "badge badge-amber";
-  return "badge badge-green";
+  if (risk === "low") return "badge badge-green";
+  return "badge badge-amber";
 }
 
-function fieldValue(record: StagingRecord | undefined, key: string) {
-  if (!record) return "";
-  return String(((record as unknown as Record<string, unknown>)[key]) ?? "");
-}
-
-function sortRowsByRisk(input: StagingRecord[]) {
-  const rank = (value?: RiskLevel) => (value === "high" ? 0 : value === "medium" ? 1 : 2);
-  return [...input].sort((a, b) => rank(a.risk_level) - rank(b.risk_level));
+function valueOf(row: StagingRecord | null, key: string) {
+  if (!row) return "";
+  return String((row as unknown as Record<string, unknown>)[key] ?? "");
 }
 
 export default function ReviewPage({ defaultDocId, onDone }: Props) {
@@ -71,18 +62,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [rows, setRows] = useState<StagingRecord[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(defaultDocId ?? null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
-  const [docQuery, setDocQuery] = useState("");
-  const [docYear, setDocYear] = useState("");
-  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
   const [draft, setDraft] = useState<Record<string, string>>({});
-  const [loadingDocs, setLoadingDocs] = useState(false);
-  const [loadingRows, setLoadingRows] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [pdfZoom, setPdfZoom] = useState(1);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void refreshDocuments();
@@ -92,84 +75,36 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     if (defaultDocId) void openDocument(defaultDocId);
   }, [defaultDocId]);
 
-  const filteredRows = useMemo(() => {
-    const sorted = sortRowsByRisk(rows);
-    return riskFilter === "all" ? sorted : sorted.filter((row) => row.risk_level === riskFilter);
-  }, [riskFilter, rows]);
-
   const selectedRow = useMemo(() => rows.find((row) => row.id === selectedRowId) ?? null, [rows, selectedRowId]);
+  const reviewedCount = rows.filter((row) => Number(row.is_reviewed)).length;
+  const highRiskCount = rows.filter((row) => row.risk_level === "high").length;
 
   useEffect(() => {
     if (!selectedRow) return;
     const nextDraft: Record<string, string> = {};
-    for (const field of REVIEW_FIELDS) nextDraft[field.key] = fieldValue(selectedRow, field.key);
+    for (const [key] of REVIEW_FIELDS) nextDraft[key] = valueOf(selectedRow, key);
     setDraft(nextDraft);
-    setPdfZoom(1);
   }, [selectedRow]);
 
-  const reviewedCount = rows.filter((row) => Number(row.is_reviewed)).length;
-  const pendingHighRisk = rows.some((row) => row.risk_level === "high" && !Number(row.is_reviewed));
-  const riskCounts = {
-    high: rows.filter((row) => row.risk_level === "high").length,
-    medium: rows.filter((row) => row.risk_level === "medium").length,
-    low: rows.filter((row) => row.risk_level === "low").length,
-  };
-
   async function refreshDocuments() {
-    setLoadingDocs(true);
     try {
-      const data = await getDocuments({
-        q: docQuery || undefined,
-        year: docYear || undefined,
-        limit: 100,
-      });
-      setDocuments(data);
+      setDocuments(await getDocuments({ limit: 100 }));
     } catch (nextError) {
       setError(toErrorMessage(nextError));
-    } finally {
-      setLoadingDocs(false);
     }
   }
 
   async function openDocument(docId: number) {
-    setLoadingRows(true);
     setError("");
     setMessage("");
-    try {
-      const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
-      setSelectedDocId(docId);
-      setSummary(docSummary);
-      setRows(stagingRows);
-      setSelectedRowId(sortRowsByRisk(stagingRows)[0]?.id ?? null);
-      setRiskFilter("all");
-    } catch (nextError) {
-      setError(toErrorMessage(nextError));
-    } finally {
-      setLoadingRows(false);
-    }
+    const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
+    setSelectedDocId(docId);
+    setSummary(docSummary);
+    setRows(stagingRows);
+    setSelectedRowId(stagingRows[0]?.id ?? null);
   }
 
-  async function deleteCurrentDocument(doc: DocumentListItem) {
-    const confirmed = window.confirm(`删除“${doc.university_name || doc.filename}”及其对应记录？`);
-    if (!confirmed) return;
-    setDeletingDocId(doc.doc_id);
-    try {
-      await deleteDocument(doc.doc_id);
-      if (selectedDocId === doc.doc_id) {
-        setSelectedDocId(null);
-        setSummary(null);
-        setRows([]);
-        setSelectedRowId(null);
-      }
-      await refreshDocuments();
-    } catch (nextError) {
-      setError(toErrorMessage(nextError));
-    } finally {
-      setDeletingDocId(null);
-    }
-  }
-
-  async function saveCurrent(markReviewed: boolean, goNext: boolean) {
+  async function save(markReviewed: boolean) {
     if (!selectedRow) return;
     setSaving(true);
     setError("");
@@ -178,13 +113,9 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
         ...draft,
         ...(markReviewed ? { is_reviewed: 1, needs_review: 0 } : {}),
       });
-      const nextRows = rows.map((row) => (row.id === selectedRow.id ? updated : row));
-      setRows(nextRows);
+      setRows(rows.map((row) => (row.id === selectedRow.id ? updated : row)));
+      setSelectedRowId(updated.id);
       setMessage(markReviewed ? "已保存，并标记为已复核。" : "修改已保存。");
-      if (goNext) {
-        const nextPending = filteredRows.find((row) => row.id !== selectedRow.id && !Number(row.is_reviewed));
-        setSelectedRowId(nextPending?.id ?? null);
-      }
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -193,21 +124,14 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   }
 
   async function confirmCurrentDocument() {
-    if (!selectedDocId || pendingHighRisk) return;
-    const confirmed = window.confirm(
-      `确认将“${summary?.university_name || "当前文档"}”写入正式库？\n\n请确认关键字段已经检查完毕。`,
-    );
-    if (!confirmed) return;
-    setConfirming(true);
+    if (!selectedDocId) return;
     setError("");
     try {
-      await confirmDoc(selectedDocId);
-      setMessage("这份文档已经确认入库。");
+      const result = await confirmDoc(selectedDocId);
+      setMessage(`已写入正式库 ${result.confirmed} 条，跳过 ${result.skipped} 条。`);
       onDone();
     } catch (nextError) {
       setError(toErrorMessage(nextError));
-    } finally {
-      setConfirming(false);
     }
   }
 
@@ -217,21 +141,21 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
         <div className="split-row split-row-start">
           <div>
             <div className="section-kicker">人工复核</div>
-            <h2 className="section-title">逐条校对待确认内容</h2>
-            <p className="section-copy">选择文档后，直接校对字段并对照原文。</p>
+            <h2 className="section-title">校对 AI 初稿，再确认入库</h2>
+            <p className="section-copy">抽取结果先进入待复核区。这里可以修改字段、查看风险提示，并将确认后的记录写入正式库。</p>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">
-              <span className="metric-label">文档</span>
-              <strong className="metric-value">{documents.length}</strong>
+              <span className="metric-label">记录数</span>
+              <strong className="metric-value">{rows.length}</strong>
             </div>
             <div className="metric-card">
-              <span className="metric-label">待处理</span>
-              <strong className="metric-value">{Math.max(rows.length - reviewedCount, 0)}</strong>
+              <span className="metric-label">已复核</span>
+              <strong className="metric-value">{reviewedCount}</strong>
             </div>
             <div className="metric-card">
               <span className="metric-label">高风险</span>
-              <strong className="metric-value">{riskCounts.high}</strong>
+              <strong className="metric-value">{highRiskCount}</strong>
             </div>
           </div>
         </div>
@@ -240,26 +164,13 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       <section className="content-grid">
         <aside className="sidebar-panel">
           <div className="toolbar-shell">
-            <div className="sidebar-section-label">入口</div>
-            <div className="split-row" style={{ marginBottom: 12 }}>
+            <div className="split-row">
               <div>
-                <h3 className="panel-title">文档列表</h3>
-                <p className="panel-copy">选择一份文档开始。</p>
+                <h3 className="panel-title">待复核文档</h3>
+                <p className="panel-copy">选择一份 PDF 查看 AI 初稿。</p>
               </div>
-              <span className="badge badge-gray">{documents.length} 份</span>
-            </div>
-
-            <div className="list-stack">
-              <label className="field-wrap">
-                <span className="field-label">搜索</span>
-                <input className="field" value={docQuery} onChange={(event) => setDocQuery(event.target.value)} placeholder="学校或文件名" />
-              </label>
-              <label className="field-wrap">
-                <span className="field-label">年份</span>
-                <input className="field" value={docYear} onChange={(event) => setDocYear(event.target.value)} placeholder="2026" />
-              </label>
-              <button className="btn btn-primary" onClick={() => void refreshDocuments()} type="button">
-                {loadingDocs ? "刷新中..." : "刷新列表"}
+              <button className="btn btn-ghost" onClick={() => void refreshDocuments()} type="button">
+                刷新
               </button>
             </div>
           </div>
@@ -273,28 +184,11 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 type="button"
               >
                 <div className="item-card-topline">
-                  <span className="badge badge-gray">文档</span>
-                  <span className="badge badge-blue">{doc.admission_year || "未标注年份"}</span>
-                </div>
-                <h4 className="item-title">{doc.university_name || "未命名文档"}</h4>
-                <p className="item-subtitle">{doc.filename}</p>
-                <div className="item-meta">
+                  <span className="badge badge-blue">{doc.admission_year || "未标年度"}</span>
                   <span className="badge badge-gray">待复核 {doc.staging_count}</span>
-                  <span className="badge badge-gray">已入库 {doc.confirmed_count}</span>
                 </div>
-                <div className="inline-actions">
-                  <button
-                    className="btn btn-red"
-                    disabled={deletingDocId === doc.doc_id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void deleteCurrentDocument(doc);
-                    }}
-                    type="button"
-                  >
-                    {deletingDocId === doc.doc_id ? "删除中..." : "删除"}
-                  </button>
-                </div>
+                <h4 className="item-title">{doc.university_name || "待识别大学"}</h4>
+                <p className="item-subtitle">{doc.filename}</p>
               </button>
             ))}
           </div>
@@ -302,169 +196,75 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
 
         <div className="item-detail">
           {error && <div className="message-box error">{error}</div>}
+          {message && <div className="message-box">{message}</div>}
 
-          {!selectedDocId && (
-            <div className="empty-state empty-state-quiet">
-              <div className="card-kicker">等待选择</div>
-              <h3 className="panel-title">请选择一份文档</h3>
-              <p className="panel-copy">文档打开后会显示待校对记录。</p>
+          {!selectedRow ? (
+            <div className="empty-state">
+              <div className="card-kicker">暂无记录</div>
+              <h3 className="panel-title">请选择左侧文档</h3>
+              <p className="panel-copy">上传并提取后，AI 初稿会出现在这里。</p>
             </div>
-          )}
-
-          {selectedDocId && !selectedRow && (
-            <div className="detail-shell">
-              <div className="detail-header">
-                <div>
-                  <div className="card-kicker">记录队列</div>
-                  <h3 className="panel-title">{summary?.university_name || "人工复核队列"}</h3>
-                  <p className="panel-copy">建议先处理高风险记录。</p>
-                </div>
-                <div className="item-meta">
-                  <span className="badge badge-gray">共 {rows.length} 条</span>
-                  <span className="badge badge-blue">已复核 {reviewedCount}</span>
-                  {loadingRows && <span className="badge badge-gray">载入中...</span>}
-                </div>
-              </div>
-
-              <div className="inline-actions inline-actions-tight">
-                {[
-                  { key: "all" as RiskFilter, label: `全部 ${rows.length}` },
-                  { key: "high" as RiskFilter, label: `高风险 ${riskCounts.high}` },
-                  { key: "medium" as RiskFilter, label: `中风险 ${riskCounts.medium}` },
-                  { key: "low" as RiskFilter, label: `低风险 ${riskCounts.low}` },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    className={`filter-chip${riskFilter === item.key ? " is-active" : ""}`}
-                    onClick={() => setRiskFilter(item.key)}
-                    type="button"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              <TreemapSummary
-                title="风险分布"
-                subtitle="优先处理高风险记录。"
-                data={[
-                  { label: "高风险", value: riskCounts.high, color: "linear-gradient(180deg, rgba(191, 53, 53, 0.9), rgba(153, 27, 27, 0.82))" },
-                  { label: "中风险", value: riskCounts.medium, color: "linear-gradient(180deg, rgba(190, 116, 18, 0.88), rgba(146, 64, 14, 0.82))" },
-                  { label: "低风险", value: riskCounts.low, color: "linear-gradient(180deg, rgba(16, 127, 95, 0.84), rgba(6, 95, 70, 0.8))" },
-                ]}
-              />
-
-              <div className="document-list">
-                {filteredRows.map((row) => (
-                  <button key={row.id} className="item-card" onClick={() => setSelectedRowId(row.id)} type="button">
-                    <div className="detail-header">
-                      <div>
-                        <h4 className="item-title">{row.faculty || row.department || `记录 #${row.id}`}</h4>
-                        <p className="item-subtitle">{row.department || row.university || "进入详情"}</p>
-                      </div>
-                      <div className="item-meta">
-                        <span className={riskBadge(row.risk_level)}>{riskText(row.risk_level)}</span>
-                        <span className="badge badge-gray">可靠度 {Number(row.confidence ?? 0).toFixed(2)}</span>
-                        <span className={Number(row.is_reviewed) ? "badge badge-green" : "badge badge-amber"}>
-                          {Number(row.is_reviewed) ? "已复核" : "待复核"}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {selectedDocId && selectedRow && (
+          ) : (
             <div className="detail-shell detail-shell-editing">
               <div className="detail-header">
                 <div>
-                  <button className="btn btn-ghost detail-back" onClick={() => setSelectedRowId(null)} type="button">
-                    返回队列
-                  </button>
-                  <div className="card-kicker" style={{ marginTop: 16 }}>
-                    人工复核
-                  </div>
-                  <h3 className="panel-title">记录详情</h3>
-                  <p className="secondary-note">
-                    {summary?.university_name || "当前文档"} · {riskText(selectedRow.risk_level)}
-                  </p>
+                  <div className="card-kicker">{summary?.university_name || "待复核记录"}</div>
+                  <h3 className="panel-title">
+                    {selectedRow.faculty || "未识别学部"} · {selectedRow.department || "未识别学科"}
+                  </h3>
                 </div>
                 <div className="item-meta">
-                  <span className={riskBadge(selectedRow.risk_level)}>{riskText(selectedRow.risk_level)}</span>
-                  <span className="badge badge-gray">页码 {selectedRow.page_number ?? "—"}</span>
+                  <span className={riskClass(selectedRow.risk_level)}>{riskText(selectedRow.risk_level)}</span>
+                  <span className="badge badge-gray">{Number(selectedRow.is_reviewed) ? "已复核" : "待复核"}</span>
                 </div>
               </div>
 
-              <div className="review-compare-grid">
-                <div className="review-form-panel">
-                  <div className="detail-grid detail-grid-forms">
-                    {REVIEW_FIELDS.map((field) => (
-                      <div key={field.key} className={`detail-field${field.span === 2 ? " is-span-2" : ""}`}>
-                        <span className="detail-label">{field.label}</span>
-                        <textarea
-                          className="field-textarea"
-                          style={field.span === 2 ? undefined : { minHeight: 88 }}
-                          value={draft[field.key] || ""}
-                          onChange={(event) => setDraft((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                        />
-                        {selectedRow.field_evidence?.[field.key]?.text && (
-                          <div className="evidence-snippet">
-                        <span className="field-label">原文</span>
-                            <div>{selectedRow.field_evidence[field.key]?.text}</div>
-                          </div>
-                        )}
-                      </div>
+              {selectedRow.warnings_json?.length ? (
+                <div className="message-box">
+                  <strong>需要注意：</strong>
+                  <ul>
+                    {selectedRow.warnings_json.map((warning) => (
+                      <li key={warning}>{warning}</li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
+              ) : null}
 
-                <aside className="pdf-preview-panel">
-                  <div className="pdf-preview-header">
-                    <div>
-                      <div className="card-kicker">原文对照</div>
-                      <h3 className="panel-title">PDF 页面</h3>
-                    </div>
-                    <span className="badge badge-gray">页码 {selectedRow.page_number ?? "—"}</span>
-                  </div>
-                  <div className="pdf-preview-actions">
-                    <button className="btn btn-ghost" type="button" onClick={() => setPdfZoom((value) => Math.max(0.75, value - 0.25))}>
-                      缩小
-                    </button>
-                    <button className="btn btn-ghost" type="button" onClick={() => setPdfZoom((value) => Math.min(2, value + 0.25))}>
-                      放大
-                    </button>
-                    <button className="btn btn-primary" type="button" onClick={() => window.open(documentPdfUrl(selectedDocId, selectedRow.page_number), "_blank")}>
-                      新窗口打开
-                    </button>
-                  </div>
-                  <div className="pdf-preview-scroll">
-                    <img
-                      className="pdf-preview-image"
-                      style={{ width: `${pdfZoom * 100}%` }}
-                      alt="PDF 原文页面"
-                      src={documentPageImageUrl(selectedDocId, selectedRow.page_number, pdfZoom)}
+              <div className="detail-grid">
+                {REVIEW_FIELDS.map(([key, label]) => (
+                  <label key={key} className="field-wrap detail-field is-span-2">
+                    <span className="field-label">{label}</span>
+                    <textarea
+                      className="field"
+                      rows={key.includes("period") || key.includes("schedule") || key === "deadline_rule" ? 3 : 2}
+                      value={draft[key] ?? ""}
+                      onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
                     />
-                  </div>
-                </aside>
+                  </label>
+                ))}
               </div>
 
-              {message && !error && <div className="message-box info">{message}</div>}
-
-              <div className="inline-actions inline-actions-wide">
-                <button className="btn btn-ghost" disabled={saving} onClick={() => void saveCurrent(false, false)} type="button">
-                  保存
-                </button>
-                <button className="btn btn-primary" disabled={saving} onClick={() => void saveCurrent(true, true)} type="button">
-                  保存并下一条
-                </button>
-                <button className="btn btn-green" disabled={confirming || pendingHighRisk} onClick={() => void confirmCurrentDocument()} type="button">
-                  {confirming ? "入库中..." : "确认整份文档入库"}
+              <div className="split-row">
+                <div className="inline-actions">
+                  <button className="btn btn-primary" disabled={saving} onClick={() => void save(false)} type="button">
+                    保存修改
+                  </button>
+                  <button className="btn btn-green" disabled={saving} onClick={() => void save(true)} type="button">
+                    保存并标记已复核
+                  </button>
+                </div>
+                <button className="btn btn-green" onClick={() => void confirmCurrentDocument()} type="button">
+                  确认整份文档入库
                 </button>
               </div>
 
-              {pendingHighRisk && <div className="secondary-note">仍有高风险记录未复核，当前不能直接入库。</div>}
+              {selectedDocId && (
+                <div className="summary-box">
+                  <h3 className="panel-title">PDF 预览</h3>
+                  <p className="panel-copy">当前显示记录关联页或第 1 页。需要精看时可打开原 PDF。</p>
+                  <img alt="PDF 页面预览" style={{ width: "100%", borderRadius: 18 }} src={documentPageImageUrl(selectedDocId, selectedRow.page_number || 1)} />
+                </div>
+              )}
             </div>
           )}
         </div>

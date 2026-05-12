@@ -136,6 +136,9 @@ export interface ExtractResponse {
   university?: string;
   records: number;
   failed_pages: Array<{ page: number; error: string }>;
+  quality_status?: "ok" | "needs_review" | "failed";
+  quality_message?: string;
+  warnings?: string[];
 }
 
 export interface ConfirmResponse {

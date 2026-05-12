@@ -9,12 +9,12 @@ SOURCE_ROOT = Path(__file__).resolve().parent.parent
 
 
 def bundled_root() -> Path:
-    """Return the read-only bundled app root when frozen, else the repo root."""
+    """Return the read-only app root when embedded, else the repo root."""
     return Path(getattr(sys, "_MEIPASS", SOURCE_ROOT)).resolve()
 
 
 def executable_dir() -> Path:
-    """Return the writable directory beside the EXE when frozen."""
+    """Return the writable application directory for the current runtime."""
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return SOURCE_ROOT

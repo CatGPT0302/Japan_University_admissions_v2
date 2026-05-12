@@ -6,7 +6,7 @@ This project scope is frozen. Do not redesign the product or expand it into a C-
 
 ### 1.1 Final Project Definition
 
-The final delivery target is:
+The MVP workflow target is:
 
 ```text
 募集要項 PDF

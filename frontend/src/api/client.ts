@@ -21,7 +21,7 @@ const BASE_URL = envBaseUrl || "http://127.0.0.1:8000";
 
 const client = axios.create({
   baseURL: BASE_URL,
-  timeout: 120000,
+  timeout: 600000,
 });
 
 function toErrorMessage(error: unknown): string {

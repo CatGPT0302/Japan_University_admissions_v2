@@ -15,8 +15,8 @@ from pydantic import BaseModel
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from scripts import extract_direct as extract_direct  # noqa: E402
 from scripts import fetch_pdfs as fetch_pdfs  # noqa: E402
+from scripts import full_vision_extractor as full_vision_extractor  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     delete_document,
@@ -65,7 +65,7 @@ def _cors_origins() -> list[str]:
         origins.add(f"https://{vercel_url.rstrip('/')}")
     return sorted(origins)
 
-app = FastAPI(title="Japan University Admissions Extractor API", version="1.0")
+app = FastAPI(title="日本大学招生要项全卷视觉工作台 API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
@@ -127,7 +127,7 @@ def _run_extract_direct(file_name: str, university: str, year: str, url: str = "
     if not pdf_path.exists():
         raise HTTPException(status_code=404, detail=f"PDF not found: {file_name}")
     try:
-        return extract_direct.run_extraction(
+        return full_vision_extractor.run_extraction(
             pdf_path=pdf_path,
             university=university,
             year=str(year),
@@ -139,7 +139,7 @@ def _run_extract_direct(file_name: str, university: str, year: str, url: str = "
         raise HTTPException(
             status_code=500,
             detail={
-                "error": "extract_direct failed",
+                "error": "full_vision_extractor failed",
                 "message": str(exc),
             },
         )
@@ -187,7 +187,15 @@ def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
         "university": result.get("university", ""),
         "records": result.get("records"),
         "failed_pages": result.get("failed_pages", []),
+        "quality_status": result.get("quality_status", "needs_review"),
+        "quality_message": result.get("quality_message", ""),
+        "warnings": result.get("warnings", []),
     }
+
+
+@app.post("/extract/full-vision")
+def extract_pdf_full_vision(payload: ExtractRequest) -> dict[str, Any]:
+    return extract_pdf(payload)
 
 
 @app.get("/fetch-pdf/targets")
@@ -433,7 +441,7 @@ def export_excel(
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
-    filename = "admissions_v2_export.xlsx"
+    filename = "admissions_master.xlsx"
     return StreamingResponse(
         io.BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

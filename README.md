@@ -1,87 +1,50 @@
 # admissions_v2
 
-An LLM-assisted information extraction and validation system for Japanese university admission guideline PDFs, especially foreign-student admissions materials.
+## Project Overview
 
-## Ownership / Usage Notice
+admissions_v2 is an LLM-assisted admissions information extraction and review system for Japanese university admission guideline PDFs.
 
-This is a personal project independently developed and maintained by the author.
+The project focuses on turning public admission documents into structured, human-reviewable records. It is not a pure OCR project and it is not a general-purpose PDF parser.
 
-It is not affiliated with, sponsored by, commissioned by, or owned by any organization.
-
-Any organization may only use this tool under explicit permission from the author.
-
-Source code, deployment credentials, database schema, prompts, extraction workflow, and review logic remain the author's intellectual assets unless otherwise agreed in writing.
-
-## Data & Ownership Notice
-
-The repository does not include proprietary datasets, internal company documents, or third-party confidential materials.
-
-Any sample data included in this repository is for demonstration only and should be replaceable by users' own public-source data.
-
-The codebase, extraction workflow, review workflow, confidence/evidence/risk logic, UI design, and product structure are maintained as the author's personal work.
-
-Third-party datasets or organization-specific templates, if any, must not be committed to this repository.
-
-Field governance baseline is documented in `FIELD_HIGHEST_PRINCIPLE.md` and must be followed for extraction and review UI updates.
-
-## Project Positioning
-
-This project is not a pure OCR or PDF vision engine project.
-
-The goal is to use LLM- and agent-assisted reading to extract key admission information from PDFs and structure it into human-verifiable workflows for staging, confirmation, and export.
-
-The frozen MVP delivery scope is:
+## Core Workflow
 
 ```text
-募集要項 PDF
-→ extract_fields.py
-→ normalize_fields.py
-→ staging / confirmed records
-→ export_excel.py standard Excel master table
+PDF upload / source input
+-> field extraction
+-> normalization
+-> staging review
+-> confirmed records
+-> Excel master export
 ```
 
-Final acceptance rules and future-agent backend/frontend prompts are documented in `docs/FINAL_ACCEPTANCE_AND_AGENT_PROMPTS.md`.
+## Features
 
-## Input / Output
+- PDF upload and source input
+- Public-source PDF retrieval and maintained source registry support
+- LLM-assisted field extraction
+- Field evidence, confidence, risk level, and warnings
+- Staging review before records are confirmed
+- Confirmed records database
+- Standard Excel master export
+- Quality metrics and correction history endpoints
 
-- Input: Japanese university admission PDFs
-- Output: structured admission records for staging, confirmation, search, and export
+## Tech Stack
 
-## Current Focus
+- Backend: Python, FastAPI
+- Frontend: React, TypeScript, Vite
+- Database: SQLite for local use, PostgreSQL-compatible deployment option
+- Export: openpyxl
+- LLM: OpenAI-compatible chat completion API
 
-- Improve snippet quality and traceability
-- Improve field-to-snippet matching
-- Keep validation quality ahead of feature expansion
-
-## Current Status
-
-- The project is now focused on local-first delivery
-- The technical direction is validated
-- The current bottleneck is extraction quality and source-PDF stability, not UI availability
-- The system is suitable for controlled local demos and validation, but it is not a general-purpose production service
-
-## Repository Components
-
-- API backend: `scripts/api.py`
-- Review app: `scripts/app.py`
-- Extraction entry: `scripts/extract_direct.py`
-- React frontend: `frontend/`
-- Runtime database is created locally at runtime and is not part of the default deliverable scope
-
-## Schema Note
-
-The admissions_v2 data structure is designed around public admissions-PDF information and the system's own review workflow needs.
-
-The working schema includes standardized operational fields such as `field_confidence`, `field_evidence`, `risk_level`, `manual_modified_fields`, review-status flags, and source-document linkage.
-
-It should not be described as an organization-specific template.
-
-## Quick Start
+## Local Setup
 
 ### Backend
 
 ```powershell
 cd <project-root>
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 python -m uvicorn scripts.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -95,23 +58,47 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-For delivery and daily local use, see `LOCAL_DELIVERY.md`. The local frontend should point to `http://127.0.0.1:8000`, not Railway or Vercel.
+The frontend should point to the local backend:
 
-### MVP Extraction And Export
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
 
-Extract fields from any 募集要項 PDF:
+### Environment Variables
+
+Use `.env.example` in the project root and `frontend/.env.example` for local configuration templates.
+
+Required for extraction:
+
+- `OPENAI_API_KEY` or `LLM_API_KEY`
+
+Optional:
+
+- `OPENAI_TEXT_MODEL`
+- `OPENAI_VISION_MODEL`
+- `OPENAI_BASE_URL` or `LLM_BASE_URL`
+- `OPENAI_COMPAT_URL` or `LLM_COMPAT_URL`
+
+Resolution order:
+
+- API key: `LLM_API_KEY` -> `OPENAI_API_KEY`
+- Endpoint: `OPENAI_COMPAT_URL` -> `LLM_COMPAT_URL` -> `OPENAI_URL` -> `OPENAI_BASE_URL` -> `LLM_BASE_URL` -> official OpenAI default
+
+## Extraction And Export
+
+Extract fields from a Japanese university admission PDF:
 
 ```powershell
 python scripts/extract_fields.py <pdf_path> --output output.json
 ```
 
-Export the normalized fixed-column TSV:
+Export a normalized TSV:
 
 ```powershell
 python scripts/export_tsv.py output.json --output admissions_standard.tsv
 ```
 
-Export the polished Excel master table:
+Export an Excel master workbook:
 
 ```powershell
 python scripts/export_excel.py output.json --output admissions_standard.xlsx
@@ -123,82 +110,29 @@ Export confirmed records from the current database:
 python scripts/export_excel.py --from-db --output admissions_master.xlsx
 ```
 
-## Environment
+## Data Boundary
 
-Use `.env.example` in the project root and `frontend/.env.example` for the frontend base URL.
+This repository is designed for public admission information, official university publications, publicly available admission documents, and manually prepared sample data.
 
-Required:
+It does not include private datasets, confidential documents, real student information, private operational data, or non-public reference tables.
 
-- `OPENAI_API_KEY` (or `LLM_API_KEY`)
+Runtime data that is private, custom, or maintained by a user should stay outside the public repository, for example under `private_data/` or another user-controlled path that is not committed.
 
-Optional:
+## Current Status
 
-- `OPENAI_TEXT_MODEL`
-- `OPENAI_VISION_MODEL`
-- `OPENAI_BASE_URL` or `LLM_BASE_URL` (OpenAI-compatible base URL)
-- `OPENAI_COMPAT_URL` or `LLM_COMPAT_URL` (full chat completions URL; higher priority than base URL)
+The project is an MVP-stage local workflow tool for controlled demos, validation, and extraction-quality iteration.
 
-Compatibility resolution order:
-
-- API key: `LLM_API_KEY` -> `OPENAI_API_KEY`
-- Endpoint: `OPENAI_COMPAT_URL` -> `LLM_COMPAT_URL` -> `OPENAI_URL` -> `OPENAI_BASE_URL` -> `LLM_BASE_URL` -> official OpenAI default
-
-## PDF Source Registry
-
-For stable PDF retrieval, you can maintain your own source registry at `private_data/pdf_source_registry.csv`.
-
-The repository includes `data/sample_pdf_source_registry.csv` only as a replaceable demonstration sample.
-
-Use `data/pdf_source_registry.template.csv` as the starting template for a real maintained registry.
-
-When a registry entry matches a university and year, the system will prefer that maintained source before falling back to open-web search.
-
-## Quality Ops Endpoints
-
-These endpoints are intended for quality control and operational monitoring:
-
-- `GET /metrics/quality`
-  - Returns field coverage, field-level manual-modification rates, risk distribution, and confidence calibration buckets.
-  - Optional query: `doc_id=<int>` for document-level metrics.
-- `GET /metrics/corrections`
-  - Returns correction events generated from human `PATCH /staging/{id}` updates.
-  - Optional query: `doc_id=<int>`, `limit=<int>`.
-- `GET /fetch-pdf/probe?year=2026`
-  - Probes maintained target pages and reports possible new PDF candidates not yet in the registry.
-
-## Golden Sample Regression
-
-Run lightweight regression reporting:
-
-```powershell
-python scripts/regression_golden_samples.py
-```
-
-Optional full rerun and report save:
-
-```powershell
-python scripts/regression_golden_samples.py --run-extract --save-json .\demo\golden_report.json
-```
-
-For standalone source probing (cron/scheduler-friendly):
-
-```powershell
-python scripts/probe_pdf_sources.py --year 2026 --save-json .\demo\probe_report.json
-```
+The current engineering priority is extraction quality, evidence traceability, and human review efficiency. It should not be described as a production SaaS system.
 
 ## Documentation
 
+- `docs/AGENT_BOOTSTRAP.md`
 - `docs/handoff.md`
 - `docs/phase2_ui.md`
 - `docs/leader_demo.md`
+- `docs/FINAL_ACCEPTANCE_AND_AGENT_PROMPTS.md`
 - `TODO.md`
 
-## For Future Agents
+## Ownership
 
-If you are continuing this project, start with:
-
-- `docs/AGENT_BOOTSTRAP.md`
-- `docs/NEXT_AGENT_PROMPT.md`
-- `docs/PROJECT_CHECKPOINT.md`
-
-Do not start by rewriting the pipeline. The current priority is quality control, traceability, and controlled review efficiency.
+See `OWNERSHIP.md`.

@@ -24,6 +24,11 @@ frontend/dist/
 tmp/
 output_pages/
 input_pdfs/
+rendered_pages/
+runtime/
+data/uploads/
+data/exports/
+data/rendered_pages/
 *.pdf
 *.zip
 *.sqlite
@@ -39,4 +44,7 @@ demo/*_standard.tsv
 demo/*_standard.xlsx
 demo/*_extract.json
 demo/*_extract_noimg.json
+demo/*.json
+demo/*.xlsx
+demo/*.tsv
 Japan_University_admissions_v2/
