@@ -25,7 +25,9 @@ This project treats admissions extraction as a reviewable data-production flow, 
 5. Narrow deterministic seed extractors
    - `scripts/meiji_schedule_extractor.py`
    - Covers the official Meiji 2027 schedule seed rows that have been checked into `quality_baselines/meiji_2027_schedule.expected.json`.
-   - Runs before the general LLM text path only for the matching Meiji 2027 official schedule text.
+   - `scripts/waseda_2027_extractor.py`
+   - Covers the Waseda 2027 seed rows that have been checked into `quality_baselines/waseda_2027_official.expected.json`.
+   - These extractors run only for matching official-source text and should stay narrow.
    - This is a stability anchor, not a full replacement for broader extraction and human review.
 
 ## Baseline JSON Shape
@@ -94,6 +96,16 @@ python scripts/quality_gap_report.py
 This lists each human-reviewed baseline, whether a local source PDF is available, whether a deterministic seed extractor is registered, and the next action needed to make that baseline enforceable.
 Use the `owner_todo` section as the production queue for the next quality pass.
 Use each baseline item's `source_candidates` list to place missing PDFs where the quality tools can find them.
+Local source PDFs live under ignored folders such as `data/uploads/`; do not commit official PDFs to the repository.
+If a university site blocks plain command-line downloads, keep the baseline and seed extractor registered, but leave the local source as missing until a checked PDF is placed in the expected path.
+
+Import a manually downloaded official PDF after checking its content markers:
+
+```bash
+python scripts/source_cache.py --source path/to/downloaded.pdf --stem waseda_2027_official --source-url https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf --marker 早稲田大学 --marker 2027年度
+```
+
+The importer copies the PDF into `data/uploads/` and writes a small receipt under `quality_sources/` with the SHA-256 hash, size, source URL, and checked markers. Commit the receipt if useful; do not commit the PDF itself.
 
 Run the full owner quality overview:
 
@@ -103,6 +115,7 @@ python scripts/quality_overview.py
 
 This combines the seed baseline suite, the gap report, and the first owner todo into one report.
 Use `python scripts/quality_overview.py --summary` for a compact owner-readable status.
+The summary separates runnable seed-suite results from registered extractors. For example, an extractor can be registered while its local PDF is still missing.
 
 Expected baseline files use the PDF stem:
 
