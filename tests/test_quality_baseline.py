@@ -92,6 +92,22 @@ class QualityBaselineTest(unittest.TestCase):
         self.assertEqual(report["summary"]["optional_empty_items"], 1)
         self.assertEqual(report["summary"]["exact_match_rate"], 1.0)
 
+    def test_contains_expectations_ignore_fullwidth_width_differences(self) -> None:
+        from scripts.quality_baseline import evaluate_against_expected
+
+        report = evaluate_against_expected(
+            [
+                {
+                    "id": "date",
+                    "match": {"faculty": "Law"},
+                    "expect": {"result_date": {"contains": ["１２月１１日"]}},
+                }
+            ],
+            [{"faculty": "Law", "result_date": "2026年12月11日（金）"}],
+        )
+
+        self.assertTrue(report["passed"], report)
+
     def test_marks_unmatched_expected_records_as_failed(self) -> None:
         from scripts.quality_baseline import evaluate_against_expected
 

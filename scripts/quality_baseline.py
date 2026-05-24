@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import argparse
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,7 @@ def _text(value: Any) -> str:
 
 
 def _normalize(value: Any) -> str:
-    return " ".join(_text(value).lower().split())
+    return " ".join(unicodedata.normalize("NFKC", _text(value)).lower().split())
 
 
 def _record_matches(expected_match: dict[str, Any], extracted: dict[str, Any]) -> bool:
@@ -44,7 +45,8 @@ def _evaluate_value(field: str, expected_rule: Any, actual_value: Any) -> dict[s
 
         if "contains" in expected_rule:
             required = [_text(item) for item in expected_rule.get("contains") or [] if _text(item)]
-            missing = [item for item in required if item not in actual]
+            normalized_actual = _normalize(actual)
+            missing = [item for item in required if _normalize(item) not in normalized_actual]
             if missing:
                 check["status"] = "mismatch" if actual else "missing"
                 check["missing_terms"] = missing
@@ -52,9 +54,10 @@ def _evaluate_value(field: str, expected_rule: Any, actual_value: Any) -> dict[s
 
         if "any_of" in expected_rule:
             options = [_text(item) for item in expected_rule.get("any_of") or [] if _text(item)]
+            normalized_actual = _normalize(actual)
             if not actual:
                 check["status"] = "missing"
-            elif not any(option in actual for option in options):
+            elif not any(_normalize(option) in normalized_actual for option in options):
                 check["status"] = "mismatch"
             return check
 

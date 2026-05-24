@@ -29,6 +29,7 @@ from scripts.db import (  # noqa: E402
     update_source_document,
 )
 from scripts.json_parser import extract_json_payload  # noqa: E402
+from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.runtime_paths import rendered_pages_dir  # noqa: E402
@@ -1691,6 +1692,19 @@ def _run_text_path(
     full_text, page_map = _read_pdf_text(pdf_path)
     text_len = len(full_text.strip())
     print(f"[direct] text_length={text_len} pages={len(page_map)}")
+    meiji_seed_records = extract_meiji_2027_schedule_records(full_text)
+    if meiji_seed_records and university == "明治大学" and str(year) == "2027":
+        result = {"records": meiji_seed_records, "source": "meiji_2027_schedule_seed"}
+        inserted = _insert_result(doc_id, result, page_map=page_map, default_page=1, university=university, year=year)
+        return {
+            "mode": "deterministic_text",
+            "pages": len(page_map),
+            "text_length": text_len,
+            "records": len(meiji_seed_records),
+            "inserted": inserted,
+            "failed_pages": [],
+            "raw": result,
+        }
     faculty_candidates: list[str] = []
     seen_faculty: set[str] = set()
     for m in re.finditer(r"[一-龥々ぁ-んァ-ンー・]+学部", full_text):

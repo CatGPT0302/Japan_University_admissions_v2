@@ -20,6 +20,13 @@ This project treats admissions extraction as a reviewable data-production flow, 
    - `scripts/quality_baseline.py`
    - Compares extracted records against an expected JSON file.
    - Supports exact values, required substrings, any-of checks, and optional empty values.
+   - Normalizes full-width and half-width text before substring comparisons, so PDF typography does not create false failures.
+
+5. Narrow deterministic seed extractors
+   - `scripts/meiji_schedule_extractor.py`
+   - Covers the official Meiji 2027 schedule seed rows that have been checked into `quality_baselines/meiji_2027_schedule.expected.json`.
+   - Runs before the general LLM text path only for the matching Meiji 2027 official schedule text.
+   - This is a stability anchor, not a full replacement for broader extraction and human review.
 
 ## Baseline JSON Shape
 
