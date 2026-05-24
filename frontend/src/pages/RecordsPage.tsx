@@ -73,9 +73,9 @@ export default function RecordsPage() {
       <section className="hero-panel">
         <div className="split-row split-row-start">
           <div>
-            <div className="section-kicker">主表导出</div>
-            <h2 className="section-title">正式库记录与统一 Excel 主表</h2>
-            <p className="section-copy">这里只显示已确认入库的数据。导出按钮会实时读取数据库，不再为每所学校维护单独 Excel。</p>
+            <div className="section-kicker">正式资料</div>
+            <h2 className="section-title">已确认的招生资料与 Excel 表</h2>
+            <p className="section-copy">这里只显示已经确认过的资料。导出按钮会读取最新内容，不用再为每所学校维护单独 Excel。</p>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">
@@ -83,7 +83,7 @@ export default function RecordsPage() {
               <strong className="metric-value">{rows.length}</strong>
             </div>
             <div className="metric-card">
-              <span className="metric-label">正式库总数</span>
+              <span className="metric-label">正式资料总数</span>
               <strong className="metric-value">{stats?.total_records ?? "-"}</strong>
             </div>
             <div className="metric-card">
@@ -98,7 +98,7 @@ export default function RecordsPage() {
         <aside className="sidebar-panel">
           <div className="toolbar-shell">
             <h3 className="panel-title">筛选与导出</h3>
-            <p className="panel-copy">筛选只影响当前查看和导出范围；清空后即可导出全部正式库主表。</p>
+            <p className="panel-copy">筛选只影响当前查看和导出范围；清空后即可导出全部正式资料。</p>
             <div className="list-stack">
               <label className="field-wrap">
                 <span className="field-label">大学</span>
@@ -126,7 +126,7 @@ export default function RecordsPage() {
                 }
                 type="button"
               >
-                导出统一 Excel 主表
+                导出 Excel 表
               </button>
               <button
                 className="btn btn-ghost"
@@ -141,7 +141,7 @@ export default function RecordsPage() {
               </button>
             </div>
             <div className="filter-row">
-              {activeFilters.length ? activeFilters.map((item) => <span key={item} className="badge badge-blue">{item}</span>) : <span className="badge badge-gray">全部正式记录</span>}
+              {activeFilters.length ? activeFilters.map((item) => <span key={item} className="badge badge-blue">{item}</span>) : <span className="badge badge-gray">全部正式资料</span>}
             </div>
           </div>
         </aside>
@@ -153,8 +153,8 @@ export default function RecordsPage() {
             <div className="detail-shell">
               <div className="detail-header">
                 <div>
-                  <div className="card-kicker">正式记录</div>
-                  <h3 className="panel-title">点击记录查看完整字段</h3>
+                  <div className="card-kicker">正式资料</div>
+                  <h3 className="panel-title">点击学校查看完整内容</h3>
                 </div>
                 <span className="badge badge-gray">{rows.length} 条</span>
               </div>
@@ -174,8 +174,8 @@ export default function RecordsPage() {
               </div>
               {!rows.length && !loading && (
                 <div className="empty-state empty-state-quiet">
-                  <h3 className="panel-title">暂无正式记录</h3>
-                  <p className="panel-copy">请先在人工复核页确认入库。</p>
+                  <h3 className="panel-title">暂无正式资料</h3>
+                  <p className="panel-copy">请先在人工核对页保存正式资料。</p>
                 </div>
               )}
             </div>
@@ -186,7 +186,7 @@ export default function RecordsPage() {
               </button>
               <div className="detail-header">
                 <div>
-                  <div className="card-kicker">记录详情</div>
+                  <div className="card-kicker">资料详情</div>
                   <h3 className="panel-title">{selectedRow.university}</h3>
                 </div>
               </div>

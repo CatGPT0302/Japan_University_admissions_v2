@@ -8,18 +8,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from scripts.normalize_fields import EXCEL_COLUMNS, load_and_normalize  # noqa: E402
+from scripts.normalize_fields import load_and_normalize  # noqa: E402
 
 
 def export_tsv(input_path: Path, output_path: Path) -> dict[str, int | str]:
     normalized = load_and_normalize(input_path)
     records = normalized.get("records") or []
+    columns = normalized.get("columns") or []
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8-sig", newline="") as fh:
         writer = csv.writer(fh, delimiter="\t", lineterminator="\n")
-        writer.writerow(EXCEL_COLUMNS)
+        writer.writerow(columns)
         for record in records:
-            writer.writerow([record.get(column, "") for column in EXCEL_COLUMNS])
+            writer.writerow([record.get(column, "") for column in columns])
     return {"output": str(output_path), "records": len(records)}
 
 

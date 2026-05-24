@@ -14,6 +14,7 @@ from scripts.normalize_fields import (  # noqa: E402
     CRITICAL_EMPTY_HIGHLIGHT_COLUMNS,
     EXCEL_COLUMNS,
     KEY_TO_COLUMN,
+    STANDARD_KEY_TO_COLUMN,
     load_and_normalize,
     normalize_extraction_result,
 )
@@ -44,7 +45,6 @@ def _column_width(column: str) -> float:
         "大学名称": 18,
         "入学年度": 12,
         "入学时期": 12,
-        "学部": 18,
         "学科/专业": 28,
         "出愿期间": 36,
         "截止规则": 44,
@@ -66,6 +66,31 @@ def _column_width(column: str) -> float:
         "是否需要复核": 14,
         "风险等级": 12,
         "警告/备注": 56,
+        "大学名": 18,
+        "出願時期": 14,
+        "学部": 18,
+        "学科・専修等": 28,
+        "出願期間": 28,
+        "必着/消印": 22,
+        "EJUの実施回": 24,
+        "日本語": 10,
+        "記述": 10,
+        "総合科目": 12,
+        "数学": 16,
+        "物理": 10,
+        "化学": 10,
+        "生物": 10,
+        "英語外部資格試験": 34,
+        "選考方法": 28,
+        "選考日程": 28,
+        "合格発表日": 18,
+        "入学手続期間": 28,
+        "都道府県": 12,
+        "キャンパス": 24,
+        "信頼度": 10,
+        "要確認": 10,
+        "リスク": 12,
+        "備考": 56,
     }.get(column, 18)
 
 
@@ -78,43 +103,67 @@ def build_excel_workbook_from_normalized(normalized: dict[str, Any]):
         raise RuntimeError("openpyxl is required for Excel export") from exc
 
     records = normalized.get("records") or []
+    columns = normalized.get("columns") or EXCEL_COLUMNS
     wb = Workbook()
     ws = wb.active
-    ws.title = "提取结果"
-    ws.append(EXCEL_COLUMNS)
+    if normalized.get("schema") != "standard_jp":
+        ws.title = "提取结果"
+        ws.append(columns)
+        for record in records:
+            ws.append([record.get(column, "") for column in columns])
+        return wb, len(records)
+
+    ws.title = "抽出結果"
+    ws["A1"] = "日本大学留学生入試 募集要項抽出結果"
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(columns))
+    ws.append([])
+    ws.append([])
+    ws.append(columns)
     for record in records:
-        ws.append([record.get(column, "") for column in EXCEL_COLUMNS])
+        ws.append([record.get(column, "") for column in columns])
 
     header_fill = PatternFill("solid", fgColor="1F4E78")
     header_font = Font(name="Microsoft YaHei UI", color="FFFFFF", bold=True)
+    title_font = Font(name="Microsoft YaHei UI", color="1F2937", bold=True, size=16)
     thin = Side(style="thin", color="D9E2F3")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
     warning_fill = PatternFill("solid", fgColor="FFF2CC")
 
-    for cell in ws[1]:
+    ws["A1"].font = title_font
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+    ws.row_dimensions[1].height = 28
+
+    for cell in ws[4]:
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = border
 
-    for col_idx, column in enumerate(EXCEL_COLUMNS, start=1):
+    for col_idx, column in enumerate(columns, start=1):
         ws.column_dimensions[get_column_letter(col_idx)].width = _column_width(column)
 
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+    for row in ws.iter_rows(min_row=5, max_row=ws.max_row):
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
             cell.border = border
-            header = EXCEL_COLUMNS[cell.column - 1]
+            header = columns[cell.column - 1]
             if header in CRITICAL_EMPTY_HIGHLIGHT_COLUMNS and str(cell.value or "").strip() in {"", "要确认", "要確認"}:
                 cell.fill = warning_fill
         ws.row_dimensions[row[0].row].height = 48
 
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = ws.dimensions
+    ws.freeze_panes = "D5"
+    ws.auto_filter.ref = f"A4:{ws.cell(row=ws.max_row, column=len(columns)).coordinate}"
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
     ws.oddFooter.center.text = f"生成时间 {datetime.now():%Y-%m-%d %H:%M}"
+
+    readme = wb.create_sheet("README")
+    readme["A1"] = "このブックは確認済みまたは抽出済みの募集要項データを標準列に整形したものです。"
+    mapping = wb.create_sheet("字段映射")
+    mapping.append(["source_key", "column"])
+    for key, column in STANDARD_KEY_TO_COLUMN.items():
+        mapping.append([key, column])
     return wb, len(records)
 
 

@@ -1,26 +1,32 @@
 # TODO
 
 ## Now
-- Improve snippet quality.
-- Improve field-to-snippet matching.
-- Review trace_debug.json.
-- Keep sample size fixed.
+
+- Stabilize the private-school service center as the first usable cooperation flow.
+- Keep owner/admin, private-school settings, and student frontend visually and semantically separate.
+- Keep `/public/*` and `/v1/*` reading confirmed admissions data only.
+- Keep private-school submissions owner-controlled: submitted material enters a queue, extraction can be started by owner/admin, and final confirmation stays in the admin review flow.
+- Remove user-facing engineering wording from the frontend.
 
 ## Next
-- Design UI Phase2 validation flow.
-- Prepare leader demo.
-- Improve README.
-- Add output comparison examples.
+
+- Add an owner-facing submission detail view with clearer links into the review page.
+- Add lightweight access protection before any external deployment of the owner/admin workspace.
+- Improve student result ranking with more real confirmed records.
+- Add browser smoke checks for `#/`, `#/settings`, and `#/student`.
+- Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later
-- Expand sample set.
-- Add more universities.
-- Improve batch processing.
-- Add human validation interface.
 
-## Handoff Package
-- [x] Add agent bootstrap document.
-- [x] Add next-agent prompt.
-- [x] Add project checkpoint.
-- [ ] Next: snippet quality report.
-- [ ] Next: snippet generation improvement.
+- Add organization-level reporting and usage summaries.
+- Add more universities only after the core review and confirmation loop is stable.
+- Add email/calendar/payment integrations only after booking v1 is proven.
+- Consider larger data model migrations only after the projection layer becomes a bottleneck.
+
+## Out Of Scope For v1
+
+-倍率数据
+- Full SaaS tenant management
+- Private-school self-confirmation into the master database
+- Full database export for private schools
+- Rebuilding the extraction workflow as a separate skill

@@ -5,8 +5,10 @@ Supports PostgreSQL in production and SQLite in local development.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
+import secrets
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
@@ -246,13 +248,78 @@ def _decode_staging_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
         decoded[field] = _decode_json_value(field, decoded.get(field))
     for flag in ("needs_review", "is_confirmed", "is_reviewed"):
         if flag in decoded and decoded[flag] is not None:
-            decoded[flag] = int(decoded[flag])
+            decoded[flag] = int(decoded[flag] or 0)
     if decoded.get("confidence") is not None:
         decoded["confidence"] = float(decoded["confidence"] or 0)
     return decoded
 
 
 _SCHEMA_PG = """
+CREATE TABLE IF NOT EXISTS organizations (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    status TEXT DEFAULT 'active',
+    plan TEXT DEFAULT 'licensed',
+    license_expires_at TEXT,
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
+CREATE TABLE IF NOT EXISTS api_clients (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id),
+    name TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
+CREATE TABLE IF NOT EXISTS api_key_hashes (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id),
+    client_id INTEGER NOT NULL REFERENCES api_clients(id),
+    key_prefix TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    scopes_json TEXT DEFAULT '[]',
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
+    last_used_at TEXT,
+    revoked_at TEXT
+);
+CREATE TABLE IF NOT EXISTS api_usage_logs (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER,
+    api_key_id INTEGER,
+    method TEXT,
+    path TEXT,
+    scope TEXT,
+    status_code INTEGER,
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
+CREATE TABLE IF NOT EXISTS organization_settings (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL UNIQUE REFERENCES organizations(id),
+    api_base_url TEXT,
+    contact_email TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
+CREATE TABLE IF NOT EXISTS document_submissions (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id),
+    api_key_id INTEGER REFERENCES api_key_hashes(id),
+    university TEXT NOT NULL,
+    admission_year TEXT,
+    pdf_url TEXT,
+    page_url TEXT,
+    file_name TEXT,
+    original_file_name TEXT,
+    notes TEXT,
+    processing_status TEXT DEFAULT 'submitted',
+    document_id INTEGER,
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE TABLE IF NOT EXISTS source_documents (
     id SERIAL PRIMARY KEY,
     university TEXT NOT NULL,
@@ -340,7 +407,7 @@ CREATE TABLE IF NOT EXISTS admission_records (
 CREATE TABLE IF NOT EXISTS correction_events (
     id SERIAL PRIMARY KEY,
     staging_id INTEGER REFERENCES admission_records_staging(id),
-    document_id INTEGER REFERENCES source_documents(id),
+    document_id INTEGER,
     university TEXT,
     admission_year TEXT,
     field_name TEXT NOT NULL,
@@ -350,15 +417,98 @@ CREATE TABLE IF NOT EXISTS correction_events (
     editor TEXT DEFAULT 'human_review',
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
 );
+CREATE TABLE IF NOT EXISTS consultation_bookings (
+    id SERIAL PRIMARY KEY,
+    student_name TEXT NOT NULL,
+    contact_email TEXT,
+    contact_phone TEXT,
+    role TEXT,
+    target_year TEXT,
+    program_id INTEGER REFERENCES admission_records(id),
+    preferred_times TEXT,
+    question TEXT,
+    status TEXT DEFAULT 'new',
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
 CREATE INDEX IF NOT EXISTS idx_stg_rev ON admission_records_staging(needs_review);
 CREATE INDEX IF NOT EXISTS idx_rec_univ ON admission_records(university);
 CREATE INDEX IF NOT EXISTS idx_rec_fac ON admission_records(faculty);
 CREATE INDEX IF NOT EXISTS idx_corr_doc ON correction_events(document_id);
 CREATE INDEX IF NOT EXISTS idx_corr_field ON correction_events(field_name);
+CREATE INDEX IF NOT EXISTS idx_booking_program ON consultation_bookings(program_id);
+CREATE INDEX IF NOT EXISTS idx_booking_status ON consultation_bookings(status);
+CREATE INDEX IF NOT EXISTS idx_api_key_hash ON api_key_hashes(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_usage_org ON api_usage_logs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_submission_org ON document_submissions(organization_id);
 """
 
 _SCHEMA_SQLITE = """
+CREATE TABLE IF NOT EXISTS organizations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    status TEXT DEFAULT 'active',
+    plan TEXT DEFAULT 'licensed',
+    license_expires_at TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS api_clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id),
+    name TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS api_key_hashes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id),
+    client_id INTEGER NOT NULL REFERENCES api_clients(id),
+    key_prefix TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    scopes_json TEXT DEFAULT '[]',
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    last_used_at TEXT,
+    revoked_at TEXT
+);
+CREATE TABLE IF NOT EXISTS api_usage_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER,
+    api_key_id INTEGER,
+    method TEXT,
+    path TEXT,
+    scope TEXT,
+    status_code INTEGER,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS organization_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER NOT NULL UNIQUE REFERENCES organizations(id),
+    api_base_url TEXT,
+    contact_email TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS document_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id),
+    api_key_id INTEGER REFERENCES api_key_hashes(id),
+    university TEXT NOT NULL,
+    admission_year TEXT,
+    pdf_url TEXT,
+    page_url TEXT,
+    file_name TEXT,
+    original_file_name TEXT,
+    notes TEXT,
+    processing_status TEXT DEFAULT 'submitted',
+    document_id INTEGER REFERENCES source_documents(id),
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
 CREATE TABLE IF NOT EXISTS source_documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     university TEXT NOT NULL,
@@ -456,12 +606,30 @@ CREATE TABLE IF NOT EXISTS correction_events (
     editor TEXT DEFAULT 'human_review',
     created_at TEXT DEFAULT (datetime('now','localtime'))
 );
+CREATE TABLE IF NOT EXISTS consultation_bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_name TEXT NOT NULL,
+    contact_email TEXT,
+    contact_phone TEXT,
+    role TEXT,
+    target_year TEXT,
+    program_id INTEGER REFERENCES admission_records(id),
+    preferred_times TEXT,
+    question TEXT,
+    status TEXT DEFAULT 'new',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
 CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
 CREATE INDEX IF NOT EXISTS idx_stg_rev ON admission_records_staging(needs_review);
 CREATE INDEX IF NOT EXISTS idx_rec_univ ON admission_records(university);
 CREATE INDEX IF NOT EXISTS idx_rec_fac ON admission_records(faculty);
 CREATE INDEX IF NOT EXISTS idx_corr_doc ON correction_events(document_id);
 CREATE INDEX IF NOT EXISTS idx_corr_field ON correction_events(field_name);
+CREATE INDEX IF NOT EXISTS idx_booking_program ON consultation_bookings(program_id);
+CREATE INDEX IF NOT EXISTS idx_booking_status ON consultation_bookings(status);
+CREATE INDEX IF NOT EXISTS idx_api_key_hash ON api_key_hashes(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_usage_org ON api_usage_logs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_submission_org ON document_submissions(organization_id);
 """
 
 _STAGING_MIGRATION_COLUMNS = {
@@ -506,6 +674,388 @@ def init_db() -> None:
     print("DB initialised (PostgreSQL)" if runtime.mode == "postgres" else "DB initialised (SQLite)")
     if runtime.warning:
         print(f"DB warning: {runtime.warning}")
+
+
+DEFAULT_API_SCOPES = [
+    "programs:read",
+    "recommendations:create",
+    "bookings:create",
+    "documents:submit",
+    "documents:read_status",
+]
+
+
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "organization"
+
+
+def _hash_api_key(secret: str) -> str:
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+
+
+def _new_api_secret() -> str:
+    return f"ak_{secrets.token_urlsafe(28)}"
+
+
+def _json_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    if not value:
+        return []
+    try:
+        decoded = json.loads(value)
+    except Exception:
+        return []
+    return [str(item) for item in decoded] if isinstance(decoded, list) else []
+
+
+def get_or_create_organization(name: str = "Owner Workspace") -> dict[str, Any]:
+    slug = _slugify(name)
+    conn = get_conn()
+    row = _fetchone(conn, f"SELECT * FROM organizations WHERE slug={_ph()}", (slug,))
+    if not row:
+        sql = (
+            f"INSERT INTO organizations (name,slug,status,plan) "
+            f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()})"
+        )
+        if _pg():
+            sql += " RETURNING id"
+        cur = _execute(conn, sql, (name, slug, "active", "licensed"))
+        org_id = _lastrowid(cur)
+        _execute(
+            conn,
+            f"INSERT INTO organization_settings (organization_id,api_base_url,contact_email,notes) "
+            f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()})",
+            (org_id, "/v1", "", "Owner-issued API access"),
+        )
+        conn.commit()
+        row = _fetchone(conn, f"SELECT * FROM organizations WHERE id={_ph()}", (org_id,))
+    conn.close()
+    return row or {}
+
+
+def _get_or_create_api_client(conn, organization_id: int, name: str) -> dict[str, Any]:
+    row = _fetchone(
+        conn,
+        f"SELECT * FROM api_clients WHERE organization_id={_ph()} AND name={_ph()}",
+        (organization_id, name),
+    )
+    if row:
+        return row
+    sql = f"INSERT INTO api_clients (organization_id,name,status) VALUES ({_ph()},{_ph()},{_ph()})"
+    if _pg():
+        sql += " RETURNING id"
+    cur = _execute(conn, sql, (organization_id, name, "active"))
+    client_id = _lastrowid(cur)
+    return _fetchone(conn, f"SELECT * FROM api_clients WHERE id={_ph()}", (client_id,)) or {}
+
+
+def issue_api_key(
+    organization_name: str = "Owner Workspace",
+    client_name: str = "Default integration",
+    scopes: list[str] | None = None,
+) -> dict[str, Any]:
+    organization = get_or_create_organization(organization_name)
+    secret = _new_api_secret()
+    scope_values = scopes or DEFAULT_API_SCOPES
+    conn = get_conn()
+    client = _get_or_create_api_client(conn, int(organization["id"]), client_name)
+    sql = (
+        "INSERT INTO api_key_hashes "
+        f"(organization_id,client_id,key_prefix,key_hash,scopes_json,status) "
+        f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()})"
+    )
+    if _pg():
+        sql += " RETURNING id"
+    cur = _execute(
+        conn,
+        sql,
+        (
+            int(organization["id"]),
+            int(client["id"]),
+            secret[:12],
+            _hash_api_key(secret),
+            json.dumps(scope_values, ensure_ascii=False),
+            "active",
+        ),
+    )
+    key_id = _lastrowid(cur)
+    conn.commit()
+    conn.close()
+    return {
+        "key_id": key_id,
+        "organization_id": int(organization["id"]),
+        "client_id": int(client["id"]),
+        "secret": secret,
+        "masked_key": f"{secret[:12]}...",
+        "scopes": scope_values,
+    }
+
+
+def revoke_api_key(key_id: int) -> bool:
+    conn = get_conn()
+    cur = _execute(
+        conn,
+        f"UPDATE api_key_hashes SET status={_ph()}, revoked_at={_ph()} WHERE id={_ph()}",
+        ("revoked", _now(), int(key_id)),
+    )
+    changed = int(getattr(cur, "rowcount", 0) or 0)
+    conn.commit()
+    conn.close()
+    return changed > 0
+
+
+def get_api_key_context(secret: str) -> dict[str, Any] | None:
+    secret = (secret or "").strip()
+    if not secret:
+        return None
+    hashed = _hash_api_key(secret)
+    conn = get_conn()
+    row = _fetchone(
+        conn,
+        "SELECT k.id AS api_key_id, k.organization_id, k.client_id, k.key_prefix, "
+        "k.scopes_json, k.status AS key_status, k.revoked_at, "
+        "o.name AS organization_name, o.status AS organization_status, o.license_expires_at, "
+        "c.name AS client_name, c.status AS client_status "
+        "FROM api_key_hashes k "
+        "JOIN organizations o ON o.id = k.organization_id "
+        "JOIN api_clients c ON c.id = k.client_id "
+        f"WHERE k.key_hash={_ph()}",
+        (hashed,),
+    )
+    conn.close()
+    if not row:
+        return None
+    row["scopes"] = _json_list(row.get("scopes_json"))
+    return row
+
+
+def mark_api_key_used(api_key_id: int) -> None:
+    conn = get_conn()
+    _execute(
+        conn,
+        f"UPDATE api_key_hashes SET last_used_at={_ph()} WHERE id={_ph()}",
+        (_now(), int(api_key_id)),
+    )
+    conn.commit()
+    conn.close()
+
+
+def log_api_usage(
+    organization_id: int | None,
+    api_key_id: int | None,
+    method: str,
+    path: str,
+    scope: str,
+    status_code: int,
+) -> None:
+    conn = get_conn()
+    _execute(
+        conn,
+        "INSERT INTO api_usage_logs "
+        f"(organization_id,api_key_id,method,path,scope,status_code) "
+        f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()})",
+        (organization_id, api_key_id, method, path, scope, int(status_code)),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_api_center() -> dict[str, Any]:
+    conn = get_conn()
+    org = _fetchone(conn, "SELECT * FROM organizations ORDER BY id LIMIT 1")
+    if not org:
+        conn.close()
+        org = get_or_create_organization()
+        conn = get_conn()
+    settings = _fetchone(
+        conn,
+        f"SELECT api_base_url,contact_email,notes FROM organization_settings WHERE organization_id={_ph()}",
+        (int(org["id"]),),
+    ) or {"api_base_url": "/v1", "contact_email": "", "notes": ""}
+    keys = _fetchall(
+        conn,
+        "SELECT k.id, k.key_prefix, k.scopes_json, k.status, k.created_at, k.last_used_at, "
+        "c.name AS client_name "
+        "FROM api_key_hashes k "
+        "JOIN api_clients c ON c.id = k.client_id "
+        f"WHERE k.organization_id={_ph()} ORDER BY k.id DESC",
+        (int(org["id"]),),
+    )
+    usage = _fetchall(
+        conn,
+        "SELECT method,path,scope,status_code,created_at FROM api_usage_logs "
+        f"WHERE organization_id={_ph()} ORDER BY id DESC LIMIT 20",
+        (int(org["id"]),),
+    )
+    conn.close()
+    return {
+        "organization": {
+            "id": int(org["id"]),
+            "name": org.get("name") or "",
+            "status": org.get("status") or "",
+            "plan": org.get("plan") or "",
+        },
+        "settings": settings,
+        "api_keys": [
+            {
+                "id": int(row["id"]),
+                "client_name": row.get("client_name") or "",
+                "masked_key": f"{row.get('key_prefix') or 'ak_'}...",
+                "scopes": _json_list(row.get("scopes_json")),
+                "status": row.get("status") or "",
+                "created_at": row.get("created_at") or "",
+                "last_used_at": row.get("last_used_at") or "",
+            }
+            for row in keys
+        ],
+        "recent_usage": usage,
+        "allowed_scopes": DEFAULT_API_SCOPES,
+    }
+
+
+def create_document_submission(
+    organization_id: int,
+    api_key_id: int | None,
+    payload: dict[str, Any],
+) -> int:
+    fields = [
+        "organization_id",
+        "api_key_id",
+        "university",
+        "admission_year",
+        "pdf_url",
+        "page_url",
+        "file_name",
+        "original_file_name",
+        "notes",
+        "processing_status",
+    ]
+    values = [
+        int(organization_id),
+        api_key_id,
+        payload.get("university", ""),
+        payload.get("admission_year", ""),
+        payload.get("pdf_url", ""),
+        payload.get("page_url", ""),
+        payload.get("file_name", ""),
+        payload.get("original_file_name", ""),
+        payload.get("notes", ""),
+        "submitted",
+    ]
+    sql = f"INSERT INTO document_submissions ({','.join(fields)}) VALUES ({_phn(len(fields))})"
+    if _pg():
+        sql += " RETURNING id"
+    conn = get_conn()
+    cur = _execute(conn, sql, values)
+    row_id = _lastrowid(cur)
+    conn.commit()
+    conn.close()
+    return row_id
+
+
+def get_document_submission(organization_id: int, submission_id: int) -> dict[str, Any] | None:
+    conn = get_conn()
+    row = _fetchone(
+        conn,
+        "SELECT id,university,admission_year,pdf_url,page_url,file_name,original_file_name,"
+        "notes,processing_status,document_id,created_at,updated_at "
+        f"FROM document_submissions WHERE organization_id={_ph()} AND id={_ph()}",
+        (int(organization_id), int(submission_id)),
+    )
+    conn.close()
+    if row:
+        row["status"] = row.get("processing_status")
+    return row
+
+
+OWNER_SUBMISSION_STATUSES = {
+    "submitted",
+    "processing",
+    "needs_owner_review",
+    "confirmed",
+    "needs_more_info",
+    "failed",
+}
+
+
+def _owner_submission_select() -> str:
+    return (
+        "SELECT s.id,s.university,s.admission_year,s.pdf_url,s.page_url,s.file_name,"
+        "s.original_file_name,s.notes,s.processing_status,s.document_id,s.created_at,s.updated_at,"
+        "o.name AS organization_name,c.name AS client_name "
+        "FROM document_submissions s "
+        "JOIN organizations o ON o.id=s.organization_id "
+        "LEFT JOIN api_key_hashes k ON k.id=s.api_key_id "
+        "LEFT JOIN api_clients c ON c.id=k.client_id "
+    )
+
+
+def _clean_owner_submission(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not row:
+        return None
+    cleaned = dict(row)
+    cleaned["status"] = cleaned.get("processing_status")
+    return cleaned
+
+
+def list_document_submissions(
+    status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    where = ""
+    params: list[Any] = []
+    if status:
+        where = f"WHERE s.processing_status={_ph()} "
+        params.append(status)
+    sql = (
+        _owner_submission_select()
+        + where
+        + f"ORDER BY s.id DESC LIMIT {_ph()} OFFSET {_ph()}"
+    )
+    params.extend([int(limit), int(offset)])
+    conn = get_conn()
+    rows = _fetchall(conn, sql, tuple(params))
+    conn.close()
+    return [_clean_owner_submission(row) or {} for row in rows]
+
+
+def get_document_submission_for_owner(submission_id: int) -> dict[str, Any] | None:
+    conn = get_conn()
+    row = _fetchone(
+        conn,
+        _owner_submission_select() + f"WHERE s.id={_ph()}",
+        (int(submission_id),),
+    )
+    conn.close()
+    return _clean_owner_submission(row)
+
+
+def update_document_submission(
+    submission_id: int,
+    *,
+    processing_status: str | None = None,
+    document_id: int | None = None,
+) -> dict[str, Any] | None:
+    updates: dict[str, Any] = {"updated_at": _now()}
+    if processing_status is not None:
+        if processing_status not in OWNER_SUBMISSION_STATUSES:
+            raise ValueError(f"Unsupported submission status: {processing_status}")
+        updates["processing_status"] = processing_status
+    if document_id is not None:
+        updates["document_id"] = int(document_id)
+    sets = ", ".join(f"{key}={_ph()}" for key in updates)
+    conn = get_conn()
+    _execute(
+        conn,
+        f"UPDATE document_submissions SET {sets} WHERE id={_ph()}",
+        (*updates.values(), int(submission_id)),
+    )
+    conn.commit()
+    conn.close()
+    return get_document_submission_for_owner(submission_id)
 
 
 def create_source_document(university, file_name, file_path="", pdf_url="", admission_year="") -> int:
@@ -1046,6 +1596,246 @@ def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -
     rows = _fetchall(conn, sql, params)
     conn.close()
     return rows
+
+
+def _public_risk(row: dict[str, Any]) -> dict[str, Any]:
+    missing = []
+    for field, label in (
+        ("application_period", "出愿期间"),
+        ("deadline_rule", "截止规则"),
+        ("screening_method", "选考方式"),
+        ("result_date", "合格发表日"),
+    ):
+        if not str(row.get(field) or "").strip():
+            missing.append(label)
+    complex_bits = []
+    haystack = " ".join(str(row.get(field) or "") for field in ("eju_japanese", "eju_general", "eju_math", "eju_physics", "eju_chemistry", "eju_biology", "english_requirement"))
+    if any(marker in haystack for marker in ("要確認", "确认", "選択", "任选", "から", "または", "／", "/")):
+        complex_bits.append("要求中含有选择或需确认条件")
+    if missing:
+        return {"level": "high" if len(missing) >= 3 else "medium", "reasons": [f"缺少{item}" for item in missing] + complex_bits}
+    if complex_bits:
+        return {"level": "medium", "reasons": complex_bits}
+    return {"level": "low", "reasons": ["已确认记录，核心字段较完整"]}
+
+
+def _public_program_from_row(row: dict[str, Any]) -> dict[str, Any]:
+    risk = _public_risk(row)
+    stored_risk_level = str(row.get("staging_risk_level") or "").strip()
+    if stored_risk_level:
+        risk["level"] = stored_risk_level
+    field_evidence = _decode_json_value("field_evidence", row.get("field_evidence"))
+    confidence_value = row.get("staging_confidence")
+    try:
+        confidence = float(confidence_value) if confidence_value not in ("", None) else None
+    except (TypeError, ValueError):
+        confidence = None
+    return {
+        "id": int(row.get("id") or 0),
+        "school_name": row.get("university") or "",
+        "admission_year": row.get("admission_year") or "",
+        "admission_period": row.get("admission_period") or "",
+        "faculty": row.get("faculty") or "",
+        "department": row.get("department") or "",
+        "application_period": row.get("application_period") or "",
+        "deadline_rule": row.get("deadline_rule") or "",
+        "exam_method": row.get("screening_method") or "",
+        "exam_date": row.get("screening_schedule") or "",
+        "result_date": row.get("result_date") or "",
+        "enrollment_period": row.get("enrollment_period") or "",
+        "prefecture": row.get("prefecture") or "",
+        "campus": row.get("campus") or "",
+        "requirements": {
+            "eju": {
+                "session": row.get("eju_session") or "",
+                "japanese": row.get("eju_japanese") or "",
+                "general": row.get("eju_general") or "",
+                "math": row.get("eju_math") or "",
+                "physics": row.get("eju_physics") or "",
+                "chemistry": row.get("eju_chemistry") or "",
+                "biology": row.get("eju_biology") or "",
+            },
+            "english": {"raw_text": row.get("english_requirement") or ""},
+            "jlpt": {"raw_text": ""},
+            "eligibility": "",
+            "required_documents": [],
+        },
+        "risk": risk,
+        "risk_level": risk.get("level"),
+        "confidence": confidence,
+        "evidence": field_evidence,
+        "source_document": {
+            "id": row.get("document_id"),
+            "file_name": row.get("source_file_name") or "",
+            "pdf_url": row.get("source_pdf_url") or row.get("pdf_url") or "",
+        },
+    }
+
+
+def get_public_programs(
+    university: str | None = None,
+    year: str | int | None = None,
+    faculty: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    clauses: list[str] = []
+    params: list[Any] = []
+    like = "ILIKE" if _pg() else "LIKE"
+    if university:
+        clauses.append(f"ar.university {like} {_ph()}")
+        params.append(f"%{university}%")
+    if year:
+        clauses.append(f"ar.admission_year = {_ph()}")
+        params.append(str(year))
+    if faculty:
+        clauses.append(f"ar.faculty {like} {_ph()}")
+        params.append(f"%{faculty}%")
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    params.extend([int(limit), int(offset)])
+    sql = (
+        "SELECT ar.id, ar.document_id, ar.university, ar.pdf_url, ar.admission_year, "
+        "ar.admission_period, ar.faculty, ar.department, ar.application_period, ar.deadline_rule, "
+        "ar.eju_session, ar.eju_japanese, ar.eju_general, ar.eju_math, ar.eju_physics, "
+        "ar.eju_chemistry, ar.eju_biology, ar.english_requirement, ar.screening_method, "
+        "ar.screening_schedule, ar.result_date, ar.enrollment_period, ar.prefecture, ar.campus, "
+        "sd.file_name AS source_file_name, sd.pdf_url AS source_pdf_url, "
+        "st.confidence AS staging_confidence, st.field_evidence, st.risk_level AS staging_risk_level "
+        "FROM admission_records ar "
+        "LEFT JOIN source_documents sd ON sd.id = ar.document_id "
+        f"LEFT JOIN admission_records_staging st ON st.id = ar.source_staging_id {where} "
+        f"ORDER BY ar.id DESC LIMIT {_ph()} OFFSET {_ph()}"
+    )
+    conn = get_conn()
+    rows = _fetchall(conn, sql, tuple(params))
+    conn.close()
+    return [_public_program_from_row(row) for row in rows]
+
+
+def get_public_program(program_id: int) -> dict[str, Any] | None:
+    sql = (
+        "SELECT ar.id, ar.document_id, ar.university, ar.pdf_url, ar.admission_year, "
+        "ar.admission_period, ar.faculty, ar.department, ar.application_period, ar.deadline_rule, "
+        "ar.eju_session, ar.eju_japanese, ar.eju_general, ar.eju_math, ar.eju_physics, "
+        "ar.eju_chemistry, ar.eju_biology, ar.english_requirement, ar.screening_method, "
+        "ar.screening_schedule, ar.result_date, ar.enrollment_period, ar.prefecture, ar.campus, "
+        "sd.file_name AS source_file_name, sd.pdf_url AS source_pdf_url, "
+        "st.confidence AS staging_confidence, st.field_evidence, st.risk_level AS staging_risk_level "
+        "FROM admission_records ar "
+        "LEFT JOIN source_documents sd ON sd.id = ar.document_id "
+        f"LEFT JOIN admission_records_staging st ON st.id = ar.source_staging_id WHERE ar.id = {_ph()}"
+    )
+    conn = get_conn()
+    row = _fetchone(conn, sql, (int(program_id),))
+    conn.close()
+    return _public_program_from_row(row) if row else None
+
+
+def _profile_terms(values: Any) -> list[str]:
+    if isinstance(values, str):
+        return [values.strip()] if values.strip() else []
+    if isinstance(values, list):
+        return [str(value).strip() for value in values if str(value or "").strip()]
+    return []
+
+
+def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> dict[str, Any]:
+    programs = get_public_programs(year=profile.get("target_year") or None, limit=500, offset=0)
+    if not programs and profile.get("target_year"):
+        programs = get_public_programs(limit=500, offset=0)
+    desired_fields = _profile_terms(profile.get("desired_fields"))
+    preferred_prefectures = _profile_terms(profile.get("preferred_prefectures"))
+    english_tests = [item.lower() for item in _profile_terms(profile.get("english_tests"))]
+    eju_subjects = _profile_terms(profile.get("eju_subjects"))
+
+    results: list[dict[str, Any]] = []
+    for program in programs:
+        score = 0
+        reasons: list[str] = []
+        check_items: list[str] = []
+        searchable = " ".join(
+            str(program.get(key) or "")
+            for key in ("school_name", "faculty", "department", "prefecture", "campus", "exam_method")
+        )
+        requirements = program.get("requirements") or {}
+        eju = requirements.get("eju") or {}
+        english = (requirements.get("english") or {}).get("raw_text") or ""
+        eju_text = " ".join(str(value or "") for value in eju.values())
+
+        if profile.get("target_year") and str(program.get("admission_year")) == str(profile.get("target_year")):
+            score += 3
+            reasons.append("入学年度匹配")
+        for term in desired_fields:
+            if term and term in searchable:
+                score += 3
+                reasons.append(f"学部/方向包含“{term}”")
+        for term in preferred_prefectures:
+            if term and term in searchable:
+                score += 2
+                reasons.append(f"地区匹配“{term}”")
+        for term in english_tests:
+            if term and term in english.lower():
+                score += 2
+                reasons.append(f"英语要求中出现 {term.upper()}")
+        for term in eju_subjects:
+            if term and term in eju_text:
+                score += 1
+                reasons.append(f"EJU 条件包含“{term}”")
+
+        risk_level = str((program.get("risk") or {}).get("level") or "medium")
+        if risk_level == "high":
+            check_items.append("该项目有较多缺失或复杂条件，咨询前需要人工确认")
+        elif risk_level == "medium":
+            check_items.append("该项目有选择条件或部分字段需确认")
+        if not english:
+            check_items.append("英语要求为空，需确认是否不要求或原文未抽出")
+        if not eju_text.strip():
+            check_items.append("EJU 要求为空，需确认是否不要求或原文未抽出")
+        if not reasons:
+            reasons.append("作为已确认记录供参考，匹配度需要顾问复核")
+
+        if score >= 7 and risk_level == "low":
+            fit_level = "likely_fit"
+        elif score >= 3 and risk_level != "high":
+            fit_level = "check_carefully"
+        else:
+            fit_level = "high_risk"
+        results.append(
+            {
+                "program": program,
+                "score": score,
+                "fit_level": fit_level,
+                "reasons": reasons,
+                "check_items": check_items or ["请顾问确认最新募集要项和个人成绩条件"],
+            }
+        )
+
+    results.sort(key=lambda item: (item["score"], 0 if item["fit_level"] == "likely_fit" else -1), reverse=True)
+    return {"profile": profile, "results": results[: int(limit)]}
+
+
+def create_consultation_booking(payload: dict[str, Any]) -> int:
+    fields = [
+        "student_name",
+        "contact_email",
+        "contact_phone",
+        "role",
+        "target_year",
+        "program_id",
+        "preferred_times",
+        "question",
+        "status",
+    ]
+    values = [payload.get(field, "") for field in fields]
+    sql = f"INSERT INTO consultation_bookings ({','.join(fields)}) VALUES ({_phn(len(fields))})"
+    if _pg():
+        sql += " RETURNING id"
+    conn = get_conn()
+    cur = _execute(conn, sql, values)
+    row_id = _lastrowid(cur)
+    conn.commit()
+    conn.close()
+    return row_id
 
 
 def get_stats() -> dict:

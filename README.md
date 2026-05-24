@@ -2,31 +2,41 @@
 
 ## Project Overview
 
-admissions_v2 is an LLM-assisted admissions information extraction and review system for Japanese university admission guideline PDFs.
+admissions_v2 is an owner-hosted Japanese university admissions system.
 
-The project focuses on turning public admission documents into structured, human-reviewable records. It is not a pure OCR project and it is not a general-purpose PDF parser.
+It has three product surfaces:
 
-## Core Workflow
+- Owner/admin workspace: upload admissions PDFs or source URLs, run extraction, review uncertain content, confirm records, and export the master Excel workbook.
+- Private-school service center: issue limited access, receive submitted PDFs or links, track processing progress, and keep final data confirmation under the owner.
+- Student/parent frontend: collect a student's profile, show schools worth checking, explain requirements in plain language, and accept consultation bookings.
+
+The project is not a pure OCR tool and is no longer only a local extraction MVP. The core data and extraction workflow stay owner-controlled.
+
+## Current Workflow
 
 ```text
-PDF upload / source input
--> field extraction
--> normalization
--> staging review
--> confirmed records
--> Excel master export
+Private school or owner submits source material
+-> system stores the submission
+-> owner starts the existing extraction workflow
+-> extracted content enters review
+-> owner confirms it into the main database
+-> student frontend and licensed API read confirmed data only
 ```
 
-## Features
+## Main Routes
 
-- PDF upload and source input
-- Public-source PDF retrieval and maintained source registry support
-- LLM-assisted field extraction
-- Field evidence, confidence, risk level, and warnings
-- Staging review before records are confirmed
-- Confirmed records database
-- Standard Excel master export
-- Quality metrics and correction history endpoints
+- `#/` - owner/admin workspace
+- `#/settings` - private-school service center
+- `#/student` - student/parent frontend
+
+## Backend Interfaces
+
+- Admin workflow: `/upload`, `/agent/run`, `/staging/*`, `/confirm/*`, `/records`, `/export/excel`
+- Public student API: `/public/programs`, `/public/recommendations`, `/public/bookings`
+- Licensed API: `/v1/programs`, `/v1/recommendations`, `/v1/bookings`, `/v1/documents/submissions`
+- Owner queue: `/admin/submissions`
+
+Licensed API keys are stored as hashes. The full secret is only shown once when created.
 
 ## Tech Stack
 
@@ -64,7 +74,7 @@ The frontend should point to the local backend:
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-### Environment Variables
+## Environment Variables
 
 Use `.env.example` in the project root and `frontend/.env.example` for local configuration templates.
 
@@ -84,54 +94,21 @@ Resolution order:
 - API key: `LLM_API_KEY` -> `OPENAI_API_KEY`
 - Endpoint: `OPENAI_COMPAT_URL` -> `LLM_COMPAT_URL` -> `OPENAI_URL` -> `OPENAI_BASE_URL` -> `LLM_BASE_URL` -> official OpenAI default
 
-## Extraction And Export
-
-Extract fields from a Japanese university admission PDF:
-
-```powershell
-python scripts/extract_fields.py <pdf_path> --output output.json
-```
-
-Export a normalized TSV:
-
-```powershell
-python scripts/export_tsv.py output.json --output admissions_standard.tsv
-```
-
-Export an Excel master workbook:
-
-```powershell
-python scripts/export_excel.py output.json --output admissions_standard.xlsx
-```
-
-Export confirmed records from the current database:
-
-```powershell
-python scripts/export_excel.py --from-db --output admissions_master.xlsx
-```
-
 ## Data Boundary
 
-This repository is designed for public admission information, official university publications, publicly available admission documents, and manually prepared sample data.
+This repository is designed for public admissions information, official university publications, publicly available admissions documents, and manually prepared sample data.
 
-It does not include private datasets, confidential documents, real student information, private operational data, or non-public reference tables.
+Do not commit private datasets, real student information, private operational data, secrets, or customer-specific files.
 
-Runtime data that is private, custom, or maintained by a user should stay outside the public repository, for example under `private_data/` or another user-controlled path that is not committed.
+Owner data assets remain in the owner-hosted database. Private schools receive limited use rights through issued access, not ownership of the master database or extraction logic.
 
-## Current Status
+## Verification
 
-The project is an MVP-stage local workflow tool for controlled demos, validation, and extraction-quality iteration.
-
-The current engineering priority is extraction quality, evidence traceability, and human review efficiency. It should not be described as a production SaaS system.
-
-## Documentation
-
-- `docs/AGENT_BOOTSTRAP.md`
-- `docs/handoff.md`
-- `docs/phase2_ui.md`
-- `docs/leader_demo.md`
-- `docs/FINAL_ACCEPTANCE_AND_AGENT_PROMPTS.md`
-- `TODO.md`
+```powershell
+python -m pytest -q
+cd frontend
+npm run build
+```
 
 ## Ownership
 

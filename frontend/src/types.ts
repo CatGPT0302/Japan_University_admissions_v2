@@ -1,4 +1,4 @@
-export type NavPage = "run" | "review" | "records";
+export type NavPage = "run" | "review" | "records" | "settings";
 
 export interface FetchPdfTarget {
   name: string;
@@ -18,6 +18,49 @@ export interface FetchPdfCandidate {
   registry_note?: string;
   university?: string;
 }
+
+export interface AgentSource {
+  input_kind: "file_name" | "pdf_url" | "page_url" | "search" | string;
+  file_name?: string;
+  selected_pdf_url?: string;
+  selected_page_url?: string;
+  selection_reason?: string;
+  query?: string;
+  candidates?: FetchPdfCandidate[];
+}
+
+export interface AgentDraftJson {
+  status: string;
+  doc_id?: number | null;
+  source: AgentSource;
+  records: number;
+  quality_status?: "ok" | "needs_review" | "failed";
+  quality_message?: string;
+  warnings?: string[];
+  review_required: boolean;
+  next_step: "human_review" | string;
+}
+
+export interface AgentRunSuccessResponse {
+  status: string;
+  doc_id: number;
+  source: AgentSource;
+  records: number;
+  quality_status?: "ok" | "needs_review" | "failed";
+  quality_message?: string;
+  warnings?: string[];
+  draft_json: AgentDraftJson;
+}
+
+export interface AgentNeedsSourceConfirmationResponse {
+  status: "needs_source_confirmation";
+  candidates: FetchPdfCandidate[];
+  university: string;
+  year: string;
+  source?: AgentSource;
+}
+
+export type AgentRunResponse = AgentRunSuccessResponse | AgentNeedsSourceConfirmationResponse;
 
 export interface FetchPdfSearchResponse {
   university: string;
@@ -127,6 +170,7 @@ export interface CorrectionEvent {
 
 export interface UploadResponse {
   file_name: string;
+  original_file_name?: string;
   saved_path: string;
 }
 
@@ -214,4 +258,165 @@ export interface ConfirmedRecord {
   enrollment_period?: string;
   prefecture?: string;
   campus?: string;
+}
+
+export type FitLevel = "likely_fit" | "check_carefully" | "high_risk";
+
+export interface PublicProgramRisk {
+  level: RiskLevel;
+  reasons: string[];
+}
+
+export interface PublicProgram {
+  id: number;
+  school_name: string;
+  admission_year: string;
+  admission_period?: string;
+  faculty: string;
+  department: string;
+  application_period?: string;
+  deadline_rule?: string;
+  exam_method?: string;
+  exam_date?: string;
+  result_date?: string;
+  enrollment_period?: string;
+  prefecture?: string;
+  campus?: string;
+  requirements: {
+    eju: {
+      session?: string;
+      japanese?: string;
+      general?: string;
+      math?: string;
+      physics?: string;
+      chemistry?: string;
+      biology?: string;
+    };
+    english: {
+      raw_text?: string;
+    };
+    jlpt: {
+      raw_text?: string;
+    };
+    eligibility?: string;
+    required_documents: string[];
+  };
+  risk: PublicProgramRisk;
+  risk_level?: RiskLevel;
+  confidence?: number | null;
+  evidence?: Record<string, { text?: string; page?: number | null; source?: string }>;
+  source_document: {
+    id?: number | null;
+    file_name?: string;
+    pdf_url?: string;
+  };
+}
+
+export interface StudentProfile {
+  target_year?: string;
+  desired_fields: string[];
+  preferred_prefectures: string[];
+  english_tests: string[];
+  eju_subjects: string[];
+  japanese_level?: string;
+  notes?: string;
+}
+
+export interface RecommendationResult {
+  program: PublicProgram;
+  score: number;
+  fit_level: FitLevel;
+  reasons: string[];
+  check_items: string[];
+}
+
+export interface RecommendationResponse {
+  profile: StudentProfile;
+  results: RecommendationResult[];
+}
+
+export interface ConsultationBookingRequest {
+  student_name: string;
+  contact_email?: string;
+  contact_phone?: string;
+  role?: string;
+  target_year?: string;
+  program_id?: number | null;
+  preferred_times?: string;
+  question?: string;
+}
+
+export interface ConsultationBookingResponse {
+  status: "received";
+  id: number;
+}
+
+export interface ApiCenterKey {
+  id: number;
+  client_name: string;
+  masked_key: string;
+  scopes: string[];
+  status: string;
+  created_at: string;
+  last_used_at?: string;
+}
+
+export interface ApiUsageLog {
+  method: string;
+  path: string;
+  scope: string;
+  status_code: number;
+  created_at: string;
+}
+
+export interface ApiCenterResponse {
+  organization: {
+    id: number;
+    name: string;
+    status: string;
+    plan: string;
+  };
+  settings: {
+    api_base_url?: string;
+    contact_email?: string;
+    notes?: string;
+  };
+  api_keys: ApiCenterKey[];
+  recent_usage: ApiUsageLog[];
+  allowed_scopes: string[];
+}
+
+export interface ApiKeyCreateResponse {
+  key_id: number;
+  secret: string;
+  masked_key: string;
+  scopes: string[];
+}
+
+export type SubmissionStatus =
+  | "submitted"
+  | "processing"
+  | "needs_owner_review"
+  | "confirmed"
+  | "needs_more_info"
+  | "failed";
+
+export interface AdminSubmission {
+  id: number;
+  organization_name: string;
+  client_name?: string;
+  university: string;
+  admission_year?: string;
+  pdf_url?: string;
+  page_url?: string;
+  file_name?: string;
+  original_file_name?: string;
+  notes?: string;
+  processing_status: SubmissionStatus;
+  status?: SubmissionStatus;
+  document_id?: number | null;
+  created_at: string;
+  updated_at: string;
+  workflow_status?: string;
+  records?: number;
 }

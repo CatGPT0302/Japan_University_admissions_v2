@@ -1,7 +1,13 @@
 import axios from "axios";
 import type {
+  AgentRunResponse,
+  AdminSubmission,
+  ApiCenterResponse,
+  ApiKeyCreateResponse,
   ConfirmResponse,
   ConfirmedRecord,
+  ConsultationBookingRequest,
+  ConsultationBookingResponse,
   CorrectionEvent,
   DocumentListItem,
   DocumentSummary,
@@ -10,14 +16,18 @@ import type {
   FetchPdfSearchResponse,
   FetchPdfProbeResponse,
   FetchPdfTarget,
+  PublicProgram,
   QualityMetricsResponse,
+  RecommendationResponse,
   StagingRecord,
   StatsResponse,
+  StudentProfile,
   UploadResponse,
 } from "../types";
 
 const envBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const BASE_URL = envBaseUrl || "http://127.0.0.1:8000";
+export const API_BASE_URL = BASE_URL;
 
 const client = axios.create({
   baseURL: BASE_URL,
@@ -50,6 +60,17 @@ export async function extractPdf(payload: {
   url?: string;
 }): Promise<ExtractResponse> {
   const { data } = await client.post<ExtractResponse>("/extract", payload);
+  return data;
+}
+
+export async function runAgentWorkflow(payload: {
+  file_name?: string;
+  pdf_url?: string;
+  page_url?: string;
+  university?: string;
+  year: string;
+}): Promise<AgentRunResponse> {
+  const { data } = await client.post<AgentRunResponse>("/agent/run", payload);
   return data;
 }
 
@@ -156,6 +177,66 @@ export async function getRecords(params?: {
   offset?: number;
 }): Promise<ConfirmedRecord[]> {
   const { data } = await client.get<ConfirmedRecord[]>("/records", { params });
+  return data;
+}
+
+export async function getPublicPrograms(params?: {
+  university?: string;
+  year?: string;
+  faculty?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<PublicProgram[]> {
+  const { data } = await client.get<PublicProgram[]>("/public/programs", { params });
+  return data;
+}
+
+export async function getPublicProgram(programId: number): Promise<PublicProgram> {
+  const { data } = await client.get<PublicProgram>(`/public/programs/${programId}`);
+  return data;
+}
+
+export async function getPublicRecommendations(profile: StudentProfile): Promise<RecommendationResponse> {
+  const { data } = await client.post<RecommendationResponse>("/public/recommendations", profile);
+  return data;
+}
+
+export async function createConsultationBooking(
+  payload: ConsultationBookingRequest,
+): Promise<ConsultationBookingResponse> {
+  const { data } = await client.post<ConsultationBookingResponse>("/public/bookings", payload);
+  return data;
+}
+
+export async function getApiCenter(): Promise<ApiCenterResponse> {
+  const { data } = await client.get<ApiCenterResponse>("/settings/api-center");
+  return data;
+}
+
+export async function createApiKey(clientName: string): Promise<ApiKeyCreateResponse> {
+  const { data } = await client.post<ApiKeyCreateResponse>("/settings/api-keys", { client_name: clientName });
+  return data;
+}
+
+export async function getAdminSubmissions(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AdminSubmission[]> {
+  const { data } = await client.get<AdminSubmission[]>("/admin/submissions", { params });
+  return data;
+}
+
+export async function updateAdminSubmission(
+  submissionId: number,
+  payload: { processing_status?: string; document_id?: number | null },
+): Promise<AdminSubmission> {
+  const { data } = await client.patch<AdminSubmission>(`/admin/submissions/${submissionId}`, payload);
+  return data;
+}
+
+export async function startAdminSubmission(submissionId: number): Promise<AdminSubmission> {
+  const { data } = await client.post<AdminSubmission>(`/admin/submissions/${submissionId}/start`);
   return data;
 }
 
