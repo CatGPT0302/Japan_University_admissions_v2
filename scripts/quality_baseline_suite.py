@@ -9,6 +9,11 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.quality_baseline import evaluate_against_expected, load_json_records  # noqa: E402

@@ -37,6 +37,25 @@ TOEIC L&R ６００以上
 合計２科目
 TOEFL iBT ２０２６年１月２０日以前受験 ４２以上
 TOEIC L&R ５５０以上
+理工学部 電気電子生命学科 機械工学科 機械情報工学科 建築学科 応用化学学科 情報科学科 数学科 物理学科 Ⅰ ２０名
+①日本語
+②③理科(物理・化学）
+④数学(コース２）
+合計４科目
+TOEFL iBT TOEIC L&R 出願基準点なし
+小論文 口頭試問
+経営学部 経営学科 会計学科 公共経営学科 Ⅰ ４０名
+①日本語
+②総合科目
+合計２科目
+TOEFL iBT TOEIC L&R IELTS 出願基準点なし
+書類選考 口頭試問
+国際日本学部 （国外在住者） 国際日本学科 Ⅱ
+①日本語
+②総合科目
+合計２科目
+TOEFL iBT TOEIC L&R ６００以上 IELTS ４．０以上
+２０２６年１２月２４日（木）
 """
 
 
@@ -49,7 +68,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 3)
+        self.assertEqual(len(records), 6)
         self.assertIn("eju_japanese", records[0])
         self.assertIn("eju_general", records[0])
         self.assertIn("eju_math", records[0])
@@ -81,7 +100,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
             )
 
             payload = json.loads(output_path.read_text(encoding="utf-8"))
-            self.assertEqual(len(payload["records"]), 3)
+            self.assertEqual(len(payload["records"]), 6)
             self.assertEqual(payload["records"][0]["university"], "明治大学")
 
     def test_text_path_uses_meiji_seed_without_llm_call(self) -> None:
@@ -90,14 +109,14 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         university = self._seed_university()
         with (
             patch("scripts.extract_direct._read_pdf_text", return_value=(MEIJI_TEXT, {1: MEIJI_TEXT})),
-            patch("scripts.extract_direct._insert_result", return_value=3) as insert_result,
+            patch("scripts.extract_direct._insert_result", return_value=6) as insert_result,
             patch("scripts.extract_direct._call_openai", side_effect=AssertionError("LLM should not be called")),
         ):
             result = _run_text_path(1, Path("dummy.pdf"), university, "2027")
 
         self.assertEqual(result["mode"], "deterministic_text")
-        self.assertEqual(result["records"], 3)
-        self.assertEqual(result["inserted"], 3)
+        self.assertEqual(result["records"], 6)
+        self.assertEqual(result["inserted"], 6)
         insert_result.assert_called_once()
 
     def _seed_university(self) -> str:

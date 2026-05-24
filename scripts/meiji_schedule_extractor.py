@@ -91,6 +91,52 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if _has_all(compact, ["理工学部", "理科(物理・化学)", "数学(コース2)", "TOEIC L&R", "小論文", "口頭試問"]):
+        record = _base_record(
+            faculty="理工学部",
+            department="電気電子生命学科 / 機械工学科 / 機械情報工学科 / 建築学科 / 応用化学科 / 情報科学科 / 数学科 / 物理学科",
+        )
+        record.update(
+            {
+                "eju_subjects": "日本語 / 理科(物理・化学) / 数学(コース2)",
+                "eju_japanese": "日本語",
+                "eju_science": "理科(物理・化学)",
+                "eju_math": "数学(コース2)",
+                "english_requirement": "TOEFL iBT / TOEIC L&R / 出願基準点なし",
+                "screening_method": "小論文 / 口頭試問",
+            }
+        )
+        records.append(record)
+
+    if _has_all(compact, ["経営学部", "経営学科", "会計学科", "公共経営学科", "IELTS", "出願基準点なし"]):
+        record = _base_record(faculty="経営学部", department="経営学科 / 会計学科 / 公共経営学科")
+        record.update(
+            {
+                "eju_subjects": "日本語 / 総合科目",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目",
+                "eju_math": "",
+                "english_requirement": "TOEFL iBT / TOEIC L&R / IELTS / 出願基準点なし",
+                "screening_method": "書類選考 / 口頭試問",
+            }
+        )
+        records.append(record)
+
+    if _has_all(compact, ["国際日本学部", "国際日本学科", "TOEIC L&R 600以上", "IELTS 4.0以上", "12月24日"]):
+        record = _base_record(faculty="国際日本学部", department="国際日本学科", selection_type="Ⅱ")
+        record.update(
+            {
+                "eju_subjects": "日本語 / 総合科目",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目",
+                "eju_math": "",
+                "english_requirement": "TOEFL iBT / TOEIC L&R 600以上 / IELTS 4.0以上",
+                "screening_method": "書類選考のみ",
+                "result_date": "2026年12月24日（木）",
+            }
+        )
+        records.append(record)
+
     return records
 
 

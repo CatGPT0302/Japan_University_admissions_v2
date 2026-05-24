@@ -79,5 +79,72 @@
       }
     },
     "review_status": "human_checked_seed"
+  },
+  {
+    "id": "meiji-2027-science-engineering",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "理工学部"
+    },
+    "expect": {
+      "eju_subjects": {
+        "contains": ["日本語", "理科", "物理", "化学", "数学"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "TOEIC L&R", "出願基準点なし"]
+      },
+      "screening_method": {
+        "contains": ["小論文", "口頭試問"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "meiji-2027-business-administration",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "経営学部"
+    },
+    "expect": {
+      "eju_subjects": {
+        "contains": ["日本語", "総合科目"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "TOEIC L&R", "IELTS", "出願基準点なし"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "口頭試問"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "meiji-2027-global-japanese-studies-ii",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "国際日本学部",
+      "department": "国際日本学科"
+    },
+    "expect": {
+      "eju_subjects": {
+        "contains": ["日本語", "総合科目"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "TOEIC L&R", "IELTS"]
+      },
+      "result_date": {
+        "contains": ["１２月２４日"]
+      }
+    },
+    "review_status": "human_checked_seed"
   }
 ]
