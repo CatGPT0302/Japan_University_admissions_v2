@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 class QualityBaselineTest(unittest.TestCase):
     def test_evaluates_exact_matches_missing_values_and_unexpected_values(self) -> None:
@@ -142,6 +144,16 @@ class QualityBaselineTest(unittest.TestCase):
             report = json.loads(report_path.read_text(encoding="utf-8"))
             self.assertFalse(report["passed"])
             self.assertEqual(report["summary"]["missing_items"], 1)
+
+    def test_waseda_seed_baseline_is_loadable_and_marked_checked(self) -> None:
+        from scripts.quality_baseline import load_json_records
+
+        records = load_json_records(ROOT / "quality_baselines" / "waseda_2027_official.expected.json")
+
+        self.assertGreaterEqual(len(records), 5)
+        self.assertTrue(all(record.get("review_status") == "human_checked_seed" for record in records))
+        self.assertTrue(all(record.get("match", {}).get("university") == "早稲田大学" for record in records))
+        self.assertTrue(all("application_period" in record.get("expect", {}) for record in records))
 
 
 if __name__ == "__main__":

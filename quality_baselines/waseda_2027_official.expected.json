@@ -1,0 +1,143 @@
+[
+  {
+    "id": "waseda-2027-law",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "法学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験"]
+      },
+      "screening_schedule": {
+        "contains": ["9月18日"]
+      },
+      "result_date": {
+        "contains": ["10月1日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-commerce",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "商学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "オンライン"]
+      },
+      "screening_schedule": {
+        "contains": ["10月3日"]
+      },
+      "result_date": {
+        "contains": ["10月15日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-social-sciences",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "社会科学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "オンライン"]
+      },
+      "screening_schedule": {
+        "contains": ["9月18日"]
+      },
+      "result_date": {
+        "contains": ["10月9日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-fundamental-science-engineering-system-1",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "基幹理工学部",
+      "department": "学系1"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験"]
+      },
+      "screening_schedule": {
+        "contains": ["9月28日"]
+      },
+      "result_date": {
+        "contains": ["10月26日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS", "TOEIC"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-sport-sciences",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "スポーツ科学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "オンライン"]
+      },
+      "screening_schedule": {
+        "contains": ["9月11日"]
+      },
+      "result_date": {
+        "contains": ["9月18日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  }
+]

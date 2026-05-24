@@ -76,6 +76,14 @@ Expected baseline files use the PDF stem:
 quality_baselines/meiji_2026.expected.json
 ```
 
+The repository includes a small seed baseline for Waseda 2027:
+
+```text
+quality_baselines/waseda_2027_official.expected.json
+```
+
+It intentionally covers only a few high-value rows and high-impact items. Extend it after checking more rows against the source PDF.
+
 ## Owner Quality Dashboard
 
 The owner workspace has an `抽取质量` page. It uses:
