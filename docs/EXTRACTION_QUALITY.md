@@ -64,6 +64,12 @@ Run existing golden-sample coverage reports, and optionally enforce human-review
 python scripts/regression_golden_samples.py --baseline-dir quality_baselines
 ```
 
+Run the Waseda 2027 complex-table quality gate:
+
+```bash
+python scripts/regression_waseda_2027.py --enforce
+```
+
 Expected baseline files use the PDF stem:
 
 ```text
