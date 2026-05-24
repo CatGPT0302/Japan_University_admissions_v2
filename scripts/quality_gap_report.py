@@ -66,6 +66,42 @@ def _next_actions(status: str) -> list[str]:
     return list(mapping.get(status, []))
 
 
+def _todo_details(stem: str, action: str) -> str:
+    if action == "add_local_source_pdf":
+        candidates = [f"data/uploads/{stem}.pdf"]
+        if not stem.endswith("_official"):
+            candidates.append(f"data/uploads/{stem}_official.pdf")
+        return "Place the checked source PDF at " + " or ".join(candidates) + "."
+    if action == "add_seed_extractor_or_pipeline_fixture":
+        return "Add a deterministic seed extractor or a pipeline fixture, then register it in scripts/quality_gap_report.py and scripts/quality_baseline_suite.py."
+    if action == "human_check_baseline_records":
+        return "Check every expected value against the source document and set review_status to human_checked_seed."
+    return "No immediate blocking action; extend checked rows when more source rows have been reviewed."
+
+
+def _build_owner_todo(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    priority = {
+        "add_local_source_pdf": 10,
+        "human_check_baseline_records": 20,
+        "add_seed_extractor_or_pipeline_fixture": 30,
+        "expand_checked_rows_when_ready": 90,
+    }
+    todos: list[dict[str, Any]] = []
+    for item in items:
+        for action in item.get("next_actions") or []:
+            if action == "expand_checked_rows_when_ready":
+                continue
+            todos.append(
+                {
+                    "priority": priority.get(str(action), 50),
+                    "baseline": item["stem"],
+                    "action": action,
+                    "details": _todo_details(str(item["stem"]), str(action)),
+                }
+            )
+    return sorted(todos, key=lambda todo: (int(todo["priority"]), str(todo["baseline"]), str(todo["action"])))
+
+
 def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
     baseline_dir = root / "quality_baselines"
     items: list[dict[str, Any]] = []
@@ -103,6 +139,7 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
             "missing_seed_extractors": sum(1 for item in items if not item["registered_seed_extractor"]),
         },
         "baseline_files": items,
+        "owner_todo": _build_owner_todo(items),
     }
 
 

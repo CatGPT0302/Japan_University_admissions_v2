@@ -58,6 +58,10 @@ class QualityGapReportTest(unittest.TestCase):
         self.assertEqual(waseda["status"], "needs_source_and_extractor")
         self.assertIn("add_local_source_pdf", waseda["next_actions"])
         self.assertIn("add_seed_extractor_or_pipeline_fixture", waseda["next_actions"])
+        self.assertEqual(report["owner_todo"][0]["baseline"], "waseda_2027_official")
+        self.assertEqual(report["owner_todo"][0]["action"], "add_local_source_pdf")
+        self.assertIn("data/uploads/waseda_2027_official.pdf", report["owner_todo"][0]["details"])
+        self.assertEqual(report["owner_todo"][1]["action"], "add_seed_extractor_or_pipeline_fixture")
 
 
 if __name__ == "__main__":
