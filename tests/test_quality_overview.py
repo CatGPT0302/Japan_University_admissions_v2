@@ -36,6 +36,34 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(overview["next_owner_action"]["baseline"], "waseda_2027_official")
         self.assertEqual(overview["next_owner_action"]["action"], "add_local_source_pdf")
 
+    def test_formats_compact_summary_for_owner(self) -> None:
+        from scripts.quality_overview import format_owner_summary
+
+        summary = format_owner_summary(
+            {
+                "overall_status": "needs_owner_action",
+                "seed_suite": {"passed": True, "summary": {"total": 1, "passed": 1, "failed": 0}},
+                "gap_report": {
+                    "summary": {
+                        "baseline_files": 2,
+                        "missing_local_sources": 1,
+                        "missing_seed_extractors": 1,
+                    }
+                },
+                "next_owner_action": {
+                    "baseline": "waseda_2027_official",
+                    "action": "add_local_source_pdf",
+                    "details": "Place the checked source PDF at data/uploads/waseda_2027_official.pdf.",
+                },
+            }
+        )
+
+        self.assertIn("status: needs_owner_action", summary)
+        self.assertIn("seed suite: 1/1 passed", summary)
+        self.assertIn("missing local sources: 1", summary)
+        self.assertIn("next: waseda_2027_official -> add_local_source_pdf", summary)
+        self.assertIn("data/uploads/waseda_2027_official.pdf", summary)
+
 
 if __name__ == "__main__":
     unittest.main()

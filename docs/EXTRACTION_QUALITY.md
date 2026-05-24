@@ -101,6 +101,7 @@ python scripts/quality_overview.py
 ```
 
 This combines the seed baseline suite, the gap report, and the first owner todo into one report.
+Use `python scripts/quality_overview.py --summary` for a compact owner-readable status.
 
 Expected baseline files use the PDF stem:
 

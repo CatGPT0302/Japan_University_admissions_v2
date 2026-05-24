@@ -38,13 +38,33 @@ def build_quality_overview() -> dict[str, Any]:
     }
 
 
+def format_owner_summary(overview: dict[str, Any]) -> str:
+    seed_summary = overview.get("seed_suite", {}).get("summary", {})
+    gap_summary = overview.get("gap_report", {}).get("summary", {})
+    next_action = overview.get("next_owner_action") if isinstance(overview.get("next_owner_action"), dict) else None
+    lines = [
+        f"status: {overview.get('overall_status')}",
+        f"seed suite: {seed_summary.get('passed', 0)}/{seed_summary.get('total', 0)} passed",
+        f"baseline files: {gap_summary.get('baseline_files', 0)}",
+        f"missing local sources: {gap_summary.get('missing_local_sources', 0)}",
+        f"missing seed extractors: {gap_summary.get('missing_seed_extractors', 0)}",
+    ]
+    if next_action:
+        lines.append(f"next: {next_action.get('baseline')} -> {next_action.get('action')}")
+        lines.append(f"details: {next_action.get('details')}")
+    else:
+        lines.append("next: expand checked rows when ready")
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run extraction quality overview: seed gates, coverage gaps, and owner todo.")
     parser.add_argument("--output", default="", help="Optional path to write JSON report.")
+    parser.add_argument("--summary", action="store_true", help="Print a compact owner-readable summary instead of JSON.")
     args = parser.parse_args(argv)
 
     overview = build_quality_overview()
-    payload = json.dumps(overview, ensure_ascii=False, indent=2)
+    payload = format_owner_summary(overview) if args.summary else json.dumps(overview, ensure_ascii=False, indent=2)
     if args.output:
         Path(args.output).write_text(payload, encoding="utf-8")
     else:
