@@ -18,6 +18,8 @@ import type {
 
 type SettingsSection = "overview" | "access" | "documents" | "activity" | "handoff";
 
+const OWNER_PARTNER_ROUTE = `#/${String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "")}`;
+
 const SECTIONS: Array<{ key: SettingsSection; label: string; hint: string }> = [
   { key: "overview", label: "今日待办", hint: "按顺序走" },
   { key: "access", label: "开通一家私塾", hint: "输入名称" },
@@ -217,7 +219,7 @@ export default function SettingsPage() {
     return (
       <div className="settings-shell-ios settings-page">
         <header className="settings-topbar">
-          <a className="settings-brand" href="#/partners" aria-label="合作方管理首页">
+          <a className="settings-brand" href={OWNER_PARTNER_ROUTE} aria-label="合作方管理首页">
             <span>
               <strong>合作私塾</strong>
               <small>Owner 管理</small>
@@ -238,7 +240,7 @@ export default function SettingsPage() {
   return (
     <div className="settings-shell-ios settings-page">
       <header className="settings-topbar">
-        <a className="settings-brand" href="#/partners" aria-label="合作方管理首页">
+        <a className="settings-brand" href={OWNER_PARTNER_ROUTE} aria-label="合作方管理首页">
           <span>
             <strong>合作私塾</strong>
             <small>Owner 管理</small>

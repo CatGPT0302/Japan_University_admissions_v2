@@ -14,6 +14,8 @@ const NAV: Array<{ key: OwnerPage; label: string; hint: string; short: string }>
   { key: "records", label: "正式资料", hint: "查看已确认资料，按需导出 Excel", short: "03" },
 ];
 
+const OWNER_PARTNER_ROUTE = String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "");
+
 function serviceText(backendOk: boolean | null) {
   if (backendOk === null) return "正在连接";
   return backendOk ? "可以使用" : "暂时连不上";
@@ -81,13 +83,15 @@ export default function App() {
   const publicStudentOnly = import.meta.env.VITE_PUBLIC_STUDENT_ONLY === "true";
   const [isStudentApp, setIsStudentApp] = useState(() => publicStudentOnly || window.location.hash.startsWith("#/student"));
   const [isSettingsApp, setIsSettingsApp] = useState(() => window.location.hash.startsWith("#/settings"));
-  const [isPartnerAdminApp, setIsPartnerAdminApp] = useState(() => window.location.hash.startsWith("#/partners"));
+  const [isPartnerAdminApp, setIsPartnerAdminApp] = useState(
+    () => window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE,
+  );
 
   useEffect(() => {
     const syncRoute = () => {
       const studentRoute = publicStudentOnly || window.location.hash.startsWith("#/student");
       const settingsRoute = !studentRoute && window.location.hash.startsWith("#/settings");
-      const partnerAdminRoute = !studentRoute && !settingsRoute && window.location.hash.startsWith("#/partners");
+      const partnerAdminRoute = !studentRoute && !settingsRoute && window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE;
       setIsStudentApp(studentRoute);
       setIsSettingsApp(settingsRoute);
       setIsPartnerAdminApp(partnerAdminRoute);
