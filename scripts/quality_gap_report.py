@@ -102,6 +102,26 @@ def _validate_local_source(root: Path, candidates: list[str], markers: list[Any]
     return {"available": False, "status": "missing", "path": "", "markers": markers}
 
 
+def _source_receipt(root: Path, stem: str) -> dict[str, Any] | None:
+    path = root / "quality_sources" / f"{stem}.source.json"
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"status": "invalid_receipt", "path": str(path)}
+    if not isinstance(payload, dict):
+        return {"status": "invalid_receipt", "path": str(path)}
+    return {
+        "status": str(payload.get("status") or ""),
+        "source_url": str(payload.get("source_url") or ""),
+        "cached_path": str(payload.get("cached_path") or ""),
+        "sha256": str(payload.get("sha256") or ""),
+        "size_bytes": payload.get("size_bytes", 0),
+        "checked_at": str(payload.get("checked_at") or ""),
+    }
+
+
 def _record_count(records: list[dict[str, Any]], review_status: str) -> int:
     return sum(1 for record in records if record.get("review_status") == review_status)
 
@@ -190,6 +210,7 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
                 "local_source_available": has_source,
                 "source_candidates": candidates,
                 "source_validation": source_validation,
+                "source_receipt": _source_receipt(root, stem),
                 "registered_seed_extractor": has_extractor,
                 "status": status,
                 "next_actions": _next_actions(status),

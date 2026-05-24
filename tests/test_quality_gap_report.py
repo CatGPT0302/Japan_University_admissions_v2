@@ -132,6 +132,50 @@ class QualityGapReportTest(unittest.TestCase):
         self.assertEqual(waseda["source_validation"]["status"], "marker_mismatch")
         self.assertEqual(waseda["status"], "needs_local_source")
 
+    def test_report_includes_source_receipt_when_available(self) -> None:
+        from scripts.quality_gap_report import build_quality_gap_report
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline_dir = root / "quality_baselines"
+            receipt_dir = root / "quality_sources"
+            baseline_dir.mkdir(parents=True)
+            receipt_dir.mkdir(parents=True)
+            (baseline_dir / "waseda_2027_official.expected.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "waseda-law",
+                            "source_document": "https://example.test/waseda.pdf",
+                            "match": {"university": "Waseda", "faculty": "Law"},
+                            "expect": {"english_requirement": "TOEFL"},
+                            "review_status": "human_checked_seed",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (receipt_dir / "waseda_2027_official.source.json").write_text(
+                json.dumps(
+                    {
+                        "status": "cached",
+                        "stem": "waseda_2027_official",
+                        "source_url": "https://example.test/waseda.pdf",
+                        "cached_path": "data/uploads/waseda_2027_official.pdf",
+                        "sha256": "a" * 64,
+                        "size_bytes": 123456,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = build_quality_gap_report(root=root)
+
+        waseda = report["baseline_files"][0]
+        self.assertEqual(waseda["source_receipt"]["sha256"], "a" * 64)
+        self.assertEqual(waseda["source_receipt"]["cached_path"], "data/uploads/waseda_2027_official.pdf")
+        self.assertFalse(waseda["local_source_available"])
+
     def test_pdf_text_layer_is_used_for_source_marker_validation(self) -> None:
         from scripts.quality_gap_report import _validate_local_source
 

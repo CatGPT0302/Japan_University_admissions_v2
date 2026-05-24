@@ -106,6 +106,7 @@ python scripts/source_cache.py --source path/to/downloaded.pdf --stem waseda_202
 ```
 
 The importer copies the PDF into `data/uploads/` and writes a small receipt under `quality_sources/` with the SHA-256 hash, size, source URL, and checked markers. Commit the receipt if useful; do not commit the PDF itself.
+`scripts/quality_gap_report.py` includes the receipt in each baseline item when present, but a receipt alone does not make the source available. The local PDF must still exist and pass marker validation.
 
 Run the full owner quality overview:
 
