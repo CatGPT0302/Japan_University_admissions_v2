@@ -703,10 +703,10 @@ def _ensure_staging_columns(conn) -> None:
 def _ensure_auth_seed() -> None:
     owner_org = get_or_create_organization("Owner Workspace")
     partner_org = get_or_create_organization(os.environ.get("PARTNER_ORG_NAME", "合作私塾"))
-    owner_email = os.environ.get("OWNER_EMAIL", "owner@example.com").strip().lower()
-    owner_password = os.environ.get("OWNER_PASSWORD", "owner-admin")
-    partner_email = os.environ.get("PARTNER_EMAIL", "partner@example.com").strip().lower()
-    partner_password = os.environ.get("PARTNER_PASSWORD", "partner-demo")
+    owner_email = os.environ.get("OWNER_EMAIL", "").strip().lower()
+    owner_password = os.environ.get("OWNER_PASSWORD", "")
+    partner_email = os.environ.get("PARTNER_EMAIL", "").strip().lower()
+    partner_password = os.environ.get("PARTNER_PASSWORD", "")
     if owner_email and owner_password:
         upsert_app_user(
             email=owner_email,

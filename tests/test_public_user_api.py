@@ -14,6 +14,10 @@ from fastapi.testclient import TestClient
 class PublicUserApiTest(unittest.TestCase):
     def _load_api(self, tmp_path: Path):
         os.environ["SQLITE_PATH"] = str(tmp_path / "public_api_test.db")
+        os.environ["OWNER_EMAIL"] = "owner@example.com"
+        os.environ["OWNER_PASSWORD"] = "owner-admin"
+        os.environ["PARTNER_EMAIL"] = "partner@example.com"
+        os.environ["PARTNER_PASSWORD"] = "partner-demo"
         for name in ("DATABASE_URL", "DATABASE_PUBLIC_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL_NON_POOLING"):
             os.environ.pop(name, None)
         for module_name in ["scripts.api", "scripts.db"]:
