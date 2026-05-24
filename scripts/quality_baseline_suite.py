@@ -17,6 +17,7 @@ except Exception:
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.quality_baseline import evaluate_against_expected, load_json_records  # noqa: E402
+from scripts.waseda_2027_extractor import extract_waseda_2027_records  # noqa: E402
 
 
 def validate_baseline_records(records: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -41,6 +42,7 @@ def _read_pdf_text(path: Path) -> str:
 
 def _default_seed_items() -> list[dict[str, Any]]:
     meiji_pdf = ROOT / "data" / "uploads" / "meiji_2027_schedule_official.pdf"
+    waseda_pdf = ROOT / "data" / "uploads" / "waseda_2027_official.pdf"
     items: list[dict[str, Any]] = [
         {
             "id": "meiji-2027-schedule",
@@ -49,6 +51,15 @@ def _default_seed_items() -> list[dict[str, Any]]:
             "extractor": lambda text: extract_meiji_2027_schedule_records(text),
         }
     ]
+    if waseda_pdf.exists():
+        items.append(
+            {
+                "id": "waseda-2027-official",
+                "expected_path": ROOT / "quality_baselines" / "waseda_2027_official.expected.json",
+                "source_path": waseda_pdf,
+                "extractor": lambda text: extract_waseda_2027_records(text),
+            }
+        )
     return items
 
 

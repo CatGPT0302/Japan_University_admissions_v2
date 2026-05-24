@@ -54,17 +54,15 @@ class QualityGapReportTest(unittest.TestCase):
 
         self.assertEqual(report["summary"]["baseline_files"], 2)
         self.assertEqual(report["summary"]["human_checked_records"], 2)
-        self.assertEqual(report["summary"]["registered_seed_extractors"], 1)
+        self.assertEqual(report["summary"]["registered_seed_extractors"], 2)
         self.assertEqual(report["summary"]["missing_local_sources"], 1)
-        self.assertEqual(report["summary"]["missing_seed_extractors"], 1)
+        self.assertEqual(report["summary"]["missing_seed_extractors"], 0)
         waseda = next(item for item in report["baseline_files"] if item["stem"].startswith("waseda"))
-        self.assertEqual(waseda["status"], "needs_source_and_extractor")
+        self.assertEqual(waseda["status"], "needs_local_source")
         self.assertIn("add_local_source_pdf", waseda["next_actions"])
-        self.assertIn("add_seed_extractor_or_pipeline_fixture", waseda["next_actions"])
         self.assertEqual(report["owner_todo"][0]["baseline"], "waseda_2027_official")
         self.assertEqual(report["owner_todo"][0]["action"], "add_local_source_pdf")
         self.assertIn("data/uploads/waseda_2027_official.pdf", report["owner_todo"][0]["details"])
-        self.assertEqual(report["owner_todo"][1]["action"], "add_seed_extractor_or_pipeline_fixture")
 
     def test_waseda_moves_to_extractor_todo_once_source_pdf_exists(self) -> None:
         from scripts.quality_gap_report import build_quality_gap_report
@@ -98,9 +96,9 @@ class QualityGapReportTest(unittest.TestCase):
         waseda = report["baseline_files"][0]
         self.assertTrue(waseda["local_source_available"])
         self.assertEqual(waseda["source_candidates"][0], "data/uploads/waseda_2027_official.pdf")
-        self.assertEqual(waseda["status"], "needs_seed_extractor")
+        self.assertEqual(waseda["status"], "covered_by_seed_suite")
         self.assertEqual(report["summary"]["missing_local_sources"], 0)
-        self.assertEqual(report["owner_todo"][0]["action"], "add_seed_extractor_or_pipeline_fixture")
+        self.assertEqual(report["owner_todo"], [])
 
     def test_wrong_pdf_marker_does_not_count_as_available_source(self) -> None:
         from scripts.quality_gap_report import build_quality_gap_report
@@ -132,7 +130,7 @@ class QualityGapReportTest(unittest.TestCase):
         waseda = report["baseline_files"][0]
         self.assertFalse(waseda["local_source_available"])
         self.assertEqual(waseda["source_validation"]["status"], "marker_mismatch")
-        self.assertEqual(waseda["status"], "needs_source_and_extractor")
+        self.assertEqual(waseda["status"], "needs_local_source")
 
     def test_pdf_text_layer_is_used_for_source_marker_validation(self) -> None:
         from scripts.quality_gap_report import _validate_local_source

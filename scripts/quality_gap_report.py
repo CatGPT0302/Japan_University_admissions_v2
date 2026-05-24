@@ -23,6 +23,11 @@ REGISTERED_SEED_EXTRACTORS = {
         "script": "scripts/meiji_schedule_extractor.py",
         "source_candidates": ["data/uploads/meiji_2027_schedule_official.pdf"],
         "source_markers": ["明治大学", "2027"],
+    },
+    "waseda_2027_official": {
+        "script": "scripts/waseda_2027_extractor.py",
+        "source_candidates": ["data/uploads/waseda_2027_official.pdf"],
+        "source_markers": [["Waseda", "早稲田大学", "早稻田大学"], ["2027", "2027年度"]],
     }
 }
 
