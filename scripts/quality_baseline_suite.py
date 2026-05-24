@@ -26,6 +26,8 @@ def validate_baseline_records(records: list[dict[str, Any]]) -> list[dict[str, s
         record_id = str(record.get("id") or f"expected-{index}")
         if not str(record.get("source_document") or "").strip():
             failures.append({"id": record_id, "failure": "missing_source_document"})
+        if not str(record.get("source_note") or "").strip():
+            failures.append({"id": record_id, "failure": "missing_source_note"})
         if not isinstance(record.get("match"), dict) or not record.get("match"):
             failures.append({"id": record_id, "failure": "missing_match"})
         if not isinstance(record.get("expect"), dict) or not record.get("expect"):

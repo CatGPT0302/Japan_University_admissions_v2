@@ -28,7 +28,9 @@ class QualityBaselineSuiteTest(unittest.TestCase):
         )
 
         self.assertIn({"id": "draft-law", "failure": "missing_source_document"}, failures)
+        self.assertIn({"id": "draft-law", "failure": "missing_source_note"}, failures)
         self.assertIn({"id": "draft-law", "failure": "baseline_not_human_checked"}, failures)
+        self.assertIn({"id": "missing-expect", "failure": "missing_source_note"}, failures)
         self.assertIn({"id": "missing-expect", "failure": "missing_expect"}, failures)
 
     def test_suite_reports_registered_seed_passes(self) -> None:
@@ -42,6 +44,7 @@ class QualityBaselineSuiteTest(unittest.TestCase):
                         {
                             "id": "seed-law",
                             "source_document": "https://example.test/source.pdf",
+                            "source_note": "Checked against official PDF page 1.",
                             "match": {"university": "Meiji", "faculty": "Law"},
                             "expect": {"english_requirement": {"contains": ["TOEFL"]}},
                             "review_status": "human_checked_seed",
