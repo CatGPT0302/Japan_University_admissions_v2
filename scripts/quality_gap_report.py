@@ -15,13 +15,19 @@ except Exception:
     pass
 
 from scripts.quality_baseline import load_json_records  # noqa: E402
+from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 
 
 REGISTERED_SEED_EXTRACTORS = {
     "meiji_2027_schedule": {
         "script": "scripts/meiji_schedule_extractor.py",
         "source_candidates": ["data/uploads/meiji_2027_schedule_official.pdf"],
+        "source_markers": ["明治大学", "2027"],
     }
+}
+
+SOURCE_MARKERS = {
+    "waseda_2027_official": ["Waseda", "2027"],
 }
 
 
@@ -43,8 +49,46 @@ def _source_candidates(stem: str, registration: dict[str, Any] | None) -> list[s
     return deduped
 
 
-def _local_source_exists(root: Path, candidates: list[str]) -> bool:
-    return any((root / candidate).exists() and (root / candidate).stat().st_size > 0 for candidate in candidates)
+def _source_markers(stem: str, registration: dict[str, Any] | None) -> list[str]:
+    if registration and registration.get("source_markers"):
+        return [str(item) for item in registration.get("source_markers") or [] if str(item).strip()]
+    return list(SOURCE_MARKERS.get(stem, []))
+
+
+def _read_probe_text(path: Path) -> str:
+    if path.suffix.lower() == ".pdf":
+        try:
+            pages = extract_text_per_page(path)
+            text = "\n".join(str(value or "") for _page, value in sorted(pages.items()))
+            if text.strip():
+                return text
+        except Exception:
+            pass
+    try:
+        return path.read_bytes()[:500_000].decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+
+def _validate_local_source(root: Path, candidates: list[str], markers: list[str]) -> dict[str, Any]:
+    for candidate in candidates:
+        path = root / candidate
+        if not path.exists() or path.stat().st_size <= 0:
+            continue
+        if not markers:
+            return {"available": True, "status": "unchecked", "path": candidate, "markers": markers}
+        text = _read_probe_text(path)
+        missing = [marker for marker in markers if marker not in text]
+        if not missing:
+            return {"available": True, "status": "matched", "path": candidate, "markers": markers}
+        return {
+            "available": False,
+            "status": "marker_mismatch",
+            "path": candidate,
+            "markers": markers,
+            "missing_markers": missing,
+        }
+    return {"available": False, "status": "missing", "path": "", "markers": markers}
 
 
 def _record_count(records: list[dict[str, Any]], review_status: str) -> int:
@@ -122,7 +166,8 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
         registration = REGISTERED_SEED_EXTRACTORS.get(stem)
         has_extractor = bool(registration)
         candidates = _source_candidates(stem, registration)
-        has_source = _local_source_exists(root, candidates)
+        source_validation = _validate_local_source(root, candidates, _source_markers(stem, registration))
+        has_source = bool(source_validation["available"])
         status = _status(has_source=has_source, has_extractor=has_extractor, human_checked=human_checked)
         items.append(
             {
@@ -133,6 +178,7 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
                 "draft_records": draft,
                 "local_source_available": has_source,
                 "source_candidates": candidates,
+                "source_validation": source_validation,
                 "registered_seed_extractor": has_extractor,
                 "status": status,
                 "next_actions": _next_actions(status),
