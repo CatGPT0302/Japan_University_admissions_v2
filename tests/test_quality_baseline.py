@@ -61,6 +61,18 @@ class QualityBaselineTest(unittest.TestCase):
         self.assertEqual(report["records"][0]["status"], "failed")
         self.assertEqual(report["records"][0]["checks"][2]["status"], "missing")
         self.assertEqual(report["records"][1]["checks"][1]["status"], "mismatch")
+        self.assertEqual(
+            report["field_coverage"]["application_period"],
+            {"checked": 2, "passed": 2, "missing": 0, "mismatched": 0, "optional_empty": 0},
+        )
+        self.assertEqual(
+            report["field_coverage"]["english_requirement"],
+            {"checked": 1, "passed": 0, "missing": 1, "mismatched": 0, "optional_empty": 0},
+        )
+        self.assertEqual(
+            report["field_coverage"]["screening_method"],
+            {"checked": 1, "passed": 0, "missing": 0, "mismatched": 1, "optional_empty": 0},
+        )
 
     def test_supports_contains_expectations_for_long_text(self) -> None:
         from scripts.quality_baseline import evaluate_against_expected

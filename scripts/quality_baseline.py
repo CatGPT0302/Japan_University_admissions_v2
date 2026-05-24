@@ -86,6 +86,7 @@ def evaluate_against_expected(
     mismatched_items = 0
     optional_empty_items = 0
     unmatched_records = 0
+    field_coverage: dict[str, dict[str, int]] = {}
 
     for expected in expected_records:
         expected_id = _text(expected.get("id")) or f"expected-{len(records) + 1}"
@@ -107,16 +108,24 @@ def evaluate_against_expected(
 
         checks = [_evaluate_value(field, rule, matched.get(field)) for field, rule in expect_rule.items()]
         for check in checks:
+            field = str(check.get("field") or "")
+            if field not in field_coverage:
+                field_coverage[field] = {"checked": 0, "passed": 0, "missing": 0, "mismatched": 0, "optional_empty": 0}
             status = check["status"]
             if status == "optional_empty":
+                field_coverage[field]["optional_empty"] += 1
                 optional_empty_items += 1
                 continue
+            field_coverage[field]["checked"] += 1
             checked_items += 1
             if status == "passed":
+                field_coverage[field]["passed"] += 1
                 passed_items += 1
             elif status == "missing":
+                field_coverage[field]["missing"] += 1
                 missing_items += 1
             elif status == "mismatch":
+                field_coverage[field]["mismatched"] += 1
                 mismatched_items += 1
 
         record_status = "passed" if all(check["status"] in {"passed", "optional_empty"} for check in checks) else "failed"
@@ -148,6 +157,7 @@ def evaluate_against_expected(
             "unmatched_records": unmatched_records,
             "exact_match_rate": exact_match_rate,
         },
+        "field_coverage": field_coverage,
         "records": records,
     }
 
