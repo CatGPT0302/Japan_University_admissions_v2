@@ -46,6 +46,7 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
         f"status: {overview.get('overall_status')}",
         f"seed suite: {seed_summary.get('passed', 0)}/{seed_summary.get('total', 0)} passed",
         f"baseline files: {gap_summary.get('baseline_files', 0)}",
+        f"registered extractors: {gap_summary.get('registered_seed_extractors', 0)}",
         f"missing local sources: {gap_summary.get('missing_local_sources', 0)}",
         f"missing seed extractors: {gap_summary.get('missing_seed_extractors', 0)}",
     ]

@@ -16,7 +16,12 @@ class QualityOverviewTest(unittest.TestCase):
             patch(
                 "scripts.quality_overview.build_quality_gap_report",
                 return_value={
-                    "summary": {"baseline_files": 2, "missing_local_sources": 1, "missing_seed_extractors": 1},
+                    "summary": {
+                        "baseline_files": 2,
+                        "registered_seed_extractors": 2,
+                        "missing_local_sources": 1,
+                        "missing_seed_extractors": 0,
+                    },
                     "owner_todo": [
                         {
                             "priority": 10,
@@ -47,7 +52,8 @@ class QualityOverviewTest(unittest.TestCase):
                     "summary": {
                         "baseline_files": 2,
                         "missing_local_sources": 1,
-                        "missing_seed_extractors": 1,
+                        "registered_seed_extractors": 2,
+                        "missing_seed_extractors": 0,
                     }
                 },
                 "next_owner_action": {
@@ -60,7 +66,9 @@ class QualityOverviewTest(unittest.TestCase):
 
         self.assertIn("status: needs_owner_action", summary)
         self.assertIn("seed suite: 1/1 passed", summary)
+        self.assertIn("registered extractors: 2", summary)
         self.assertIn("missing local sources: 1", summary)
+        self.assertIn("missing seed extractors: 0", summary)
         self.assertIn("next: waseda_2027_official -> add_local_source_pdf", summary)
         self.assertIn("data/uploads/waseda_2027_official.pdf", summary)
 
