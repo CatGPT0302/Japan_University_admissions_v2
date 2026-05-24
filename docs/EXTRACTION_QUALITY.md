@@ -44,6 +44,14 @@ This project treats admissions extraction as a reviewable data-production flow, 
 
 ## Commands
 
+Create a human-review draft from an existing extraction output:
+
+```bash
+python scripts/make_quality_baseline_draft.py --input path/to/extracted.json --output quality_baselines/meiji_2027.expected.json
+```
+
+Draft files are only review seeds. Keep `review_status: draft_needs_human_check` until the values have been checked against the source PDF.
+
 Compare one extracted output with one expected baseline:
 
 ```bash
