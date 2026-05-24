@@ -85,6 +85,14 @@ python scripts/quality_baseline_suite.py
 
 This checks registered deterministic seed extractors against human-checked baseline files and refuses to treat draft baselines as trusted truth.
 
+Report current quality coverage gaps:
+
+```bash
+python scripts/quality_gap_report.py
+```
+
+This lists each human-reviewed baseline, whether a local source PDF is available, whether a deterministic seed extractor is registered, and the next action needed to make that baseline enforceable.
+
 Expected baseline files use the PDF stem:
 
 ```text
