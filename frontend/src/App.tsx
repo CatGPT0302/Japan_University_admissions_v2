@@ -15,6 +15,15 @@ const NAV: Array<{ key: OwnerPage; label: string; hint: string; short: string }>
 ];
 
 const OWNER_PARTNER_ROUTE = String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "");
+type AppSurface = "owner" | "owner-service" | "partner" | "student" | "combined";
+
+function appSurface(): AppSurface {
+  const value = String(import.meta.env.VITE_APP_SURFACE || "").trim();
+  if (value === "owner" || value === "owner-service" || value === "partner" || value === "student" || value === "combined") {
+    return value;
+  }
+  return import.meta.env.VITE_PUBLIC_STUDENT_ONLY === "true" ? "student" : "owner";
+}
 
 function serviceText(backendOk: boolean | null) {
   if (backendOk === null) return "正在连接";
@@ -27,12 +36,12 @@ function pageFromHash(): OwnerPage {
 }
 
 function roleHome(role?: AppRole) {
-  return role === "partner_staff" ? "#/settings" : "#/";
+  return role === "partner_staff" ? "/" : "/";
 }
 
 function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onSignedIn: (user: AppUser) => void }) {
-  const [email, setEmail] = useState(expectedRole === "partner_staff" ? "partner@example.com" : "owner@example.com");
-  const [password, setPassword] = useState(expectedRole === "partner_staff" ? "partner-demo" : "owner-admin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -75,23 +84,25 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
 }
 
 export default function App() {
+  const surface = appSurface();
   const [page, setPage] = useState<OwnerPage>(() => pageFromHash());
   const [activeDocId, setActiveDocId] = useState<number | null>(null);
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const publicStudentOnly = import.meta.env.VITE_PUBLIC_STUDENT_ONLY === "true";
-  const [isStudentApp, setIsStudentApp] = useState(() => publicStudentOnly || window.location.hash.startsWith("#/student"));
-  const [isSettingsApp, setIsSettingsApp] = useState(() => window.location.hash.startsWith("#/settings"));
+  const [isStudentApp, setIsStudentApp] = useState(() => surface === "student" || (surface === "combined" && window.location.hash.startsWith("#/student")));
+  const [isSettingsApp, setIsSettingsApp] = useState(() => surface === "partner" || (surface === "combined" && window.location.hash.startsWith("#/settings")));
   const [isPartnerAdminApp, setIsPartnerAdminApp] = useState(
-    () => window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE,
+    () => surface === "owner-service" || (surface === "combined" && window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE),
   );
 
   useEffect(() => {
     const syncRoute = () => {
-      const studentRoute = publicStudentOnly || window.location.hash.startsWith("#/student");
-      const settingsRoute = !studentRoute && window.location.hash.startsWith("#/settings");
-      const partnerAdminRoute = !studentRoute && !settingsRoute && window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE;
+      const studentRoute = surface === "student" || (surface === "combined" && window.location.hash.startsWith("#/student"));
+      const settingsRoute = surface === "partner" || (!studentRoute && surface === "combined" && window.location.hash.startsWith("#/settings"));
+      const partnerAdminRoute =
+        surface === "owner-service" ||
+        (!studentRoute && !settingsRoute && surface === "combined" && window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE);
       setIsStudentApp(studentRoute);
       setIsSettingsApp(settingsRoute);
       setIsPartnerAdminApp(partnerAdminRoute);
@@ -99,7 +110,7 @@ export default function App() {
     };
     window.addEventListener("hashchange", syncRoute);
     return () => window.removeEventListener("hashchange", syncRoute);
-  }, [publicStudentOnly]);
+  }, [surface]);
 
   useEffect(() => {
     void checkHealth().then(setBackendOk);

@@ -23,11 +23,16 @@ Private school or owner submits source material
 -> student frontend and licensed API read confirmed data only
 ```
 
-## Main Routes
+## Product Websites
 
-- `#/` - owner/admin workspace
-- `#/settings` - private-school service center
-- `#/student` - student/parent frontend
+Use separate deployments/sites for the three systems. They can share this repository and backend, but they should not be exposed as different hash routes on one public URL.
+
+- Owner data workspace site: `VITE_APP_SURFACE=owner`
+- Owner partner-management site: `VITE_APP_SURFACE=owner-service`
+- Private-school service center site: `VITE_APP_SURFACE=partner`
+- Student/parent frontend site: `VITE_APP_SURFACE=student`
+
+`VITE_APP_SURFACE=combined` is only for local debugging. Do not use it as the public product entry.
 
 ## Backend Interfaces
 
@@ -72,6 +77,16 @@ The frontend should point to the local backend:
 
 ```text
 VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+For local split-site testing, run separate Vite servers with different surfaces:
+
+```powershell
+$env:VITE_API_BASE_URL="http://127.0.0.1:8000"
+$env:VITE_APP_SURFACE="owner"; npm run dev -- --host 127.0.0.1 --port 5173
+$env:VITE_APP_SURFACE="owner-service"; npm run dev -- --host 127.0.0.1 --port 5174
+$env:VITE_APP_SURFACE="partner"; npm run dev -- --host 127.0.0.1 --port 5175
+$env:VITE_APP_SURFACE="student"; npm run dev -- --host 127.0.0.1 --port 5176
 ```
 
 ## Environment Variables
