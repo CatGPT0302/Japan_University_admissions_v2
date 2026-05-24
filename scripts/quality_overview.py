@@ -38,6 +38,20 @@ def build_quality_overview() -> dict[str, Any]:
     }
 
 
+def _weak_field_coverage(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[str]:
+    totals: dict[str, int] = {}
+    for item in seed_suite.get("items") or []:
+        baseline = item.get("baseline") if isinstance(item, dict) else {}
+        coverage = baseline.get("field_coverage") if isinstance(baseline, dict) else {}
+        if not isinstance(coverage, dict):
+            continue
+        for field, stats in coverage.items():
+            if isinstance(stats, dict):
+                totals[str(field)] = totals.get(str(field), 0) + int(stats.get("checked") or 0)
+    weak = [(field, checked) for field, checked in totals.items() if checked <= max_checked]
+    return [f"{field} checked={checked}" for field, checked in sorted(weak, key=lambda item: (item[1], item[0]))[:5]]
+
+
 def format_owner_summary(overview: dict[str, Any]) -> str:
     seed_summary = overview.get("seed_suite", {}).get("summary", {})
     gap_summary = overview.get("gap_report", {}).get("summary", {})
@@ -50,6 +64,9 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
         f"missing local sources: {gap_summary.get('missing_local_sources', 0)}",
         f"missing seed extractors: {gap_summary.get('missing_seed_extractors', 0)}",
     ]
+    weak_fields = _weak_field_coverage(overview.get("seed_suite", {}))
+    if weak_fields:
+        lines.append("weak field coverage: " + "; ".join(weak_fields))
     if next_action:
         lines.append(f"next: {next_action.get('baseline')} -> {next_action.get('action')}")
         lines.append(f"details: {next_action.get('details')}")

@@ -47,7 +47,21 @@ class QualityOverviewTest(unittest.TestCase):
         summary = format_owner_summary(
             {
                 "overall_status": "needs_owner_action",
-                "seed_suite": {"passed": True, "summary": {"total": 1, "passed": 1, "failed": 0}},
+                "seed_suite": {
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "baseline": {
+                                "field_coverage": {
+                                    "english_requirement": {"checked": 6, "passed": 6, "missing": 0, "mismatched": 0},
+                                    "screening_schedule": {"checked": 1, "passed": 1, "missing": 0, "mismatched": 0},
+                                }
+                            },
+                        }
+                    ],
+                },
                 "gap_report": {
                     "summary": {
                         "baseline_files": 2,
@@ -67,6 +81,7 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertIn("status: needs_owner_action", summary)
         self.assertIn("seed suite: 1/1 passed", summary)
         self.assertIn("registered extractors: 2", summary)
+        self.assertIn("weak field coverage: screening_schedule checked=1", summary)
         self.assertIn("missing local sources: 1", summary)
         self.assertIn("missing seed extractors: 0", summary)
         self.assertIn("next: waseda_2027_official -> add_local_source_pdf", summary)
