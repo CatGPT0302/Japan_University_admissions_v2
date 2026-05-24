@@ -1,5 +1,5 @@
 export type NavPage = "run" | "review" | "records";
-export type OwnerPage = NavPage | "partners";
+export type OwnerPage = NavPage;
 export type AppRole = "owner_admin" | "partner_staff";
 
 export interface AppUser {

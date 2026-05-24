@@ -12,7 +12,6 @@ const NAV: Array<{ key: OwnerPage; label: string; hint: string; short: string }>
   { key: "run", label: "上传整理", hint: "提交招生资料，生成待核对内容", short: "01" },
   { key: "review", label: "人工核对", hint: "修正不确定内容，确认后保存", short: "02" },
   { key: "records", label: "正式资料", hint: "查看已确认资料，按需导出 Excel", short: "03" },
-  { key: "partners", label: "合作私塾", hint: "开通使用权，处理对方提交的资料", short: "04" },
 ];
 
 function serviceText(backendOk: boolean | null) {
@@ -82,14 +81,17 @@ export default function App() {
   const publicStudentOnly = import.meta.env.VITE_PUBLIC_STUDENT_ONLY === "true";
   const [isStudentApp, setIsStudentApp] = useState(() => publicStudentOnly || window.location.hash.startsWith("#/student"));
   const [isSettingsApp, setIsSettingsApp] = useState(() => window.location.hash.startsWith("#/settings"));
+  const [isPartnerAdminApp, setIsPartnerAdminApp] = useState(() => window.location.hash.startsWith("#/partners"));
 
   useEffect(() => {
     const syncRoute = () => {
       const studentRoute = publicStudentOnly || window.location.hash.startsWith("#/student");
       const settingsRoute = !studentRoute && window.location.hash.startsWith("#/settings");
+      const partnerAdminRoute = !studentRoute && !settingsRoute && window.location.hash.startsWith("#/partners");
       setIsStudentApp(studentRoute);
       setIsSettingsApp(settingsRoute);
-      if (!studentRoute && !settingsRoute) setPage(pageFromHash());
+      setIsPartnerAdminApp(partnerAdminRoute);
+      if (!studentRoute && !settingsRoute && !partnerAdminRoute) setPage(pageFromHash());
     };
     window.addEventListener("hashchange", syncRoute);
     return () => window.removeEventListener("hashchange", syncRoute);
@@ -119,6 +121,11 @@ export default function App() {
     if (!user) return <LoginScreen expectedRole="partner_staff" onSignedIn={setUser} />;
     if (user.role !== "partner_staff") return <LoginScreen expectedRole="partner_staff" onSignedIn={setUser} />;
     return <SettingsPage />;
+  }
+  if (isPartnerAdminApp) {
+    if (!user) return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
+    if (user.role !== "owner_admin") return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
+    return <OwnerPartnersPage />;
   }
   if (!user) return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
   if (user.role !== "owner_admin") return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
@@ -208,10 +215,8 @@ export default function App() {
                 setPage("records");
               }}
             />
-          ) : page === "records" ? (
-            <RecordsPage />
           ) : (
-            <OwnerPartnersPage />
+            <RecordsPage />
           )}
         </main>
       </div>
