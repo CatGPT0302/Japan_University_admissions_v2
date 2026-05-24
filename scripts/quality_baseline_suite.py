@@ -14,8 +14,19 @@ from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.quality_baseline import evaluate_against_expected, load_json_records  # noqa: E402
 
 
-def _human_checked(records: list[dict[str, Any]]) -> bool:
-    return bool(records) and all(record.get("review_status") == "human_checked_seed" for record in records)
+def validate_baseline_records(records: list[dict[str, Any]]) -> list[dict[str, str]]:
+    failures: list[dict[str, str]] = []
+    for index, record in enumerate(records, start=1):
+        record_id = str(record.get("id") or f"expected-{index}")
+        if not str(record.get("source_document") or "").strip():
+            failures.append({"id": record_id, "failure": "missing_source_document"})
+        if not isinstance(record.get("match"), dict) or not record.get("match"):
+            failures.append({"id": record_id, "failure": "missing_match"})
+        if not isinstance(record.get("expect"), dict) or not record.get("expect"):
+            failures.append({"id": record_id, "failure": "missing_expect"})
+        if record.get("review_status") != "human_checked_seed":
+            failures.append({"id": record_id, "failure": "baseline_not_human_checked"})
+    return failures
 
 
 def _read_pdf_text(path: Path) -> str:
@@ -76,8 +87,9 @@ def run_seed_baseline_suite(
             continue
 
         expected_records = load_json_records(expected_path)
-        if not _human_checked(expected_records):
-            failures.append("baseline_not_human_checked")
+        metadata_failures = validate_baseline_records(expected_records)
+        if metadata_failures:
+            failures.append("baseline_metadata_invalid")
 
         extracted_records, record_error = _records_for_item(item)
         if record_error:
@@ -98,6 +110,7 @@ def run_seed_baseline_suite(
                 "expected_path": str(expected_path),
                 "extracted_count": len(extracted_records),
                 "failures": failures,
+                "metadata_failures": metadata_failures,
                 "baseline": baseline_report,
             }
         )
