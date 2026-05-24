@@ -25,17 +25,25 @@ REGISTERED_SEED_EXTRACTORS = {
 }
 
 
-def _local_source_exists(root: Path, stem: str, registration: dict[str, Any] | None) -> bool:
+def _source_candidates(stem: str, registration: dict[str, Any] | None) -> list[str]:
     candidates = []
     if registration:
         candidates.extend(str(item) for item in registration.get("source_candidates") or [])
     candidates.extend(
-        [
-            f"data/uploads/{stem}_official.pdf",
-            f"data/uploads/{stem}.pdf",
-            f"input_pdfs/{stem}.pdf",
-        ]
+        [f"data/uploads/{stem}.pdf", f"input_pdfs/{stem}.pdf"]
     )
+    if not stem.endswith("_official"):
+        candidates.insert(0, f"data/uploads/{stem}_official.pdf")
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        if candidate not in seen:
+            seen.add(candidate)
+            deduped.append(candidate)
+    return deduped
+
+
+def _local_source_exists(root: Path, candidates: list[str]) -> bool:
     return any((root / candidate).exists() and (root / candidate).stat().st_size > 0 for candidate in candidates)
 
 
@@ -113,7 +121,8 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
         draft = _record_count(records, "draft_needs_human_check")
         registration = REGISTERED_SEED_EXTRACTORS.get(stem)
         has_extractor = bool(registration)
-        has_source = _local_source_exists(root, stem, registration)
+        candidates = _source_candidates(stem, registration)
+        has_source = _local_source_exists(root, candidates)
         status = _status(has_source=has_source, has_extractor=has_extractor, human_checked=human_checked)
         items.append(
             {
@@ -123,6 +132,7 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
                 "human_checked_records": human_checked,
                 "draft_records": draft,
                 "local_source_available": has_source,
+                "source_candidates": candidates,
                 "registered_seed_extractor": has_extractor,
                 "status": status,
                 "next_actions": _next_actions(status),

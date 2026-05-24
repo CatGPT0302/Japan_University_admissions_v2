@@ -93,6 +93,7 @@ python scripts/quality_gap_report.py
 
 This lists each human-reviewed baseline, whether a local source PDF is available, whether a deterministic seed extractor is registered, and the next action needed to make that baseline enforceable.
 Use the `owner_todo` section as the production queue for the next quality pass.
+Use each baseline item's `source_candidates` list to place missing PDFs where the quality tools can find them.
 
 Run the full owner quality overview:
 

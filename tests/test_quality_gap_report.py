@@ -63,6 +63,40 @@ class QualityGapReportTest(unittest.TestCase):
         self.assertIn("data/uploads/waseda_2027_official.pdf", report["owner_todo"][0]["details"])
         self.assertEqual(report["owner_todo"][1]["action"], "add_seed_extractor_or_pipeline_fixture")
 
+    def test_waseda_moves_to_extractor_todo_once_source_pdf_exists(self) -> None:
+        from scripts.quality_gap_report import build_quality_gap_report
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline_dir = root / "quality_baselines"
+            upload_dir = root / "data" / "uploads"
+            baseline_dir.mkdir(parents=True)
+            upload_dir.mkdir(parents=True)
+            (baseline_dir / "waseda_2027_official.expected.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "waseda-law",
+                            "source_document": "https://example.test/waseda.pdf",
+                            "match": {"university": "Waseda", "faculty": "Law"},
+                            "expect": {"english_requirement": "TOEFL"},
+                            "review_status": "human_checked_seed",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (upload_dir / "waseda_2027_official.pdf").write_bytes(b"%PDF-1.4 checked source")
+
+            report = build_quality_gap_report(root=root)
+
+        waseda = report["baseline_files"][0]
+        self.assertTrue(waseda["local_source_available"])
+        self.assertEqual(waseda["source_candidates"][0], "data/uploads/waseda_2027_official.pdf")
+        self.assertEqual(waseda["status"], "needs_seed_extractor")
+        self.assertEqual(report["summary"]["missing_local_sources"], 0)
+        self.assertEqual(report["owner_todo"][0]["action"], "add_seed_extractor_or_pipeline_fixture")
+
 
 if __name__ == "__main__":
     unittest.main()
