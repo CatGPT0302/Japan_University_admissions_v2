@@ -1,0 +1,83 @@
+[
+  {
+    "id": "meiji-2027-law",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "法学部",
+      "department": "法律学科"
+    },
+    "expect": {
+      "eju_subjects": {
+        "contains": ["日本語", "総合科目", "数学"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT"]
+      },
+      "screening_method": {
+        "contains": ["小論文", "口頭試問"]
+      },
+      "result_date": {
+        "contains": ["１２月１１日"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "meiji-2027-commerce-i",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "商学部",
+      "department": "商学科"
+    },
+    "expect": {
+      "eju_subjects": {
+        "contains": ["日本語", "総合科目"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "TOEIC L&R"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "口頭試問"]
+      },
+      "screening_schedule": {
+        "contains": ["１２月５日"]
+      },
+      "result_date": {
+        "contains": ["１２月１１日"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "meiji-2027-information-communication",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "情報コミュニケーション学部",
+      "department": "情報コミュニケーション学科"
+    },
+    "expect": {
+      "eju_subjects": {
+        "contains": ["日本語", "総合科目"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "TOEIC L&R"]
+      },
+      "screening_method": {
+        "contains": ["小論文", "面接"]
+      },
+      "result_date": {
+        "contains": ["１２月１５日"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  }
+]

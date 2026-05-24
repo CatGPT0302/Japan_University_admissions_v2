@@ -82,7 +82,13 @@ The repository includes a small seed baseline for Waseda 2027:
 quality_baselines/waseda_2027_official.expected.json
 ```
 
-It intentionally covers only a few high-value rows and high-impact items. Extend it after checking more rows against the source PDF.
+It also includes a small seed baseline for Meiji 2027:
+
+```text
+quality_baselines/meiji_2027_schedule.expected.json
+```
+
+These seed baselines intentionally cover only a few high-value rows and high-impact items. Extend them after checking more rows against the source PDFs.
 
 ## Owner Quality Dashboard
 

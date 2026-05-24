@@ -155,6 +155,16 @@ class QualityBaselineTest(unittest.TestCase):
         self.assertTrue(all(record.get("match", {}).get("university") == "早稲田大学" for record in records))
         self.assertTrue(all("application_period" in record.get("expect", {}) for record in records))
 
+    def test_meiji_seed_baseline_is_loadable_and_marked_checked(self) -> None:
+        from scripts.quality_baseline import load_json_records
+
+        records = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
+
+        self.assertGreaterEqual(len(records), 3)
+        self.assertTrue(all(record.get("review_status") == "human_checked_seed" for record in records))
+        self.assertTrue(all(record.get("match", {}).get("university") == "明治大学" for record in records))
+        self.assertTrue(any(record.get("match", {}).get("faculty") == "法学部" for record in records))
+
 
 if __name__ == "__main__":
     unittest.main()
