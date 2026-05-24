@@ -27,7 +27,7 @@ REGISTERED_SEED_EXTRACTORS = {
 }
 
 SOURCE_MARKERS = {
-    "waseda_2027_official": ["Waseda", "2027"],
+    "waseda_2027_official": [["Waseda", "早稲田大学", "早稻田大学"], ["2027", "2027年度"]],
 }
 
 
@@ -49,9 +49,9 @@ def _source_candidates(stem: str, registration: dict[str, Any] | None) -> list[s
     return deduped
 
 
-def _source_markers(stem: str, registration: dict[str, Any] | None) -> list[str]:
+def _source_markers(stem: str, registration: dict[str, Any] | None) -> list[Any]:
     if registration and registration.get("source_markers"):
-        return [str(item) for item in registration.get("source_markers") or [] if str(item).strip()]
+        return [item for item in registration.get("source_markers") or [] if str(item).strip()]
     return list(SOURCE_MARKERS.get(stem, []))
 
 
@@ -70,7 +70,13 @@ def _read_probe_text(path: Path) -> str:
         return ""
 
 
-def _validate_local_source(root: Path, candidates: list[str], markers: list[str]) -> dict[str, Any]:
+def _marker_group_matches(text: str, marker: Any) -> bool:
+    if isinstance(marker, list):
+        return any(str(item) in text for item in marker if str(item).strip())
+    return str(marker) in text
+
+
+def _validate_local_source(root: Path, candidates: list[str], markers: list[Any]) -> dict[str, Any]:
     for candidate in candidates:
         path = root / candidate
         if not path.exists() or path.stat().st_size <= 0:
@@ -78,7 +84,7 @@ def _validate_local_source(root: Path, candidates: list[str], markers: list[str]
         if not markers:
             return {"available": True, "status": "unchecked", "path": candidate, "markers": markers}
         text = _read_probe_text(path)
-        missing = [marker for marker in markers if marker not in text]
+        missing = [marker for marker in markers if not _marker_group_matches(text, marker)]
         if not missing:
             return {"available": True, "status": "matched", "path": candidate, "markers": markers}
         return {

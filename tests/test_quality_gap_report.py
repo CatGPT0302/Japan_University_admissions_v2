@@ -156,6 +156,43 @@ class QualityGapReportTest(unittest.TestCase):
         self.assertTrue(validation["available"])
         self.assertEqual(validation["status"], "matched")
 
+    def test_source_markers_support_alias_groups(self) -> None:
+        from scripts.quality_gap_report import _validate_local_source
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            upload_dir = root / "data" / "uploads"
+            upload_dir.mkdir(parents=True)
+            (upload_dir / "waseda.pdf").write_text("早稲田大学 2027年度 外国学生", encoding="utf-8")
+
+            validation = _validate_local_source(
+                root,
+                ["data/uploads/waseda.pdf"],
+                [["Waseda", "早稲田大学"], ["2027", "2027年度"]],
+            )
+
+        self.assertTrue(validation["available"])
+        self.assertEqual(validation["status"], "matched")
+
+    def test_source_markers_fail_when_a_required_group_is_missing(self) -> None:
+        from scripts.quality_gap_report import _validate_local_source
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            upload_dir = root / "data" / "uploads"
+            upload_dir.mkdir(parents=True)
+            (upload_dir / "waseda.pdf").write_text("早稲田大学 外国学生", encoding="utf-8")
+
+            validation = _validate_local_source(
+                root,
+                ["data/uploads/waseda.pdf"],
+                [["Waseda", "早稲田大学"], ["2027", "2027年度"]],
+            )
+
+        self.assertFalse(validation["available"])
+        self.assertEqual(validation["status"], "marker_mismatch")
+        self.assertEqual(validation["missing_markers"], [["2027", "2027年度"]])
+
 
 if __name__ == "__main__":
     unittest.main()
