@@ -6,6 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,6 +63,21 @@ class Waseda2027ExtractorTest(unittest.TestCase):
             payload = json.loads(output_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["record_count"], 5)
             self.assertEqual(payload["records"][0]["university"], "早稲田大学")
+
+    def test_text_path_uses_waseda_seed_without_llm_call(self) -> None:
+        from scripts.extract_direct import _run_text_path
+
+        with (
+            patch("scripts.extract_direct._read_pdf_text", return_value=(WASEDA_TEXT, {1: WASEDA_TEXT})),
+            patch("scripts.extract_direct._insert_result", return_value=5) as insert_result,
+            patch("scripts.extract_direct._call_openai", side_effect=AssertionError("LLM should not be called")),
+        ):
+            result = _run_text_path(1, Path("dummy.pdf"), "早稲田大学", "2027")
+
+        self.assertEqual(result["mode"], "deterministic_text")
+        self.assertEqual(result["records"], 5)
+        self.assertEqual(result["inserted"], 5)
+        insert_result.assert_called_once()
 
 
 if __name__ == "__main__":
