@@ -1,4 +1,16 @@
-export type NavPage = "run" | "review" | "records" | "settings";
+export type NavPage = "run" | "review" | "records";
+export type OwnerPage = NavPage | "partners";
+export type AppRole = "owner_admin" | "partner_staff";
+
+export interface AppUser {
+  id: number;
+  organization_id: number;
+  organization_name: string;
+  email: string;
+  display_name: string;
+  role: AppRole;
+  status: string;
+}
 
 export interface FetchPdfTarget {
   name: string;

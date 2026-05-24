@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -22,10 +22,13 @@ from scripts import full_vision_extractor as full_vision_extractor  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     create_consultation_booking,
+    create_app_session,
     create_document_submission,
+    delete_app_session,
     delete_document,
     delete_staging_record,
     get_api_center,
+    get_app_user_by_session,
     get_api_key_context,
     get_correction_events as db_get_correction_events,
     get_db_runtime,
@@ -186,10 +189,44 @@ class AdminSubmissionUpdateRequest(BaseModel):
     document_id: int | None = None
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class PartnerSubmissionRequest(BaseModel):
+    university: str
+    admission_year: str | None = ""
+    pdf_url: str | None = ""
+    page_url: str | None = ""
+    notes: str | None = ""
+
+
 def _model_data(model: BaseModel) -> dict[str, Any]:
     if hasattr(model, "model_dump"):
         return model.model_dump()
     return model.dict()
+
+
+def _session_token(request: Request) -> str:
+    return request.cookies.get("admissions_session", "").strip()
+
+
+def _current_user(request: Request) -> dict[str, Any] | None:
+    return get_app_user_by_session(_session_token(request))
+
+
+def _require_user(request: Request, roles: set[str] | None = None) -> dict[str, Any]:
+    user = _current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Please sign in")
+    if roles and user.get("role") not in roles:
+        raise HTTPException(status_code=403, detail="This area is not available for this account")
+    return user
+
+
+def _require_owner(request: Request) -> dict[str, Any]:
+    return _require_user(request, {"owner_admin"})
 
 
 def _extract_api_secret(request: Request) -> str:
@@ -255,7 +292,8 @@ def _run_extract_direct(file_name: str, university: str, year: str, url: str = "
 
 
 @app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...)) -> dict[str, str]:
+async def upload_pdf(request: Request, file: UploadFile = File(...)) -> dict[str, str]:
+    _require_owner(request)
     suffix = Path(file.filename or "").suffix or ".pdf"
     original_name = Path(file.filename or "uploaded.pdf").name
     stem = Path(original_name).stem or "uploaded"
@@ -290,8 +328,42 @@ def health() -> dict[str, Any]:
     }
 
 
+@app.post("/auth/login")
+def login(payload: LoginRequest) -> JSONResponse:
+    session = create_app_session(payload.email, payload.password)
+    if not session:
+        raise HTTPException(status_code=401, detail="Email or password is not correct")
+    token, user = session
+    response = JSONResponse({"user": user})
+    response.set_cookie(
+        "admissions_session",
+        token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=60 * 60 * 24 * 7,
+        path="/",
+    )
+    return response
+
+
+@app.post("/auth/logout")
+def logout(request: Request) -> JSONResponse:
+    delete_app_session(_session_token(request))
+    response = JSONResponse({"status": "signed_out"})
+    response.delete_cookie("admissions_session", path="/")
+    return response
+
+
+@app.get("/auth/me")
+def auth_me(request: Request) -> dict[str, Any]:
+    user = _current_user(request)
+    return {"user": user}
+
+
 @app.post("/extract")
-def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
+def extract_pdf(payload: ExtractRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     result = _run_extract_direct(payload.file_name, payload.university, payload.year, payload.url or "")
     return {
         "doc_id": result.get("doc_id"),
@@ -306,12 +378,13 @@ def extract_pdf(payload: ExtractRequest) -> dict[str, Any]:
 
 
 @app.post("/extract/full-vision")
-def extract_pdf_full_vision(payload: ExtractRequest) -> dict[str, Any]:
-    return extract_pdf(payload)
+def extract_pdf_full_vision(payload: ExtractRequest, request: Request) -> dict[str, Any]:
+    return extract_pdf(payload, request)
 
 
 @app.post("/agent/run")
-def run_agent(payload: AgentRunRequest) -> dict[str, Any]:
+def run_agent(payload: AgentRunRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     try:
         return run_agent_workflow(
             AgentRequest(
@@ -337,12 +410,14 @@ def run_agent(payload: AgentRunRequest) -> dict[str, Any]:
 
 
 @app.get("/fetch-pdf/targets")
-def fetch_pdf_targets() -> list[dict[str, str]]:
+def fetch_pdf_targets(request: Request) -> list[dict[str, str]]:
+    _require_owner(request)
     return fetch_pdfs.list_targets()
 
 
 @app.post("/fetch-pdf/search")
-def search_pdf(payload: SearchPdfRequest) -> dict[str, Any]:
+def search_pdf(payload: SearchPdfRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     try:
         return fetch_pdfs.search_single(
             university=payload.university,
@@ -362,7 +437,8 @@ def search_pdf(payload: SearchPdfRequest) -> dict[str, Any]:
 
 
 @app.get("/fetch-pdf/probe")
-def probe_pdf_sources(year: int = 2026) -> dict[str, Any]:
+def probe_pdf_sources(request: Request, year: int = 2026) -> dict[str, Any]:
+    _require_owner(request)
     try:
         return fetch_pdfs.probe_targets(year=year)
     except Exception as exc:
@@ -376,7 +452,8 @@ def probe_pdf_sources(year: int = 2026) -> dict[str, Any]:
 
 
 @app.post("/fetch-pdf")
-def fetch_pdf(payload: FetchPdfRequest) -> dict[str, Any]:
+def fetch_pdf(payload: FetchPdfRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     try:
         result = fetch_pdfs.fetch_single(
             university=payload.university,
@@ -403,16 +480,19 @@ def fetch_pdf(payload: FetchPdfRequest) -> dict[str, Any]:
 
 @app.get("/documents")
 def list_documents(
+    request: Request,
     q: str | None = None,
     year: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
+    _require_owner(request)
     return db_get_documents(query=q, year=year, limit=limit, offset=offset)
 
 
 @app.get("/documents/{doc_id}/summary")
-def get_document_summary(doc_id: int) -> dict[str, Any]:
+def get_document_summary(doc_id: int, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     row = db_get_document_summary(doc_id)
     if not row:
         raise HTTPException(status_code=404, detail="document not found")
@@ -420,7 +500,8 @@ def get_document_summary(doc_id: int) -> dict[str, Any]:
 
 
 @app.get("/documents/{doc_id}/pdf")
-def get_document_pdf(doc_id: int) -> FileResponse:
+def get_document_pdf(doc_id: int, request: Request) -> FileResponse:
+    _require_owner(request)
     pdf_path = _document_pdf_path(doc_id)
     return FileResponse(
         pdf_path,
@@ -430,7 +511,8 @@ def get_document_pdf(doc_id: int) -> FileResponse:
 
 
 @app.get("/documents/{doc_id}/page-image")
-def get_document_page_image(doc_id: int, page: int = 1) -> FileResponse:
+def get_document_page_image(doc_id: int, request: Request, page: int = 1) -> FileResponse:
+    _require_owner(request)
     pdf_path = _document_pdf_path(doc_id)
     page_num = max(int(page or 1), 1)
     out_dir = rendered_pages_dir() / f"preview_{doc_id}"
@@ -460,7 +542,8 @@ def _document_pdf_path(doc_id: int) -> Path:
 
 
 @app.delete("/documents/{doc_id}")
-def delete_uploaded_document(doc_id: int) -> dict[str, Any]:
+def delete_uploaded_document(doc_id: int, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     result = delete_document(doc_id)
     if not result:
         raise HTTPException(status_code=404, detail="document not found")
@@ -468,7 +551,8 @@ def delete_uploaded_document(doc_id: int) -> dict[str, Any]:
 
 
 @app.get("/staging/{doc_id}")
-def list_staging(doc_id: int) -> list[dict[str, Any]]:
+def list_staging(doc_id: int, request: Request) -> list[dict[str, Any]]:
+    _require_owner(request)
     records = get_staging_records(doc_id)
     fields = [
         "id", "document_id", "page_number",
@@ -486,7 +570,8 @@ def list_staging(doc_id: int) -> list[dict[str, Any]]:
 
 
 @app.patch("/staging/{staging_id}")
-def patch_staging(staging_id: int, payload: PatchRequest) -> dict[str, Any]:
+def patch_staging(staging_id: int, payload: PatchRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     updated = update_staging_record(staging_id, payload.data)
     if not updated:
         raise HTTPException(status_code=404, detail=f"staging record not found: {staging_id}")
@@ -494,7 +579,8 @@ def patch_staging(staging_id: int, payload: PatchRequest) -> dict[str, Any]:
 
 
 @app.delete("/staging/{staging_id}")
-def delete_staging(staging_id: int) -> dict[str, Any]:
+def delete_staging(staging_id: int, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     row = get_staging_record(staging_id)
     if not row:
         raise HTTPException(status_code=404, detail="not found")
@@ -503,7 +589,8 @@ def delete_staging(staging_id: int) -> dict[str, Any]:
 
 
 @app.post("/staging/manual")
-def create_manual_staging(payload: ManualRecord) -> dict[str, Any]:
+def create_manual_staging(payload: ManualRecord, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     record = dict(payload.data or {})
     validated = validate(record)
     row_id = insert_staging_record(payload.document_id, None, validated)
@@ -511,7 +598,8 @@ def create_manual_staging(payload: ManualRecord) -> dict[str, Any]:
 
 
 @app.post("/confirm/{doc_id}")
-def confirm_doc(doc_id: int) -> dict[str, int]:
+def confirm_doc(doc_id: int, request: Request) -> dict[str, int]:
+    _require_owner(request)
     stats = confirm_all_by_doc(doc_id)
     return {
         "confirmed": int(stats.get("written", 0)),
@@ -521,12 +609,14 @@ def confirm_doc(doc_id: int) -> dict[str, int]:
 
 @app.get("/records")
 def list_records(
+    request: Request,
     university: str | None = None,
     year: int | None = None,
     faculty: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
+    _require_owner(request)
     rows = get_records(
         university=university,
         year=year,
@@ -574,12 +664,16 @@ def public_booking(payload: ConsultationBookingRequest) -> dict[str, Any]:
 
 
 @app.get("/settings/api-center")
-def settings_api_center() -> dict[str, Any]:
+def settings_api_center(request: Request) -> dict[str, Any]:
+    user = _require_user(request, {"owner_admin", "partner_staff"})
+    if user.get("role") == "partner_staff":
+        return get_api_center(int(user.get("organization_id") or 0))
     return get_api_center()
 
 
 @app.post("/settings/api-keys")
-def settings_create_api_key(payload: ApiKeyCreateRequest) -> dict[str, Any]:
+def settings_create_api_key(payload: ApiKeyCreateRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     center = get_api_center()
     organization_name = (center.get("organization") or {}).get("name") or "Owner Workspace"
     created = issue_api_key(organization_name=organization_name, client_name=payload.client_name)
@@ -593,15 +687,18 @@ def settings_create_api_key(payload: ApiKeyCreateRequest) -> dict[str, Any]:
 
 @app.get("/admin/submissions")
 def admin_submission_queue(
+    request: Request,
     status: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
+    _require_owner(request)
     return list_document_submissions(status=status, limit=limit, offset=offset)
 
 
 @app.patch("/admin/submissions/{submission_id}")
-def admin_update_submission(submission_id: int, payload: AdminSubmissionUpdateRequest) -> dict[str, Any]:
+def admin_update_submission(submission_id: int, payload: AdminSubmissionUpdateRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     try:
         updated = update_document_submission(
             submission_id,
@@ -616,7 +713,8 @@ def admin_update_submission(submission_id: int, payload: AdminSubmissionUpdateRe
 
 
 @app.post("/admin/submissions/{submission_id}/start")
-def admin_start_submission(submission_id: int) -> dict[str, Any]:
+def admin_start_submission(submission_id: int, request: Request) -> dict[str, Any]:
+    _require_owner(request)
     submission = get_document_submission_for_owner(submission_id)
     if not submission:
         raise HTTPException(status_code=404, detail="submission not found")
@@ -779,8 +877,41 @@ def licensed_document_submission_detail(submission_id: int, request: Request) ->
     return submission
 
 
+@app.post("/partner/submissions")
+async def partner_create_submission(payload: PartnerSubmissionRequest, request: Request) -> dict[str, Any]:
+    user = _require_user(request, {"partner_staff"})
+    data = _model_data(payload)
+    if not str(data.get("university") or "").strip():
+        raise HTTPException(status_code=400, detail="请填写学校名称")
+    if not any(str(data.get(field) or "").strip() for field in ("pdf_url", "page_url")):
+        raise HTTPException(status_code=400, detail="请填写 PDF 地址或官网页面")
+    submission_id = create_document_submission(
+        int(user.get("organization_id") or 0),
+        None,
+        data,
+    )
+    return {"status": "submitted", "id": submission_id, "processing_status": "submitted"}
+
+
+@app.get("/partner/submissions")
+def partner_submissions(
+    request: Request,
+    status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    user = _require_user(request, {"partner_staff"})
+    return list_document_submissions(
+        status=status,
+        limit=limit,
+        offset=offset,
+        organization_id=int(user.get("organization_id") or 0),
+    )
+
+
 @app.get("/stats")
-def get_stats() -> dict[str, Any]:
+def get_stats(request: Request) -> dict[str, Any]:
+    _require_owner(request)
     runtime = get_db_runtime()
     stats = db_get_stats()
     stats.update(
@@ -795,22 +926,26 @@ def get_stats() -> dict[str, Any]:
 
 
 @app.get("/metrics/quality")
-def quality_metrics(doc_id: int | None = None) -> dict[str, Any]:
+def quality_metrics(request: Request, doc_id: int | None = None) -> dict[str, Any]:
+    _require_owner(request)
     return db_get_quality_metrics(doc_id=doc_id)
 
 
 @app.get("/metrics/corrections")
-def correction_events(doc_id: int | None = None, limit: int = 100) -> list[dict[str, Any]]:
+def correction_events(request: Request, doc_id: int | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    _require_owner(request)
     return db_get_correction_events(doc_id=doc_id, limit=limit)
 
 
 @app.get("/export/excel")
 def export_excel(
+    request: Request,
     university: str | None = None,
     year: int | None = None,
     faculty: str | None = None,
 ) -> StreamingResponse:
     """Export confirmed records as the standard admissions master workbook."""
+    _require_owner(request)
     import io
 
     rows = get_records(university=university, year=year, faculty=faculty, limit=10000, offset=0)

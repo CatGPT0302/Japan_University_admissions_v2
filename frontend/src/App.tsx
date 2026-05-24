@@ -1,33 +1,84 @@
-import { useEffect, useMemo, useState } from "react";
-import { checkHealth } from "./api/client";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { checkHealth, getCurrentUser, login, logout, toErrorMessage } from "./api/client";
+import OwnerPartnersPage from "./pages/OwnerPartnersPage";
 import RunPage from "./pages/RunPage";
 import RecordsPage from "./pages/RecordsPage";
 import ReviewPage from "./pages/ReviewPage";
 import SettingsPage from "./pages/SettingsPage";
 import StudentApp from "./pages/StudentApp";
-import type { NavPage } from "./types";
+import type { AppRole, AppUser, OwnerPage } from "./types";
 
-const NAV: Array<{ key: NavPage; label: string; hint: string; short: string }> = [
+const NAV: Array<{ key: OwnerPage; label: string; hint: string; short: string }> = [
   { key: "run", label: "上传整理", hint: "提交招生资料，生成待核对内容", short: "01" },
   { key: "review", label: "人工核对", hint: "修正不确定内容，确认后保存", short: "02" },
   { key: "records", label: "正式资料", hint: "查看已确认资料，按需导出 Excel", short: "03" },
-  { key: "settings", label: "设置", hint: "合作方与资料", short: "04" },
+  { key: "partners", label: "合作私塾", hint: "开通使用权，处理对方提交的资料", short: "04" },
 ];
 
 function serviceText(backendOk: boolean | null) {
-  if (backendOk === null) return "服务检查中";
-  return backendOk ? "服务正常" : "服务异常";
+  if (backendOk === null) return "正在连接";
+  return backendOk ? "可以使用" : "暂时连不上";
 }
 
-function pageFromHash(): NavPage {
+function pageFromHash(): OwnerPage {
   const value = window.location.hash.replace(/^#\/?/, "");
-  return NAV.some((item) => item.key === value) ? (value as NavPage) : "run";
+  return NAV.some((item) => item.key === value) ? (value as OwnerPage) : "run";
+}
+
+function roleHome(role?: AppRole) {
+  return role === "partner_staff" ? "#/settings" : "#/";
+}
+
+function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onSignedIn: (user: AppUser) => void }) {
+  const [email, setEmail] = useState(expectedRole === "partner_staff" ? "partner@example.com" : "owner@example.com");
+  const [password, setPassword] = useState(expectedRole === "partner_staff" ? "partner-demo" : "owner-admin");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const user = await login(email, password);
+      onSignedIn(user);
+      window.location.hash = roleHome(user.role);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="login-shell">
+      <form className="login-card" onSubmit={(event) => void submit(event)}>
+        <p className="section-kicker">{expectedRole === "partner_staff" ? "私塾后台" : "Owner 工作台"}</p>
+        <h1>{expectedRole === "partner_staff" ? "登录服务中心" : "登录资料中心"}</h1>
+        <p>{expectedRole === "partner_staff" ? "提交资料、查看整理进度。" : "上传、整理、核对和维护正式资料。"}</p>
+        <label className="field-wrap">
+          <span className="field-label">邮箱</span>
+          <input className="field" value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label className="field-wrap">
+          <span className="field-label">密码</span>
+          <input className="field" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+        {error ? <div className="message-box error">{error}</div> : null}
+        <button className="btn btn-primary" disabled={busy} type="submit">
+          {busy ? "正在登录" : "登录"}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 export default function App() {
-  const [page, setPage] = useState<NavPage>(() => pageFromHash());
+  const [page, setPage] = useState<OwnerPage>(() => pageFromHash());
   const [activeDocId, setActiveDocId] = useState<number | null>(null);
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const publicStudentOnly = import.meta.env.VITE_PUBLIC_STUDENT_ONLY === "true";
   const [isStudentApp, setIsStudentApp] = useState(() => publicStudentOnly || window.location.hash.startsWith("#/student"));
   const [isSettingsApp, setIsSettingsApp] = useState(() => window.location.hash.startsWith("#/settings"));
@@ -46,12 +97,31 @@ export default function App() {
 
   useEffect(() => {
     void checkHealth().then(setBackendOk);
+    void getCurrentUser()
+      .then(setUser)
+      .finally(() => setAuthChecked(true));
   }, []);
 
   const activeItem = useMemo(() => NAV.find((item) => item.key === page) ?? NAV[0], [page]);
 
   if (isStudentApp) return <StudentApp />;
-  if (isSettingsApp) return <SettingsPage />;
+  if (!authChecked) {
+    return (
+      <div className="login-shell">
+        <div className="login-card">
+          <p className="section-kicker">正在打开</p>
+          <h1>请稍等</h1>
+        </div>
+      </div>
+    );
+  }
+  if (isSettingsApp) {
+    if (!user) return <LoginScreen expectedRole="partner_staff" onSignedIn={setUser} />;
+    if (user.role !== "partner_staff") return <LoginScreen expectedRole="partner_staff" onSignedIn={setUser} />;
+    return <SettingsPage />;
+  }
+  if (!user) return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
+  if (user.role !== "owner_admin") return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
 
   return (
     <div className="app-shell app-shell-product">
@@ -72,10 +142,7 @@ export default function App() {
                   key={item.key}
                   className={`workspace-tab${active ? " is-active" : ""}`}
                   onClick={() => {
-                    if (item.key === "settings") {
-                      window.location.hash = "#/settings";
-                      return;
-                    }
+                    window.location.hash = item.key === "run" ? "#/" : `#/${item.key}`;
                     setPage(item.key);
                   }}
                   type="button"
@@ -113,6 +180,15 @@ export default function App() {
               <span className="connection-dot" />
               {serviceText(backendOk)}
             </div>
+            <button
+              className="btn btn-ghost btn-small"
+              type="button"
+              onClick={() => {
+                void logout().then(() => setUser(null));
+              }}
+            >
+              退出
+            </button>
           </div>
         </header>
 
@@ -135,7 +211,7 @@ export default function App() {
           ) : page === "records" ? (
             <RecordsPage />
           ) : (
-            <SettingsPage />
+            <OwnerPartnersPage />
           )}
         </main>
       </div>

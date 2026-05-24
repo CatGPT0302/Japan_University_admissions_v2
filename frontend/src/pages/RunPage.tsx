@@ -121,6 +121,21 @@ export default function RunPage({ onDone }: Props) {
         </div>
       </section>
 
+      <nav className="local-secondary-nav" aria-label="资料整理步骤">
+        <button className="is-active" type="button">
+          <strong>导入资料</strong>
+          <span>上传 PDF 或填写来源</span>
+        </button>
+        <button type="button">
+          <strong>整理初稿</strong>
+          <span>页面会先整理成可核对内容</span>
+        </button>
+        <button type="button">
+          <strong>确认保存</strong>
+          <span>核对后进入正式资料</span>
+        </button>
+      </nav>
+
       <section className="content-grid">
         <aside className="sidebar-panel">
           <div className="toolbar-shell">

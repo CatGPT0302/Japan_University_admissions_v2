@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --font-display: "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
-  --font-body: "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "华文宋体", "STZhongsong", "Yu Mincho", "BIZ UDMincho", "SimSun", serif;
+  --font-display: var(--font-serif);
+  --font-body: var(--font-serif);
   --font-mono: "SF Mono", "Geist Mono", "Cascadia Mono", "Consolas", monospace;
   --bg: #edf2f7;
   --bg-deep: #dde7f2;
@@ -44,6 +45,44 @@ body,
 #root {
   min-height: 100%;
   width: 100%;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 24% 10%, rgba(255, 255, 255, 0.9), transparent 26%),
+    linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+}
+
+.login-card {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.58);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.login-card p {
+  margin: 0;
+  color: var(--text-3);
+  line-height: 1.8;
 }
 
 body {
@@ -95,6 +134,11 @@ a {
 
 .app-shell-product {
   grid-template-columns: 292px minmax(0, 1fr);
+  font-family: var(--font-serif);
+}
+
+.app-shell-product :where(button, input, textarea, select, code, pre, strong, small, span, p, h1, h2, h3, h4, em) {
+  font-family: var(--font-serif);
 }
 
 .product-sidebar {
@@ -175,6 +219,42 @@ a {
 .sidebar-panel {
   display: grid;
   gap: 16px;
+}
+
+.local-secondary-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.local-secondary-nav button {
+  display: grid;
+  gap: 4px;
+  min-height: 76px;
+  padding: 14px 16px;
+  text-align: left;
+  color: var(--text-3);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  cursor: default;
+}
+
+.local-secondary-nav button.is-active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+.local-secondary-nav strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.local-secondary-nav span {
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .sidebar-card,
@@ -2057,6 +2137,24 @@ a {
   overflow-x: hidden;
 }
 
+.workspace-body-product .settings-shell-ios {
+  min-height: auto;
+  background: transparent;
+}
+
+.workspace-body-product .settings-shell-ios::before {
+  display: none;
+}
+
+.workspace-body-product .settings-main {
+  width: 100%;
+  padding: 0;
+}
+
+.workspace-body-product .settings-topbar {
+  display: none;
+}
+
 .settings-shell-ios::before {
   content: "";
   position: fixed;
@@ -2094,6 +2192,41 @@ a {
 .settings-shell-ios h4,
 .settings-shell-ios em {
   font-family: var(--student-sans);
+}
+
+.partner-submit-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.partner-wide,
+.partner-submit-form .btn {
+  grid-column: 1 / -1;
+}
+
+.partner-console .settings-topbar {
+  justify-content: flex-start;
+}
+
+.partner-panel h3,
+.partner-hero h2 {
+  letter-spacing: 0;
+}
+
+.partner-service-list {
+  margin-top: 20px;
+}
+
+@media (max-width: 720px) {
+  .local-secondary-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .partner-submit-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 .settings-topbar {

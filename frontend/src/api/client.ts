@@ -2,6 +2,7 @@ import axios from "axios";
 import type {
   AgentRunResponse,
   AdminSubmission,
+  AppUser,
   ApiCenterResponse,
   ApiKeyCreateResponse,
   ConfirmResponse,
@@ -32,6 +33,7 @@ export const API_BASE_URL = BASE_URL;
 const client = axios.create({
   baseURL: BASE_URL,
   timeout: 600000,
+  withCredentials: true,
 });
 
 function toErrorMessage(error: unknown): string {
@@ -240,6 +242,26 @@ export async function startAdminSubmission(submissionId: number): Promise<AdminS
   return data;
 }
 
+export async function getPartnerSubmissions(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AdminSubmission[]> {
+  const { data } = await client.get<AdminSubmission[]>("/partner/submissions", { params });
+  return data;
+}
+
+export async function createPartnerSubmission(payload: {
+  university: string;
+  admission_year?: string;
+  pdf_url?: string;
+  page_url?: string;
+  notes?: string;
+}): Promise<{ status: string; id: number; processing_status: string }> {
+  const { data } = await client.post("/partner/submissions", payload);
+  return data;
+}
+
 export async function getStats(): Promise<StatsResponse> {
   const { data } = await client.get<StatsResponse>("/stats");
   return data;
@@ -282,3 +304,17 @@ export async function checkHealth(): Promise<boolean> {
 }
 
 export { toErrorMessage };
+
+export async function login(email: string, password: string): Promise<AppUser> {
+  const { data } = await client.post<{ user: AppUser }>("/auth/login", { email, password });
+  return data.user;
+}
+
+export async function logout(): Promise<void> {
+  await client.post("/auth/logout");
+}
+
+export async function getCurrentUser(): Promise<AppUser | null> {
+  const { data } = await client.get<{ user: AppUser | null }>("/auth/me");
+  return data.user || null;
+}

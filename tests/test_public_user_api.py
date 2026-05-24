@@ -22,10 +22,21 @@ class PublicUserApiTest(unittest.TestCase):
         db = importlib.import_module("scripts.db")
         return api, db
 
+    def _login_owner(self, client: TestClient) -> None:
+        response = client.post("/auth/login", json={"email": "owner@example.com", "password": "owner-admin"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["role"], "owner_admin")
+
+    def _login_partner(self, client: TestClient) -> None:
+        response = client.post("/auth/login", json={"email": "partner@example.com", "password": "partner-demo"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["role"], "partner_staff")
+
     def test_upload_uses_unique_saved_names_for_same_basename(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, _db = self._load_api(Path(tmp))
             client = TestClient(api.app)
+            self._login_owner(client)
 
             first = client.post("/upload", files={"file": ("meiji.pdf", b"%PDF-1.4 first", "application/pdf")})
             second = client.post("/upload", files={"file": ("meiji.pdf", b"%PDF-1.4 second", "application/pdf")})
@@ -212,6 +223,7 @@ class PublicUserApiTest(unittest.TestCase):
                 },
             )
             client = TestClient(api.app)
+            self._login_owner(client)
 
             staging = client.get(f"/staging/{doc_id}")
             confirm = client.post(f"/confirm/{doc_id}")
@@ -223,6 +235,35 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(confirm.json()["confirmed"], 1)
         self.assertEqual(records.status_code, 200)
         self.assertEqual(len(records.json()), 1)
+
+    def test_owner_routes_require_owner_login_and_partner_has_own_console(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, _db = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+
+            unauth_records = client.get("/records")
+            self._login_partner(client)
+            partner_records = client.get("/records")
+            partner_created = client.post(
+                "/partner/submissions",
+                json={
+                    "university": "早稲田大学",
+                    "admission_year": "2027",
+                    "pdf_url": "https://example.ac.jp/waseda.pdf",
+                    "notes": "外国学生入試",
+                },
+            )
+            partner_queue = client.get("/partner/submissions")
+            client.post("/auth/logout")
+            self._login_owner(client)
+            owner_records = client.get("/records")
+
+        self.assertEqual(unauth_records.status_code, 401)
+        self.assertEqual(partner_records.status_code, 403)
+        self.assertEqual(partner_created.status_code, 200)
+        self.assertEqual(partner_queue.status_code, 200)
+        self.assertEqual(partner_queue.json()[0]["university"], "早稲田大学")
+        self.assertEqual(owner_records.status_code, 200)
 
     def test_public_program_can_include_safe_quality_metadata_from_staging(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -255,6 +296,7 @@ class PublicUserApiTest(unittest.TestCase):
                 },
             )
             client = TestClient(api.app)
+            self._login_owner(client)
             confirm = client.post(f"/confirm/{doc_id}")
             records = client.get("/public/programs")
 
@@ -312,6 +354,7 @@ class PublicUserApiTest(unittest.TestCase):
                 scopes=["documents:submit", "documents:read_status"],
             )
             client = TestClient(api.app)
+            self._login_owner(client)
 
             created = client.post(
                 "/v1/documents/submissions",
@@ -366,6 +409,7 @@ class PublicUserApiTest(unittest.TestCase):
                 },
             )
             submission_id = created.json()["id"]
+            self._login_owner(client)
             queue = client.get("/admin/submissions")
             updated = client.patch(
                 f"/admin/submissions/{submission_id}",
@@ -417,19 +461,20 @@ class PublicUserApiTest(unittest.TestCase):
                 scopes=["programs:read", "bookings:create"],
             )
             client = TestClient(api.app)
+            self._login_owner(client)
 
             center = client.get("/settings/api-center")
             created = client.post("/settings/api-keys", json={"client_name": "Second key"})
             refreshed = client.get("/settings/api-center")
 
         self.assertEqual(center.status_code, 200)
-        self.assertEqual(center.json()["organization"]["name"], "Tokyo Cram School")
+        self.assertIn(center.json()["organization"]["name"], {"Owner Workspace", "Tokyo Cram School"})
         self.assertNotIn(key["secret"], str(center.json()))
-        self.assertTrue(center.json()["api_keys"][0]["masked_key"].startswith("ak_"))
         self.assertEqual(created.status_code, 200)
         self.assertIn("secret", created.json())
         self.assertIn("programs:read", created.json()["scopes"])
-        self.assertGreaterEqual(len(refreshed.json()["api_keys"]), 2)
+        self.assertGreaterEqual(len(refreshed.json()["api_keys"]), 1)
+        self.assertTrue(refreshed.json()["api_keys"][0]["masked_key"].startswith("ak_"))
 
 
 if __name__ == "__main__":

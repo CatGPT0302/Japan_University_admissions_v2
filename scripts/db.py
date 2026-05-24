@@ -11,7 +11,7 @@ import re
 import secrets
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -265,6 +265,24 @@ CREATE TABLE IF NOT EXISTS organizations (
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
     updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
 );
+CREATE TABLE IF NOT EXISTS app_users (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id),
+    email TEXT NOT NULL UNIQUE,
+    display_name TEXT,
+    role TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
+    updated_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
+CREATE TABLE IF NOT EXISTS app_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES app_users(id),
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
+);
 CREATE TABLE IF NOT EXISTS api_clients (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER NOT NULL REFERENCES organizations(id),
@@ -438,6 +456,8 @@ CREATE INDEX IF NOT EXISTS idx_corr_doc ON correction_events(document_id);
 CREATE INDEX IF NOT EXISTS idx_corr_field ON correction_events(field_name);
 CREATE INDEX IF NOT EXISTS idx_booking_program ON consultation_bookings(program_id);
 CREATE INDEX IF NOT EXISTS idx_booking_status ON consultation_bookings(status);
+CREATE INDEX IF NOT EXISTS idx_app_session_hash ON app_sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_app_user_email ON app_users(email);
 CREATE INDEX IF NOT EXISTS idx_api_key_hash ON api_key_hashes(key_hash);
 CREATE INDEX IF NOT EXISTS idx_api_usage_org ON api_usage_logs(organization_id);
 CREATE INDEX IF NOT EXISTS idx_submission_org ON document_submissions(organization_id);
@@ -453,6 +473,24 @@ CREATE TABLE IF NOT EXISTS organizations (
     license_expires_at TEXT,
     created_at TEXT DEFAULT (datetime('now','localtime')),
     updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS app_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id INTEGER REFERENCES organizations(id),
+    email TEXT NOT NULL UNIQUE,
+    display_name TEXT,
+    role TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS app_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES app_users(id),
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE IF NOT EXISTS api_clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -627,6 +665,8 @@ CREATE INDEX IF NOT EXISTS idx_corr_doc ON correction_events(document_id);
 CREATE INDEX IF NOT EXISTS idx_corr_field ON correction_events(field_name);
 CREATE INDEX IF NOT EXISTS idx_booking_program ON consultation_bookings(program_id);
 CREATE INDEX IF NOT EXISTS idx_booking_status ON consultation_bookings(status);
+CREATE INDEX IF NOT EXISTS idx_app_session_hash ON app_sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_app_user_email ON app_users(email);
 CREATE INDEX IF NOT EXISTS idx_api_key_hash ON api_key_hashes(key_hash);
 CREATE INDEX IF NOT EXISTS idx_api_usage_org ON api_usage_logs(organization_id);
 CREATE INDEX IF NOT EXISTS idx_submission_org ON document_submissions(organization_id);
@@ -660,6 +700,31 @@ def _ensure_staging_columns(conn) -> None:
             _execute(conn, f"ALTER TABLE admission_records_staging ADD COLUMN {column} {definition}")
 
 
+def _ensure_auth_seed() -> None:
+    owner_org = get_or_create_organization("Owner Workspace")
+    partner_org = get_or_create_organization(os.environ.get("PARTNER_ORG_NAME", "合作私塾"))
+    owner_email = os.environ.get("OWNER_EMAIL", "owner@example.com").strip().lower()
+    owner_password = os.environ.get("OWNER_PASSWORD", "owner-admin")
+    partner_email = os.environ.get("PARTNER_EMAIL", "partner@example.com").strip().lower()
+    partner_password = os.environ.get("PARTNER_PASSWORD", "partner-demo")
+    if owner_email and owner_password:
+        upsert_app_user(
+            email=owner_email,
+            password=owner_password,
+            role="owner_admin",
+            display_name=os.environ.get("OWNER_DISPLAY_NAME", "Owner"),
+            organization_id=int(owner_org["id"]),
+        )
+    if partner_email and partner_password:
+        upsert_app_user(
+            email=partner_email,
+            password=partner_password,
+            role="partner_staff",
+            display_name=os.environ.get("PARTNER_DISPLAY_NAME", "私塾负责人"),
+            organization_id=int(partner_org["id"]),
+        )
+
+
 def init_db() -> None:
     conn = get_conn()
     if _pg():
@@ -670,6 +735,7 @@ def init_db() -> None:
     _ensure_staging_columns(conn)
     conn.commit()
     conn.close()
+    _ensure_auth_seed()
     runtime = get_db_runtime()
     print("DB initialised (PostgreSQL)" if runtime.mode == "postgres" else "DB initialised (SQLite)")
     if runtime.warning:
@@ -683,6 +749,140 @@ DEFAULT_API_SCOPES = [
     "documents:submit",
     "documents:read_status",
 ]
+
+
+def _hash_secret(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _hash_password(password: str, salt: str | None = None) -> str:
+    salt_value = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt_value.encode("utf-8"), 120_000)
+    return f"pbkdf2_sha256${salt_value}${digest.hex()}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        algo, salt, digest = stored.split("$", 2)
+    except ValueError:
+        return False
+    if algo != "pbkdf2_sha256":
+        return False
+    return secrets.compare_digest(_hash_password(password, salt), stored)
+
+
+def _clean_app_user(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not row:
+        return None
+    return {
+        "id": int(row["id"]),
+        "organization_id": int(row["organization_id"] or 0),
+        "organization_name": row.get("organization_name") or "",
+        "email": row.get("email") or "",
+        "display_name": row.get("display_name") or "",
+        "role": row.get("role") or "",
+        "status": row.get("status") or "",
+    }
+
+
+def upsert_app_user(
+    *,
+    email: str,
+    password: str,
+    role: str,
+    display_name: str = "",
+    organization_id: int | None = None,
+) -> dict[str, Any]:
+    email_value = email.strip().lower()
+    conn = get_conn()
+    existing = _fetchone(conn, f"SELECT * FROM app_users WHERE email={_ph()}", (email_value,))
+    password_hash = _hash_password(password)
+    if existing:
+        _execute(
+            conn,
+            f"UPDATE app_users SET organization_id={_ph()}, display_name={_ph()}, role={_ph()}, "
+            f"password_hash={_ph()}, status={_ph()}, updated_at={_ph()} WHERE id={_ph()}",
+            (organization_id, display_name, role, password_hash, "active", _now(), int(existing["id"])),
+        )
+        user_id = int(existing["id"])
+    else:
+        sql = (
+            "INSERT INTO app_users (organization_id,email,display_name,role,password_hash,status) "
+            f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()},{_ph()},{_ph()})"
+        )
+        if _pg():
+            sql += " RETURNING id"
+        cur = _execute(conn, sql, (organization_id, email_value, display_name, role, password_hash, "active"))
+        user_id = _lastrowid(cur)
+    conn.commit()
+    row = _fetchone(
+        conn,
+        "SELECT u.*, o.name AS organization_name FROM app_users u "
+        "LEFT JOIN organizations o ON o.id=u.organization_id "
+        f"WHERE u.id={_ph()}",
+        (user_id,),
+    )
+    conn.close()
+    return _clean_app_user(row) or {}
+
+
+def create_app_session(email: str, password: str) -> tuple[str, dict[str, Any]] | None:
+    conn = get_conn()
+    row = _fetchone(
+        conn,
+        "SELECT u.*, o.name AS organization_name FROM app_users u "
+        "LEFT JOIN organizations o ON o.id=u.organization_id "
+        f"WHERE u.email={_ph()} AND u.status={_ph()}",
+        (email.strip().lower(), "active"),
+    )
+    if not row or not _verify_password(password, row.get("password_hash") or ""):
+        conn.close()
+        return None
+    token = f"sess_{secrets.token_urlsafe(32)}"
+    expires_at = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
+    _execute(
+        conn,
+        f"INSERT INTO app_sessions (user_id,token_hash,expires_at) VALUES ({_ph()},{_ph()},{_ph()})",
+        (int(row["id"]), _hash_secret(token), expires_at),
+    )
+    conn.commit()
+    conn.close()
+    return token, _clean_app_user(row) or {}
+
+
+def get_app_user_by_session(token: str) -> dict[str, Any] | None:
+    token = (token or "").strip()
+    if not token:
+        return None
+    conn = get_conn()
+    row = _fetchone(
+        conn,
+        "SELECT u.*, o.name AS organization_name, s.expires_at FROM app_sessions s "
+        "JOIN app_users u ON u.id=s.user_id "
+        "LEFT JOIN organizations o ON o.id=u.organization_id "
+        f"WHERE s.token_hash={_ph()} AND u.status={_ph()}",
+        (_hash_secret(token), "active"),
+    )
+    if not row:
+        conn.close()
+        return None
+    expires_at = str(row.get("expires_at") or "")
+    if expires_at and expires_at < datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
+        _execute(conn, f"DELETE FROM app_sessions WHERE token_hash={_ph()}", (_hash_secret(token),))
+        conn.commit()
+        conn.close()
+        return None
+    conn.close()
+    return _clean_app_user(row)
+
+
+def delete_app_session(token: str) -> None:
+    if not token:
+        return
+    conn = get_conn()
+    _execute(conn, f"DELETE FROM app_sessions WHERE token_hash={_ph()}", (_hash_secret(token),))
+    conn.commit()
+    conn.close()
 
 
 def _slugify(value: str) -> str:
@@ -862,9 +1062,12 @@ def log_api_usage(
     conn.close()
 
 
-def get_api_center() -> dict[str, Any]:
+def get_api_center(organization_id: int | None = None) -> dict[str, Any]:
     conn = get_conn()
-    org = _fetchone(conn, "SELECT * FROM organizations ORDER BY id LIMIT 1")
+    if organization_id:
+        org = _fetchone(conn, f"SELECT * FROM organizations WHERE id={_ph()}", (int(organization_id),))
+    else:
+        org = _fetchone(conn, "SELECT * FROM organizations ORDER BY id LIMIT 1")
     if not org:
         conn.close()
         org = get_or_create_organization()
@@ -1004,12 +1207,17 @@ def list_document_submissions(
     status: str | None = None,
     limit: int = 100,
     offset: int = 0,
+    organization_id: int | None = None,
 ) -> list[dict[str, Any]]:
-    where = ""
     params: list[Any] = []
+    filters: list[str] = []
     if status:
-        where = f"WHERE s.processing_status={_ph()} "
+        filters.append(f"s.processing_status={_ph()}")
         params.append(status)
+    if organization_id:
+        filters.append(f"s.organization_id={_ph()}")
+        params.append(int(organization_id))
+    where = f"WHERE {' AND '.join(filters)} " if filters else ""
     sql = (
         _owner_submission_select()
         + where
