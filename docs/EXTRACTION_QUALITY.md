@@ -77,6 +77,14 @@ Run the Waseda 2027 complex-table quality gate:
 python scripts/regression_waseda_2027.py --enforce
 ```
 
+Run the deterministic seed baseline suite:
+
+```bash
+python scripts/quality_baseline_suite.py
+```
+
+This checks registered deterministic seed extractors against human-checked baseline files and refuses to treat draft baselines as trusted truth.
+
 Expected baseline files use the PDF stem:
 
 ```text

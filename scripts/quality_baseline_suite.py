@@ -1,0 +1,134 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records  # noqa: E402
+from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
+from scripts.quality_baseline import evaluate_against_expected, load_json_records  # noqa: E402
+
+
+def _human_checked(records: list[dict[str, Any]]) -> bool:
+    return bool(records) and all(record.get("review_status") == "human_checked_seed" for record in records)
+
+
+def _read_pdf_text(path: Path) -> str:
+    pages = extract_text_per_page(path)
+    return "\n".join(text for _page, text in sorted(pages.items()))
+
+
+def _default_seed_items() -> list[dict[str, Any]]:
+    meiji_pdf = ROOT / "data" / "uploads" / "meiji_2027_schedule_official.pdf"
+    items: list[dict[str, Any]] = [
+        {
+            "id": "meiji-2027-schedule",
+            "expected_path": ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json",
+            "source_path": meiji_pdf,
+            "extractor": lambda text: extract_meiji_2027_schedule_records(text),
+        }
+    ]
+    return items
+
+
+def _records_for_item(item: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
+    if isinstance(item.get("records"), list):
+        return [record for record in item["records"] if isinstance(record, dict)], None
+
+    source_path = Path(item.get("source_path") or "")
+    if not source_path.exists():
+        return [], "missing_source"
+
+    extractor = item.get("extractor")
+    if not callable(extractor):
+        return [], "missing_extractor"
+
+    return [record for record in extractor(_read_pdf_text(source_path)) if isinstance(record, dict)], None
+
+
+def run_seed_baseline_suite(
+    items: list[dict[str, Any]] | None = None,
+    *,
+    min_exact_match_rate: float = 0.95,
+) -> dict[str, Any]:
+    suite_items = items if items is not None else _default_seed_items()
+    reports: list[dict[str, Any]] = []
+
+    for item in suite_items:
+        item_id = str(item.get("id") or f"seed-{len(reports) + 1}")
+        expected_path = Path(item.get("expected_path") or "")
+        failures: list[str] = []
+
+        if not expected_path.exists():
+            reports.append(
+                {
+                    "id": item_id,
+                    "status": "failed",
+                    "expected_path": str(expected_path),
+                    "failures": ["missing_expected"],
+                }
+            )
+            continue
+
+        expected_records = load_json_records(expected_path)
+        if not _human_checked(expected_records):
+            failures.append("baseline_not_human_checked")
+
+        extracted_records, record_error = _records_for_item(item)
+        if record_error:
+            failures.append(record_error)
+
+        baseline_report = evaluate_against_expected(
+            expected_records,
+            extracted_records,
+            min_exact_match_rate=min_exact_match_rate,
+        )
+        if not baseline_report["passed"]:
+            failures.append("baseline_mismatch")
+
+        reports.append(
+            {
+                "id": item_id,
+                "status": "passed" if not failures else "failed",
+                "expected_path": str(expected_path),
+                "extracted_count": len(extracted_records),
+                "failures": failures,
+                "baseline": baseline_report,
+            }
+        )
+
+    passed_count = sum(1 for item in reports if item["status"] == "passed")
+    failed_count = sum(1 for item in reports if item["status"] == "failed")
+    return {
+        "passed": failed_count == 0,
+        "summary": {
+            "total": len(reports),
+            "passed": passed_count,
+            "failed": failed_count,
+        },
+        "items": reports,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run human-checked seed baseline checks for deterministic extractors.")
+    parser.add_argument("--output", default="", help="Optional path to write the JSON report.")
+    parser.add_argument("--min-exact-match-rate", type=float, default=0.95)
+    args = parser.parse_args(argv)
+
+    report = run_seed_baseline_suite(min_exact_match_rate=args.min_exact_match_rate)
+    payload = json.dumps(report, ensure_ascii=False, indent=2)
+    if args.output:
+        Path(args.output).write_text(payload, encoding="utf-8")
+    else:
+        print(payload)
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
