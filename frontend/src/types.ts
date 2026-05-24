@@ -1,4 +1,4 @@
-export type NavPage = "run" | "review" | "records";
+export type NavPage = "run" | "review" | "records" | "quality";
 export type OwnerPage = NavPage;
 export type AppRole = "owner_admin" | "partner_staff";
 

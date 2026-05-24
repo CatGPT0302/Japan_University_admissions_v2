@@ -1,0 +1,185 @@
+from __future__ import annotations
+
+import json
+import argparse
+from pathlib import Path
+from typing import Any
+
+
+def _text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _normalize(value: Any) -> str:
+    return " ".join(_text(value).lower().split())
+
+
+def _record_matches(expected_match: dict[str, Any], extracted: dict[str, Any]) -> bool:
+    for field, expected_value in expected_match.items():
+        if _normalize(extracted.get(field)) != _normalize(expected_value):
+            return False
+    return True
+
+
+def _find_record(expected_match: dict[str, Any], extracted_records: list[dict[str, Any]]) -> dict[str, Any] | None:
+    for record in extracted_records:
+        if _record_matches(expected_match, record):
+            return record
+    return None
+
+
+def _evaluate_value(field: str, expected_rule: Any, actual_value: Any) -> dict[str, Any]:
+    actual = _text(actual_value)
+    check = {
+        "field": field,
+        "expected": expected_rule,
+        "actual": actual,
+        "status": "passed",
+    }
+
+    if isinstance(expected_rule, dict):
+        if expected_rule.get("optional") and not actual:
+            check["status"] = "optional_empty"
+            return check
+
+        if "contains" in expected_rule:
+            required = [_text(item) for item in expected_rule.get("contains") or [] if _text(item)]
+            missing = [item for item in required if item not in actual]
+            if missing:
+                check["status"] = "mismatch" if actual else "missing"
+                check["missing_terms"] = missing
+            return check
+
+        if "any_of" in expected_rule:
+            options = [_text(item) for item in expected_rule.get("any_of") or [] if _text(item)]
+            if not actual:
+                check["status"] = "missing"
+            elif not any(option in actual for option in options):
+                check["status"] = "mismatch"
+            return check
+
+        expected_value = expected_rule.get("equals", "")
+    else:
+        expected_value = expected_rule
+
+    expected = _text(expected_value)
+    if not actual:
+        check["status"] = "missing"
+    elif _normalize(actual) != _normalize(expected):
+        check["status"] = "mismatch"
+    return check
+
+
+def evaluate_against_expected(
+    expected_records: list[dict[str, Any]],
+    extracted_records: list[dict[str, Any]],
+    *,
+    min_exact_match_rate: float = 0.95,
+) -> dict[str, Any]:
+    records: list[dict[str, Any]] = []
+    checked_items = 0
+    passed_items = 0
+    missing_items = 0
+    mismatched_items = 0
+    optional_empty_items = 0
+    unmatched_records = 0
+
+    for expected in expected_records:
+        expected_id = _text(expected.get("id")) or f"expected-{len(records) + 1}"
+        match_rule = expected.get("match") if isinstance(expected.get("match"), dict) else {}
+        expect_rule = expected.get("expect") if isinstance(expected.get("expect"), dict) else {}
+        matched = _find_record(match_rule, extracted_records)
+
+        if matched is None:
+            unmatched_records += 1
+            records.append(
+                {
+                    "id": expected_id,
+                    "match": match_rule,
+                    "status": "unmatched",
+                    "checks": [],
+                }
+            )
+            continue
+
+        checks = [_evaluate_value(field, rule, matched.get(field)) for field, rule in expect_rule.items()]
+        for check in checks:
+            status = check["status"]
+            if status == "optional_empty":
+                optional_empty_items += 1
+                continue
+            checked_items += 1
+            if status == "passed":
+                passed_items += 1
+            elif status == "missing":
+                missing_items += 1
+            elif status == "mismatch":
+                mismatched_items += 1
+
+        record_status = "passed" if all(check["status"] in {"passed", "optional_empty"} for check in checks) else "failed"
+        records.append(
+            {
+                "id": expected_id,
+                "match": match_rule,
+                "status": record_status,
+                "checks": checks,
+            }
+        )
+
+    exact_match_rate = round((passed_items / checked_items) if checked_items else 0.0, 4)
+    passed = unmatched_records == 0 and missing_items == 0 and mismatched_items == 0 and exact_match_rate >= min_exact_match_rate
+    return {
+        "passed": passed,
+        "expected_count": len(expected_records),
+        "extracted_count": len(extracted_records),
+        "matched_record_count": len(expected_records) - unmatched_records,
+        "thresholds": {
+            "min_exact_match_rate": min_exact_match_rate,
+        },
+        "summary": {
+            "checked_items": checked_items,
+            "passed_items": passed_items,
+            "missing_items": missing_items,
+            "mismatched_items": mismatched_items,
+            "optional_empty_items": optional_empty_items,
+            "unmatched_records": unmatched_records,
+            "exact_match_rate": exact_match_rate,
+        },
+        "records": records,
+    }
+
+
+def load_json_records(path: str | Path) -> list[dict[str, Any]]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        records = payload.get("records")
+        if isinstance(records, list):
+            return [item for item in records if isinstance(item, dict)]
+    return []
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Compare extracted admissions data against a human-reviewed baseline.")
+    parser.add_argument("--expected", required=True, help="Path to expected baseline JSON.")
+    parser.add_argument("--extracted", required=True, help="Path to extracted records JSON.")
+    parser.add_argument("--output", default="", help="Optional path to write the JSON report.")
+    parser.add_argument("--min-exact-match-rate", type=float, default=0.95)
+    args = parser.parse_args(argv)
+
+    report = evaluate_against_expected(
+        load_json_records(args.expected),
+        load_json_records(args.extracted),
+        min_exact_match_rate=args.min_exact_match_rate,
+    )
+    payload = json.dumps(report, ensure_ascii=False, indent=2)
+    if args.output:
+        Path(args.output).write_text(payload, encoding="utf-8")
+    else:
+        print(payload)
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
