@@ -34,6 +34,7 @@ def _base_record(*, faculty: str, department: str, selection_type: str = "Ⅰ") 
         "department": department,
         "selection_type": selection_type,
         "application_period": "2026年8月25日(火)～9月1日(火)",
+        "eju_session": "2025年度第1回 / 2025年度第2回 / 2026年度第1回",
         "confidence": 0.99,
         "needs_review": True,
         "warnings": ["Deterministic seed extraction from the official Meiji 2027 schedule PDF; extend by human review."],

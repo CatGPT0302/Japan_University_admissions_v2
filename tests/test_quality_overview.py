@@ -57,6 +57,7 @@ class QualityOverviewTest(unittest.TestCase):
                             "baseline": {
                                 "field_coverage": {
                                     "application_period": {"checked": 5, "passed": 5},
+                                    "eju_session": {"checked": 5, "passed": 5},
                                     "english_requirement": {"checked": 6, "passed": 6},
                                     "result_date": {"checked": 5, "passed": 5},
                                     "screening_schedule": {"checked": 5, "passed": 5},
@@ -140,6 +141,52 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(overview["overall_status"], "needs_owner_action")
         critical = [todo for todo in overview["quality_todo"] if todo["action"] == "critical_field_coverage_below_target"]
         self.assertEqual(critical[0]["field"], "application_period")
+        self.assertEqual(critical[0]["checked"], 4)
+        self.assertEqual(critical[0]["minimum"], 5)
+
+    def test_treats_eju_session_as_critical_field_coverage(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "baseline": {
+                                "field_coverage": {
+                                    "application_period": {"checked": 5, "passed": 5},
+                                    "english_requirement": {"checked": 5, "passed": 5},
+                                    "result_date": {"checked": 5, "passed": 5},
+                                    "screening_schedule": {"checked": 5, "passed": 5},
+                                    "eju_session": {"checked": 4, "passed": 4},
+                                }
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        critical = [todo for todo in overview["quality_todo"] if todo["action"] == "critical_field_coverage_below_target"]
+        self.assertEqual(overview["overall_status"], "needs_owner_action")
+        self.assertEqual(critical[0]["field"], "eju_session")
         self.assertEqual(critical[0]["checked"], 4)
         self.assertEqual(critical[0]["minimum"], 5)
 

@@ -13,6 +13,9 @@
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
       },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目", "数学"]
       },
@@ -41,6 +44,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
       },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
@@ -74,6 +80,9 @@
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
       },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
       },
@@ -105,6 +114,9 @@
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
       },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "理科", "物理", "化学", "数学"]
       },
@@ -132,6 +144,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
       },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
@@ -161,6 +176,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
       },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]

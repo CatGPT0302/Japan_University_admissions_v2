@@ -20,6 +20,7 @@ from scripts.quality_gap_report import build_quality_gap_report  # noqa: E402
 
 CRITICAL_FIELD_MINIMUMS = {
     "application_period": 5,
+    "eju_session": 5,
     "english_requirement": 5,
     "result_date": 5,
     "screening_schedule": 5,
