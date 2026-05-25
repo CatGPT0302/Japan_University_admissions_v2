@@ -115,6 +115,43 @@ class QualityBaselineSuiteTest(unittest.TestCase):
         self.assertTrue(any(item["id"] == "waseda-2027-official" for item in skipped))
         self.assertIn("missing_source", skipped[0]["failures"])
 
+    def test_suite_can_enforce_minimum_field_coverage(self) -> None:
+        from scripts.quality_baseline_suite import run_seed_baseline_suite
+
+        with TemporaryDirectory() as tmp:
+            expected_path = Path(tmp) / "expected.json"
+            expected_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "seed-law",
+                            "source_document": "https://example.test/source.pdf",
+                            "source_note": "Checked against official PDF page 1.",
+                            "match": {"faculty": "Law"},
+                            "expect": {"screening_schedule": {"contains": ["December"]}},
+                            "review_status": "human_checked_seed",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            report = run_seed_baseline_suite(
+                [
+                    {
+                        "id": "sample-seed",
+                        "expected_path": expected_path,
+                        "records": [{"faculty": "Law", "screening_schedule": "December 5"}],
+                    }
+                ],
+                min_field_coverage={"screening_schedule": 2},
+            )
+
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["items"][0]["status"], "failed")
+        self.assertIn("field_coverage_below_minimum", report["items"][0]["failures"])
+        self.assertEqual(report["items"][0]["field_coverage_failures"][0]["field"], "screening_schedule")
+
 
 if __name__ == "__main__":
     unittest.main()

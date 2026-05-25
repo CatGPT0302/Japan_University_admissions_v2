@@ -87,6 +87,7 @@ python scripts/quality_baseline_suite.py
 
 This checks registered deterministic seed extractors against human-checked baseline files and refuses to treat draft baselines as trusted truth.
 Registered seeds without a local source PDF are reported as `skipped` rather than silently omitted.
+Use `--min-field-coverage field=count` to enforce a minimum number of checked expectations for high-risk fields, for example `--min-field-coverage screening_schedule=2`.
 
 Report current quality coverage gaps:
 

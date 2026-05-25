@@ -76,9 +76,11 @@ def run_seed_baseline_suite(
     items: list[dict[str, Any]] | None = None,
     *,
     min_exact_match_rate: float = 0.95,
+    min_field_coverage: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     suite_items = items if items is not None else _default_seed_items()
     reports: list[dict[str, Any]] = []
+    field_targets = min_field_coverage or {}
 
     for item in suite_items:
         item_id = str(item.get("id") or f"seed-{len(reports) + 1}")
@@ -127,6 +129,15 @@ def run_seed_baseline_suite(
         )
         if not baseline_report["passed"]:
             failures.append("baseline_mismatch")
+        field_coverage_failures = []
+        coverage = baseline_report.get("field_coverage") if isinstance(baseline_report, dict) else {}
+        for field, minimum in field_targets.items():
+            stats = coverage.get(field) if isinstance(coverage, dict) else {}
+            checked = int(stats.get("checked") or 0) if isinstance(stats, dict) else 0
+            if checked < int(minimum):
+                field_coverage_failures.append({"field": field, "checked": checked, "minimum": int(minimum)})
+        if field_coverage_failures:
+            failures.append("field_coverage_below_minimum")
 
         reports.append(
             {
@@ -136,6 +147,7 @@ def run_seed_baseline_suite(
                 "extracted_count": len(extracted_records),
                 "failures": failures,
                 "metadata_failures": metadata_failures,
+                "field_coverage_failures": field_coverage_failures,
                 "baseline": baseline_report,
             }
         )
@@ -159,9 +171,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run human-checked seed baseline checks for deterministic extractors.")
     parser.add_argument("--output", default="", help="Optional path to write the JSON report.")
     parser.add_argument("--min-exact-match-rate", type=float, default=0.95)
+    parser.add_argument(
+        "--min-field-coverage",
+        action="append",
+        default=[],
+        help="Optional field coverage gate in the form field=count. Repeat as needed.",
+    )
     args = parser.parse_args(argv)
 
-    report = run_seed_baseline_suite(min_exact_match_rate=args.min_exact_match_rate)
+    min_field_coverage: dict[str, int] = {}
+    for value in args.min_field_coverage:
+        field, _, raw_count = str(value).partition("=")
+        if field.strip() and raw_count.strip():
+            min_field_coverage[field.strip()] = int(raw_count.strip())
+
+    report = run_seed_baseline_suite(
+        min_exact_match_rate=args.min_exact_match_rate,
+        min_field_coverage=min_field_coverage,
+    )
     payload = json.dumps(report, ensure_ascii=False, indent=2)
     if args.output:
         Path(args.output).write_text(payload, encoding="utf-8")
