@@ -56,8 +56,11 @@ class QualityOverviewTest(unittest.TestCase):
                             "expected_path": "quality_baselines/meiji_2027_schedule.expected.json",
                             "baseline": {
                                 "field_coverage": {
+                                    "application_period": {"checked": 5, "passed": 5},
                                     "english_requirement": {"checked": 6, "passed": 6},
-                                    "screening_schedule": {"checked": 1, "passed": 1},
+                                    "result_date": {"checked": 5, "passed": 5},
+                                    "screening_schedule": {"checked": 5, "passed": 5},
+                                    "optional_notes": {"checked": 1, "passed": 1},
                                 }
                             },
                         }
@@ -81,8 +84,64 @@ class QualityOverviewTest(unittest.TestCase):
 
         self.assertEqual(overview["overall_status"], "needs_owner_action")
         self.assertEqual(overview["next_owner_action"]["action"], "expand_field_baseline")
-        self.assertEqual(overview["next_owner_action"]["field"], "screening_schedule")
+        self.assertEqual(overview["next_owner_action"]["field"], "optional_notes")
         self.assertEqual(overview["quality_todo"][0]["checked"], 1)
+
+    def test_adds_owner_todo_when_critical_field_coverage_is_below_target(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 2, "passed": 2, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "baseline": {
+                                "field_coverage": {
+                                    "application_period": {"checked": 2, "passed": 2},
+                                    "english_requirement": {"checked": 6, "passed": 6},
+                                    "result_date": {"checked": 6, "passed": 6},
+                                    "screening_schedule": {"checked": 6, "passed": 6},
+                                }
+                            },
+                        },
+                        {
+                            "id": "waseda-2027-official",
+                            "baseline": {
+                                "field_coverage": {
+                                    "application_period": {"checked": 2, "passed": 2},
+                                    "english_requirement": {"checked": 5, "passed": 5},
+                                    "result_date": {"checked": 5, "passed": 5},
+                                    "screening_schedule": {"checked": 5, "passed": 5},
+                                }
+                            },
+                        },
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 2,
+                        "registered_seed_extractors": 2,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        self.assertEqual(overview["overall_status"], "needs_owner_action")
+        critical = [todo for todo in overview["quality_todo"] if todo["action"] == "critical_field_coverage_below_target"]
+        self.assertEqual(critical[0]["field"], "application_period")
+        self.assertEqual(critical[0]["checked"], 4)
+        self.assertEqual(critical[0]["minimum"], 5)
 
     def test_formats_compact_summary_for_owner(self) -> None:
         from scripts.quality_overview import format_owner_summary

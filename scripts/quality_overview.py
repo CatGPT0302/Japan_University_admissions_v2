@@ -18,6 +18,14 @@ from scripts.quality_baseline_suite import run_seed_baseline_suite  # noqa: E402
 from scripts.quality_gap_report import build_quality_gap_report  # noqa: E402
 
 
+CRITICAL_FIELD_MINIMUMS = {
+    "application_period": 5,
+    "english_requirement": 5,
+    "result_date": 5,
+    "screening_schedule": 5,
+}
+
+
 def _overall_status(seed_suite: dict[str, Any], gap_report: dict[str, Any]) -> str:
     if not seed_suite.get("passed"):
         return "seed_suite_failed"
@@ -30,7 +38,7 @@ def build_quality_overview() -> dict[str, Any]:
     seed_suite = run_seed_baseline_suite()
     gap_report = build_quality_gap_report()
     gap_todo = gap_report.get("owner_todo") if isinstance(gap_report.get("owner_todo"), list) else []
-    quality_todo = _weak_field_todos(seed_suite)
+    quality_todo = _critical_field_todos(seed_suite) + _weak_field_todos(seed_suite)
     owner_todo = gap_todo + quality_todo
     return {
         "overall_status": "seed_suite_failed" if not seed_suite.get("passed") else ("needs_owner_action" if owner_todo else "quality_gate_ready"),
@@ -42,7 +50,7 @@ def build_quality_overview() -> dict[str, Any]:
     }
 
 
-def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[dict[str, Any]]:
+def _field_coverage_totals(seed_suite: dict[str, Any]) -> dict[str, int]:
     totals: dict[str, int] = {}
     for item in seed_suite.get("items") or []:
         baseline = item.get("baseline") if isinstance(item, dict) else {}
@@ -52,6 +60,11 @@ def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> lis
         for field, stats in coverage.items():
             if isinstance(stats, dict):
                 totals[str(field)] = totals.get(str(field), 0) + int(stats.get("checked") or 0)
+    return totals
+
+
+def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[dict[str, Any]]:
+    totals = _field_coverage_totals(seed_suite)
     weak = [(field, checked) for field, checked in totals.items() if checked <= max_checked]
     return [{"field": field, "checked": checked} for field, checked in sorted(weak, key=lambda item: (item[1], item[0]))[:5]]
 
@@ -72,6 +85,25 @@ def _weak_field_todos(seed_suite: dict[str, Any]) -> list[dict[str, Any]]:
                 "details": f"Add more human-checked baseline expectations for {item['field']}.",
             }
         )
+    return todos
+
+
+def _critical_field_todos(seed_suite: dict[str, Any]) -> list[dict[str, Any]]:
+    totals = _field_coverage_totals(seed_suite)
+    todos = []
+    for field, minimum in CRITICAL_FIELD_MINIMUMS.items():
+        checked = int(totals.get(field) or 0)
+        if checked < minimum:
+            todos.append(
+                {
+                    "priority": 40,
+                    "action": "critical_field_coverage_below_target",
+                    "field": field,
+                    "checked": checked,
+                    "minimum": minimum,
+                    "details": f"Add human-checked baseline expectations for {field} until at least {minimum} records are covered.",
+                }
+            )
     return todos
 
 
