@@ -41,6 +41,49 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(overview["next_owner_action"]["baseline"], "waseda_2027_official")
         self.assertEqual(overview["next_owner_action"]["action"], "add_local_source_pdf")
 
+    def test_adds_owner_todo_for_weak_field_coverage(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "expected_path": "quality_baselines/meiji_2027_schedule.expected.json",
+                            "baseline": {
+                                "field_coverage": {
+                                    "english_requirement": {"checked": 6, "passed": 6},
+                                    "screening_schedule": {"checked": 1, "passed": 1},
+                                }
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        self.assertEqual(overview["overall_status"], "needs_owner_action")
+        self.assertEqual(overview["next_owner_action"]["action"], "expand_field_baseline")
+        self.assertEqual(overview["next_owner_action"]["field"], "screening_schedule")
+        self.assertEqual(overview["quality_todo"][0]["checked"], 1)
+
     def test_formats_compact_summary_for_owner(self) -> None:
         from scripts.quality_overview import format_owner_summary
 

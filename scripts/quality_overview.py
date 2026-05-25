@@ -29,16 +29,20 @@ def _overall_status(seed_suite: dict[str, Any], gap_report: dict[str, Any]) -> s
 def build_quality_overview() -> dict[str, Any]:
     seed_suite = run_seed_baseline_suite()
     gap_report = build_quality_gap_report()
-    owner_todo = gap_report.get("owner_todo") if isinstance(gap_report.get("owner_todo"), list) else []
+    gap_todo = gap_report.get("owner_todo") if isinstance(gap_report.get("owner_todo"), list) else []
+    quality_todo = _weak_field_todos(seed_suite)
+    owner_todo = gap_todo + quality_todo
     return {
-        "overall_status": _overall_status(seed_suite, gap_report),
+        "overall_status": "seed_suite_failed" if not seed_suite.get("passed") else ("needs_owner_action" if owner_todo else "quality_gate_ready"),
         "seed_suite": seed_suite,
         "gap_report": gap_report,
+        "quality_todo": quality_todo,
+        "owner_todo": owner_todo,
         "next_owner_action": owner_todo[0] if owner_todo else None,
     }
 
 
-def _weak_field_coverage(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[str]:
+def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[dict[str, Any]]:
     totals: dict[str, int] = {}
     for item in seed_suite.get("items") or []:
         baseline = item.get("baseline") if isinstance(item, dict) else {}
@@ -49,7 +53,26 @@ def _weak_field_coverage(seed_suite: dict[str, Any], *, max_checked: int = 2) ->
             if isinstance(stats, dict):
                 totals[str(field)] = totals.get(str(field), 0) + int(stats.get("checked") or 0)
     weak = [(field, checked) for field, checked in totals.items() if checked <= max_checked]
-    return [f"{field} checked={checked}" for field, checked in sorted(weak, key=lambda item: (item[1], item[0]))[:5]]
+    return [{"field": field, "checked": checked} for field, checked in sorted(weak, key=lambda item: (item[1], item[0]))[:5]]
+
+
+def _weak_field_coverage(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[str]:
+    return [f"{item['field']} checked={item['checked']}" for item in _weak_field_rows(seed_suite, max_checked=max_checked)]
+
+
+def _weak_field_todos(seed_suite: dict[str, Any]) -> list[dict[str, Any]]:
+    todos = []
+    for item in _weak_field_rows(seed_suite):
+        todos.append(
+            {
+                "priority": 80,
+                "action": "expand_field_baseline",
+                "field": item["field"],
+                "checked": item["checked"],
+                "details": f"Add more human-checked baseline expectations for {item['field']}.",
+            }
+        )
+    return todos
 
 
 def format_owner_summary(overview: dict[str, Any]) -> str:

@@ -117,6 +117,7 @@ python scripts/quality_overview.py
 This combines the seed baseline suite, the gap report, and the first owner todo into one report.
 Use `python scripts/quality_overview.py --summary` for a compact owner-readable status.
 The summary separates runnable seed-suite results from registered extractors. For example, an extractor can be registered while its local PDF is still missing.
+The JSON output also includes `quality_todo`. Use this to find weakly covered fields, such as `screening_schedule`, that need more human-checked baseline expectations.
 
 Expected baseline files use the PDF stem:
 
