@@ -4,6 +4,7 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 
 class SourceCacheTest(unittest.TestCase):
@@ -13,13 +14,13 @@ class SourceCacheTest(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             source = root / "downloaded.pdf"
-            source.write_bytes("%PDF-1.4\n早稲田大学 2027年度 外国学生".encode("utf-8"))
+            source.write_bytes(b"%PDF-1.4\nWaseda 2027 official admissions guide")
 
             receipt = import_checked_source(
                 source,
                 stem="waseda_2027_official",
                 source_url="https://example.test/waseda.pdf",
-                markers=[["Waseda", "早稲田大学"], ["2027", "2027年度"]],
+                markers=[["Waseda University", "Waseda"], ["admission year 2027", "2027"]],
                 root=root,
             )
 
@@ -39,14 +40,14 @@ class SourceCacheTest(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             source = root / "downloaded.txt"
-            source.write_text("早稲田大学 2027年度", encoding="utf-8")
+            source.write_text("Waseda 2027 official admissions guide", encoding="utf-8")
 
             with self.assertRaisesRegex(SourceCacheError, "not_pdf"):
                 import_checked_source(
                     source,
                     stem="waseda_2027_official",
                     source_url="https://example.test/waseda.pdf",
-                    markers=[["Waseda", "早稲田大学"], ["2027", "2027年度"]],
+                    markers=[["Waseda University", "Waseda"], ["admission year 2027", "2027"]],
                     root=root,
                 )
 
@@ -63,9 +64,41 @@ class SourceCacheTest(unittest.TestCase):
                     source,
                     stem="waseda_2027_official",
                     source_url="https://example.test/waseda.pdf",
-                    markers=[["Waseda", "早稲田大学"], ["2027", "2027年度"]],
+                    markers=[["Waseda University", "Waseda"], ["admission year 2027", "2027"]],
                     root=root,
                 )
+
+    def test_can_attach_quality_overview_after_import(self) -> None:
+        from scripts.source_cache import import_checked_source
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "downloaded.pdf"
+            source.write_bytes(b"%PDF-1.4\nWaseda 2027 official admissions guide")
+
+            with (
+                patch(
+                    "scripts.source_cache.build_quality_overview",
+                    return_value={"overall_status": "needs_owner_action"},
+                ) as build_overview,
+                patch(
+                    "scripts.source_cache.format_owner_summary",
+                    return_value="status: needs_owner_action\nnext: add_local_source_pdf",
+                ) as format_summary,
+            ):
+                receipt = import_checked_source(
+                    source,
+                    stem="waseda_2027_official",
+                    source_url="https://example.test/waseda.pdf",
+                    markers=[["Waseda University", "Waseda"], ["admission year 2027", "2027"]],
+                    root=root,
+                    verify_overview=True,
+                )
+
+            build_overview.assert_called_once()
+            format_summary.assert_called_once_with({"overall_status": "needs_owner_action"})
+            self.assertEqual(receipt["quality_overview_status"], "needs_owner_action")
+            self.assertIn("next: add_local_source_pdf", receipt["quality_overview_summary"])
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ except Exception:
     pass
 
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
+from scripts.quality_overview import build_quality_overview, format_owner_summary  # noqa: E402
 
 
 class SourceCacheError(ValueError):
@@ -69,6 +70,7 @@ def import_checked_source(
     source_url: str,
     markers: list[Any],
     root: Path = ROOT,
+    verify_overview: bool = False,
 ) -> dict[str, Any]:
     source = Path(source_path)
     _ensure_pdf(source)
@@ -97,6 +99,12 @@ def import_checked_source(
     }
     receipt_path = receipt_dir / f"{stem}.source.json"
     receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    if verify_overview:
+        overview = build_quality_overview()
+        receipt["quality_overview_status"] = str(overview.get("overall_status", "unknown"))
+        receipt["quality_overview_summary"] = format_owner_summary(overview)
+
     return receipt
 
 
@@ -106,6 +114,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stem", required=True, help="Source stem, for example waseda_2027_official.")
     parser.add_argument("--source-url", required=True, help="Official source URL.")
     parser.add_argument("--marker", action="append", default=[], help="Required marker. Repeat for multiple required markers.")
+    parser.add_argument(
+        "--verify-overview",
+        action="store_true",
+        help="Run the quality overview after import and include the summary in the command output.",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -114,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
             stem=args.stem,
             source_url=args.source_url,
             markers=list(args.marker),
+            verify_overview=args.verify_overview,
         )
     except SourceCacheError as exc:
         print(json.dumps({"status": "rejected", "reason": str(exc)}, ensure_ascii=False, indent=2))

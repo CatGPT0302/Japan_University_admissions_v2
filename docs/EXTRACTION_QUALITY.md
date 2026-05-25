@@ -101,13 +101,14 @@ Use each baseline item's `source_candidates` list to place missing PDFs where th
 Local source PDFs live under ignored folders such as `data/uploads/`; do not commit official PDFs to the repository.
 If a university site blocks plain command-line downloads, keep the baseline and seed extractor registered, but leave the local source as missing until a checked PDF is placed in the expected path.
 
-Import a manually downloaded official PDF after checking its content markers:
+Import a manually downloaded official PDF after checking its content markers. Add `--verify-overview` when you want the command output to include the refreshed owner quality status immediately after the PDF is cached:
 
 ```bash
 python scripts/source_cache.py --source path/to/downloaded.pdf --stem waseda_2027_official --source-url https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf --marker 早稲田大学 --marker 2027年度
 ```
 
 The importer copies the PDF into `data/uploads/` and writes a small receipt under `quality_sources/` with the SHA-256 hash, size, source URL, and checked markers. Commit the receipt if useful; do not commit the PDF itself.
+With `--verify-overview`, the printed receipt also includes `quality_overview_status` and `quality_overview_summary`; use this after adding a missing local source to confirm the next quality blocker without running a second command.
 `scripts/quality_gap_report.py` includes the receipt in each baseline item when present, but a receipt alone does not make the source available. The local PDF must still exist and pass marker validation.
 
 Run the full owner quality overview:
