@@ -20,7 +20,7 @@
         "contains": ["日本語", "総合科目", "数学"]
       },
       "english_requirement": {
-        "contains": ["TOEFL iBT"]
+        "contains": ["TOEFL iBT", "45以上"]
       },
       "screening_method": {
         "contains": ["小論文", "口頭試問"]
@@ -52,7 +52,7 @@
         "contains": ["日本語", "総合科目"]
       },
       "english_requirement": {
-        "contains": ["TOEFL iBT", "TOEIC L&R"]
+        "contains": ["TOEFL iBT", "48以上", "TOEIC L&R", "600以上"]
       },
       "screening_method": {
         "contains": ["書類選考", "口頭試問"]
@@ -87,7 +87,7 @@
         "contains": ["日本語", "総合科目"]
       },
       "english_requirement": {
-        "contains": ["TOEFL iBT", "TOEIC L&R"]
+        "contains": ["TOEFL iBT", "42以上", "TOEIC L&R", "550以上"]
       },
       "screening_method": {
         "contains": ["小論文", "面接"]
@@ -184,7 +184,7 @@
         "contains": ["日本語", "総合科目"]
       },
       "english_requirement": {
-        "contains": ["TOEFL iBT", "TOEIC L&R", "IELTS"]
+        "contains": ["TOEFL iBT", "TOEIC L&R", "600以上", "IELTS", "4.0以上"]
       },
       "screening_schedule": {
         "contains": ["１２月２４日"]
