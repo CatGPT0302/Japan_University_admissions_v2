@@ -78,8 +78,10 @@ def evaluate_against_expected(
     extracted_records: list[dict[str, Any]],
     *,
     min_exact_match_rate: float = 0.95,
+    allow_extra_records: bool = False,
 ) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
+    matched_indexes: set[int] = set()
     checked_items = 0
     passed_items = 0
     missing_items = 0
@@ -92,7 +94,13 @@ def evaluate_against_expected(
         expected_id = _text(expected.get("id")) or f"expected-{len(records) + 1}"
         match_rule = expected.get("match") if isinstance(expected.get("match"), dict) else {}
         expect_rule = expected.get("expect") if isinstance(expected.get("expect"), dict) else {}
-        matched = _find_record(match_rule, extracted_records)
+        matched = None
+        matched_index = -1
+        for extracted_index, record in enumerate(extracted_records):
+            if _record_matches(match_rule, record):
+                matched = record
+                matched_index = extracted_index
+                break
 
         if matched is None:
             unmatched_records += 1
@@ -105,6 +113,7 @@ def evaluate_against_expected(
                 }
             )
             continue
+        matched_indexes.add(matched_index)
 
         checks = [_evaluate_value(field, rule, matched.get(field)) for field, rule in expect_rule.items()]
         for check in checks:
@@ -139,7 +148,17 @@ def evaluate_against_expected(
         )
 
     exact_match_rate = round((passed_items / checked_items) if checked_items else 0.0, 4)
-    passed = unmatched_records == 0 and missing_items == 0 and mismatched_items == 0 and exact_match_rate >= min_exact_match_rate
+    unexpected_records = [
+        record for index, record in enumerate(extracted_records) if index not in matched_indexes
+    ]
+    unexpected_count = len(unexpected_records)
+    passed = (
+        unmatched_records == 0
+        and missing_items == 0
+        and mismatched_items == 0
+        and (allow_extra_records or unexpected_count == 0)
+        and exact_match_rate >= min_exact_match_rate
+    )
     return {
         "passed": passed,
         "expected_count": len(expected_records),
@@ -155,9 +174,11 @@ def evaluate_against_expected(
             "mismatched_items": mismatched_items,
             "optional_empty_items": optional_empty_items,
             "unmatched_records": unmatched_records,
+            "unexpected_records": unexpected_count,
             "exact_match_rate": exact_match_rate,
         },
         "field_coverage": field_coverage,
+        "unexpected_records": unexpected_records[:20],
         "records": records,
     }
 

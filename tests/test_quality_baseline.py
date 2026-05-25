@@ -133,6 +133,36 @@ class QualityBaselineTest(unittest.TestCase):
         self.assertEqual(report["summary"]["unmatched_records"], 1)
         self.assertEqual(report["records"][0]["status"], "unmatched")
 
+    def test_flags_unexpected_extra_records_by_default(self) -> None:
+        from scripts.quality_baseline import evaluate_against_expected
+
+        report = evaluate_against_expected(
+            [{"id": "law", "match": {"faculty": "Law"}, "expect": {"english_requirement": "TOEFL"}}],
+            [
+                {"faculty": "Law", "english_requirement": "TOEFL"},
+                {"faculty": "Commerce", "english_requirement": "IELTS"},
+            ],
+        )
+
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["summary"]["unexpected_records"], 1)
+        self.assertEqual(report["unexpected_records"][0]["faculty"], "Commerce")
+
+    def test_can_allow_extra_records_for_partial_baseline_checks(self) -> None:
+        from scripts.quality_baseline import evaluate_against_expected
+
+        report = evaluate_against_expected(
+            [{"id": "law", "match": {"faculty": "Law"}, "expect": {"english_requirement": "TOEFL"}}],
+            [
+                {"faculty": "Law", "english_requirement": "TOEFL"},
+                {"faculty": "Commerce", "english_requirement": "IELTS"},
+            ],
+            allow_extra_records=True,
+        )
+
+        self.assertTrue(report["passed"])
+        self.assertEqual(report["summary"]["unexpected_records"], 1)
+
     def test_cli_writes_report_and_returns_failure_when_baseline_fails(self) -> None:
         import json
 
