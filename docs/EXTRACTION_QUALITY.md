@@ -86,6 +86,7 @@ python scripts/quality_baseline_suite.py
 ```
 
 This checks registered deterministic seed extractors against human-checked baseline files and refuses to treat draft baselines as trusted truth.
+Registered seeds without a local source PDF are reported as `skipped` rather than silently omitted.
 
 Report current quality coverage gaps:
 

@@ -105,6 +105,16 @@ class QualityBaselineSuiteTest(unittest.TestCase):
             report["items"][0]["metadata_failures"],
         )
 
+    def test_default_suite_reports_registered_seed_without_local_source_as_skipped(self) -> None:
+        from scripts.quality_baseline_suite import run_seed_baseline_suite
+
+        report = run_seed_baseline_suite()
+
+        skipped = [item for item in report["items"] if item["status"] == "skipped"]
+        self.assertGreaterEqual(report["summary"]["skipped"], 1)
+        self.assertTrue(any(item["id"] == "waseda-2027-official" for item in skipped))
+        self.assertIn("missing_source", skipped[0]["failures"])
+
 
 if __name__ == "__main__":
     unittest.main()

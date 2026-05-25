@@ -79,9 +79,12 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
     seed_summary = overview.get("seed_suite", {}).get("summary", {})
     gap_summary = overview.get("gap_report", {}).get("summary", {})
     next_action = overview.get("next_owner_action") if isinstance(overview.get("next_owner_action"), dict) else None
+    seed_line = f"seed suite: {seed_summary.get('passed', 0)}/{seed_summary.get('total', 0)} passed"
+    if int(seed_summary.get("skipped") or 0):
+        seed_line += f", {seed_summary.get('skipped')} skipped"
     lines = [
         f"status: {overview.get('overall_status')}",
-        f"seed suite: {seed_summary.get('passed', 0)}/{seed_summary.get('total', 0)} passed",
+        seed_line,
         f"baseline files: {gap_summary.get('baseline_files', 0)}",
         f"registered extractors: {gap_summary.get('registered_seed_extractors', 0)}",
         f"missing local sources: {gap_summary.get('missing_local_sources', 0)}",

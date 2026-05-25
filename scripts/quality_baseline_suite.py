@@ -46,8 +46,6 @@ def _default_seed_items() -> list[dict[str, Any]]:
     for seed in registered_seed_extractors().values():
         candidates = list(seed.get("source_candidates") or [])
         source_path = ROOT / candidates[0] if candidates else Path("")
-        if not source_path.exists():
-            continue
         items.append(
             {
                 "id": seed.get("id"),
@@ -107,6 +105,21 @@ def run_seed_baseline_suite(
         if record_error:
             failures.append(record_error)
 
+        if record_error == "missing_source":
+            reports.append(
+                {
+                    "id": item_id,
+                    "status": "skipped",
+                    "expected_path": str(expected_path),
+                    "source_path": str(item.get("source_path") or ""),
+                    "extracted_count": 0,
+                    "failures": failures,
+                    "metadata_failures": metadata_failures,
+                    "baseline": None,
+                }
+            )
+            continue
+
         baseline_report = evaluate_against_expected(
             expected_records,
             extracted_records,
@@ -129,12 +142,14 @@ def run_seed_baseline_suite(
 
     passed_count = sum(1 for item in reports if item["status"] == "passed")
     failed_count = sum(1 for item in reports if item["status"] == "failed")
+    skipped_count = sum(1 for item in reports if item["status"] == "skipped")
     return {
         "passed": failed_count == 0,
         "summary": {
             "total": len(reports),
             "passed": passed_count,
             "failed": failed_count,
+            "skipped": skipped_count,
         },
         "items": reports,
     }

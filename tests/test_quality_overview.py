@@ -49,7 +49,7 @@ class QualityOverviewTest(unittest.TestCase):
                 "scripts.quality_overview.run_seed_baseline_suite",
                 return_value={
                     "passed": True,
-                    "summary": {"total": 1, "passed": 1, "failed": 0},
+                    "summary": {"total": 2, "passed": 1, "failed": 0, "skipped": 1},
                     "items": [
                         {
                             "id": "meiji-2027-schedule",
@@ -92,7 +92,7 @@ class QualityOverviewTest(unittest.TestCase):
                 "overall_status": "needs_owner_action",
                 "seed_suite": {
                     "passed": True,
-                    "summary": {"total": 1, "passed": 1, "failed": 0},
+                    "summary": {"total": 2, "passed": 1, "failed": 0, "skipped": 1},
                     "items": [
                         {
                             "id": "meiji-2027-schedule",
@@ -122,7 +122,7 @@ class QualityOverviewTest(unittest.TestCase):
         )
 
         self.assertIn("status: needs_owner_action", summary)
-        self.assertIn("seed suite: 1/1 passed", summary)
+        self.assertIn("seed suite: 1/2 passed, 1 skipped", summary)
         self.assertIn("registered extractors: 2", summary)
         self.assertIn("weak field coverage: screening_schedule checked=1", summary)
         self.assertIn("missing local sources: 1", summary)
