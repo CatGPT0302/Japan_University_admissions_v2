@@ -104,7 +104,13 @@ If a university site blocks plain command-line downloads, keep the baseline and 
 Import a manually downloaded official PDF after checking its content markers. Add `--verify-overview` when you want the command output to include the refreshed owner quality status immediately after the PDF is cached:
 
 ```bash
-python scripts/source_cache.py --source path/to/downloaded.pdf --stem waseda_2027_official --source-url https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf --marker 早稲田大学 --marker 2027年度
+python scripts/source_cache.py --source path/to/downloaded.pdf --stem waseda_2027_official --source-url https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf --marker Waseda --marker 2027 --verify-overview
+```
+
+If the URL can be fetched directly, use `--download` to download, validate, cache, and summarize in one step:
+
+```bash
+python scripts/source_cache.py --download --stem waseda_2027_official --source-url https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf --marker Waseda --marker 2027 --verify-overview
 ```
 
 The importer copies the PDF into `data/uploads/` and writes a small receipt under `quality_sources/` with the SHA-256 hash, size, source URL, and checked markers. Commit the receipt if useful; do not commit the PDF itself.

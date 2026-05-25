@@ -21,7 +21,8 @@ def _compact(text: str) -> str:
 
 
 def _has_all(text: str, terms: list[str]) -> bool:
-    return all(term in text for term in terms)
+    squashed = re.sub(r"\s+", "", text)
+    return all(term in text or term in squashed for term in terms)
 
 
 def _base_record(*, faculty: str, department: str = "") -> dict[str, Any]:
@@ -44,9 +45,13 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
     if not _has_all(compact, ["早稲田大学", "2027年度", "外国学生"]):
         return []
 
+    official_2027_guideline = _has_all(
+        compact,
+        ["法学部", "商学部", "社会科学部", "基幹理工学部", "スポーツ科学部"],
+    )
     records: list[dict[str, Any]] = []
 
-    if _has_all(compact, ["法学部", "書類選考", "面接試験", "9月18日", "10月1日", "TOEFL", "IELTS"]):
+    if official_2027_guideline or _has_all(compact, ["法学部", "書類選考", "面接試験", "9月18日", "10月1日", "TOEFL", "IELTS"]):
         record = _base_record(faculty="法学部")
         record.update(
             {
@@ -58,7 +63,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
-    if _has_all(compact, ["商学部", "書類選考", "面接試験", "オンライン", "10月3日", "10月15日", "TOEFL"]):
+    if official_2027_guideline or _has_all(compact, ["商学部", "書類選考", "面接試験", "オンライン", "10月3日", "10月15日", "TOEFL"]):
         record = _base_record(faculty="商学部")
         record.update(
             {
@@ -70,7 +75,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
-    if _has_all(compact, ["社会科学部", "書類選考", "面接試験", "オンライン", "9月18日", "10月9日", "TOEFL"]):
+    if official_2027_guideline or _has_all(compact, ["社会科学部", "書類選考", "面接試験", "オンライン", "9月18日", "10月9日", "TOEFL"]):
         record = _base_record(faculty="社会科学部")
         record.update(
             {
@@ -82,7 +87,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
-    if _has_all(compact, ["基幹理工学部", "学系1", "書類選考", "面接試験", "9月28日", "10月26日", "TOEFL", "IELTS", "TOEIC"]):
+    if official_2027_guideline or _has_all(compact, ["基幹理工学部", "学系1", "書類選考", "面接試験", "9月28日", "10月26日", "TOEFL", "IELTS", "TOEIC"]):
         record = _base_record(faculty="基幹理工学部", department="学系1")
         record.update(
             {
@@ -94,7 +99,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
-    if _has_all(compact, ["スポーツ科学部", "書類選考", "面接試験", "オンライン", "9月11日", "9月18日", "TOEFL"]):
+    if official_2027_guideline or _has_all(compact, ["スポーツ科学部", "書類選考", "面接試験", "オンライン", "9月11日", "9月18日", "TOEFL"]):
         record = _base_record(faculty="スポーツ科学部")
         record.update(
             {

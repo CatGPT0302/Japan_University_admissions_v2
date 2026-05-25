@@ -100,6 +100,32 @@ class SourceCacheTest(unittest.TestCase):
             self.assertEqual(receipt["quality_overview_status"], "needs_owner_action")
             self.assertIn("next: add_local_source_pdf", receipt["quality_overview_summary"])
 
+    def test_downloads_checked_source_with_browser_headers(self) -> None:
+        from scripts.source_cache import download_checked_source
+
+        class FakeResponse:
+            content = b"%PDF-1.4\nWaseda 2027 official admissions guide"
+
+            def raise_for_status(self) -> None:
+                return None
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch("scripts.source_cache.requests.get", return_value=FakeResponse()) as request_get:
+                receipt = download_checked_source(
+                    source_url="https://example.test/waseda.pdf",
+                    stem="waseda_2027_official",
+                    markers=[["Waseda"], ["2027"]],
+                    root=root,
+                )
+
+            request_get.assert_called_once()
+            _url, kwargs = request_get.call_args
+            self.assertIn("Mozilla/5.0", kwargs["headers"]["User-Agent"])
+            self.assertEqual(kwargs["timeout"], 60)
+            self.assertEqual(receipt["status"], "cached")
+            self.assertTrue((root / "data" / "uploads" / "waseda_2027_official.pdf").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

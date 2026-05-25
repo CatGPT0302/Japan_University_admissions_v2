@@ -1,0 +1,17 @@
+{
+  "status": "cached",
+  "stem": "waseda_2027_official",
+  "source_url": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+  "cached_path": "data/uploads/waseda_2027_official.pdf",
+  "sha256": "1ed444074f4d00280bab74505d015fd63e375b1e6668cf2f5fda2e258d75d12e",
+  "size_bytes": 3197837,
+  "markers": [
+    [
+      "Waseda"
+    ],
+    [
+      "2027"
+    ]
+  ],
+  "checked_at": "2026-05-25T07:14:23+00:00"
+}

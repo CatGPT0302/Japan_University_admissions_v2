@@ -105,14 +105,42 @@ class QualityBaselineSuiteTest(unittest.TestCase):
             report["items"][0]["metadata_failures"],
         )
 
-    def test_default_suite_reports_registered_seed_without_local_source_as_skipped(self) -> None:
+    def test_suite_reports_registered_seed_without_local_source_as_skipped(self) -> None:
         from scripts.quality_baseline_suite import run_seed_baseline_suite
 
-        report = run_seed_baseline_suite()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            expected_path = root / "expected.json"
+            expected_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "missing-source-seed",
+                            "source_document": "https://example.test/source.pdf",
+                            "source_note": "Checked against official PDF page 1.",
+                            "match": {"university": "Waseda", "faculty": "Law"},
+                            "expect": {"english_requirement": {"contains": ["TOEFL"]}},
+                            "review_status": "human_checked_seed",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            report = run_seed_baseline_suite(
+                [
+                    {
+                        "id": "sample-missing-source",
+                        "expected_path": expected_path,
+                        "source_path": root / "missing.pdf",
+                        "extractor": lambda _text: [],
+                    }
+                ]
+            )
 
         skipped = [item for item in report["items"] if item["status"] == "skipped"]
-        self.assertGreaterEqual(report["summary"]["skipped"], 1)
-        self.assertTrue(any(item["id"] == "waseda-2027-official" for item in skipped))
+        self.assertEqual(report["summary"]["skipped"], 1)
+        self.assertEqual(skipped[0]["id"], "sample-missing-source")
         self.assertIn("missing_source", skipped[0]["failures"])
 
     def test_suite_can_enforce_minimum_field_coverage(self) -> None:
