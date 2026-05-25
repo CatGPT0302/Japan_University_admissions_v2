@@ -74,6 +74,18 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         self.assertIn("eju_math", records[0])
         self.assertTrue(report["passed"], report)
 
+    def test_extracts_seed_records_from_real_pdf_text_fixture(self) -> None:
+        from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
+        from scripts.quality_baseline import evaluate_against_expected, load_json_records
+
+        fixture_text = (ROOT / "tests" / "fixtures" / "meiji_2027_schedule_text.txt").read_text(encoding="utf-8")
+        records = extract_meiji_2027_schedule_records(fixture_text)
+        expected = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
+        report = evaluate_against_expected(expected, records)
+
+        self.assertEqual(len(records), 6)
+        self.assertTrue(report["passed"], report)
+
     def test_returns_no_records_for_unrelated_text(self) -> None:
         from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
 
