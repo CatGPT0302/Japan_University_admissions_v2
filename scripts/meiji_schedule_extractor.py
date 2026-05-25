@@ -132,6 +132,7 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
                 "eju_math": "",
                 "english_requirement": "TOEFL iBT / TOEIC L&R 600以上 / IELTS 4.0以上",
                 "screening_method": "書類選考のみ",
+                "screening_schedule": "2026年12月24日（木）",
                 "result_date": "2026年12月24日（木）",
             }
         )

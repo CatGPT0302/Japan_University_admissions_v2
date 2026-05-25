@@ -141,6 +141,9 @@
       "english_requirement": {
         "contains": ["TOEFL iBT", "TOEIC L&R", "IELTS"]
       },
+      "screening_schedule": {
+        "contains": ["１２月２４日"]
+      },
       "result_date": {
         "contains": ["１２月２４日"]
       }
