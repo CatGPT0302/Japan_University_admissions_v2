@@ -12,6 +12,9 @@
       "application_period": {
         "contains": ["2026年6月1日", "6月18日", "17:00"]
       },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験"]
       },
@@ -40,6 +43,9 @@
       "application_period": {
         "contains": ["2026年6月1日", "6月18日", "17:00"]
       },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
       },
@@ -67,6 +73,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
       },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
@@ -97,6 +106,9 @@
       "application_period": {
         "contains": ["2026年6月1日", "6月18日", "17:00"]
       },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験"]
       },
@@ -124,6 +136,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
       },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]

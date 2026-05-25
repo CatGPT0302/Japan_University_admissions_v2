@@ -13,6 +13,9 @@
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
       },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
+      },
       "eju_session": {
         "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
       },
@@ -53,6 +56,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
+      },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
       },
       "eju_session": {
         "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
@@ -95,6 +101,9 @@
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
       },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
+      },
       "eju_session": {
         "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
       },
@@ -134,6 +143,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
+      },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
       },
       "eju_session": {
         "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
@@ -178,6 +190,9 @@
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
       },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
+      },
       "eju_session": {
         "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
       },
@@ -215,6 +230,9 @@
     "expect": {
       "application_period": {
         "contains": ["2026年8月25日", "9月1日"]
+      },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
       },
       "eju_session": {
         "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
