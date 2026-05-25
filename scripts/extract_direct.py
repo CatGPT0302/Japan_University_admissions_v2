@@ -29,12 +29,11 @@ from scripts.db import (  # noqa: E402
     update_source_document,
 )
 from scripts.json_parser import extract_json_payload  # noqa: E402
-from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.runtime_paths import rendered_pages_dir  # noqa: E402
+from scripts.seed_registry import seed_for_source  # noqa: E402
 from scripts.validator import CRITICAL_FIELDS, validate  # noqa: E402
-from scripts.waseda_2027_extractor import extract_waseda_2027_records  # noqa: E402
 
 PROMPT_PATH = ROOT / "prompts" / "vision_prompt.md"
 DEFAULT_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
@@ -1693,28 +1692,16 @@ def _run_text_path(
     full_text, page_map = _read_pdf_text(pdf_path)
     text_len = len(full_text.strip())
     print(f"[direct] text_length={text_len} pages={len(page_map)}")
-    meiji_seed_records = extract_meiji_2027_schedule_records(full_text)
-    if meiji_seed_records and university == "明治大学" and str(year) == "2027":
-        result = {"records": meiji_seed_records, "source": "meiji_2027_schedule_seed"}
+    seed = seed_for_source(university, str(year), full_text)
+    seed_records = seed["extractor"](full_text) if seed and callable(seed.get("extractor")) else []
+    if seed_records:
+        result = {"records": seed_records, "source": str(seed.get("stem") or "") + "_seed"}
         inserted = _insert_result(doc_id, result, page_map=page_map, default_page=1, university=university, year=year)
         return {
             "mode": "deterministic_text",
             "pages": len(page_map),
             "text_length": text_len,
-            "records": len(meiji_seed_records),
-            "inserted": inserted,
-            "failed_pages": [],
-            "raw": result,
-        }
-    waseda_seed_records = extract_waseda_2027_records(full_text)
-    if waseda_seed_records and university == "早稲田大学" and str(year) == "2027":
-        result = {"records": waseda_seed_records, "source": "waseda_2027_seed"}
-        inserted = _insert_result(doc_id, result, page_map=page_map, default_page=1, university=university, year=year)
-        return {
-            "mode": "deterministic_text",
-            "pages": len(page_map),
-            "text_length": text_len,
-            "records": len(waseda_seed_records),
+            "records": len(seed_records),
             "inserted": inserted,
             "failed_pages": [],
             "raw": result,

@@ -16,24 +16,10 @@ except Exception:
 
 from scripts.quality_baseline import load_json_records  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
+from scripts.seed_registry import registered_seed_extractors  # noqa: E402
 
 
-REGISTERED_SEED_EXTRACTORS = {
-    "meiji_2027_schedule": {
-        "script": "scripts/meiji_schedule_extractor.py",
-        "source_candidates": ["data/uploads/meiji_2027_schedule_official.pdf"],
-        "source_markers": ["明治大学", "2027"],
-    },
-    "waseda_2027_official": {
-        "script": "scripts/waseda_2027_extractor.py",
-        "source_candidates": ["data/uploads/waseda_2027_official.pdf"],
-        "source_markers": [["Waseda", "早稲田大学", "早稻田大学"], ["2027", "2027年度"]],
-    }
-}
-
-SOURCE_MARKERS = {
-    "waseda_2027_official": [["Waseda", "早稲田大学", "早稻田大学"], ["2027", "2027年度"]],
-}
+REGISTERED_SEED_EXTRACTORS = registered_seed_extractors()
 
 
 def _source_candidates(stem: str, registration: dict[str, Any] | None) -> list[str]:
@@ -57,7 +43,7 @@ def _source_candidates(stem: str, registration: dict[str, Any] | None) -> list[s
 def _source_markers(stem: str, registration: dict[str, Any] | None) -> list[Any]:
     if registration and registration.get("source_markers"):
         return [item for item in registration.get("source_markers") or [] if str(item).strip()]
-    return list(SOURCE_MARKERS.get(stem, []))
+    return []
 
 
 def _read_probe_text(path: Path) -> str:

@@ -14,10 +14,9 @@ try:
 except Exception:
     pass
 
-from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records  # noqa: E402
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.quality_baseline import evaluate_against_expected, load_json_records  # noqa: E402
-from scripts.waseda_2027_extractor import extract_waseda_2027_records  # noqa: E402
+from scripts.seed_registry import registered_seed_extractors  # noqa: E402
 
 
 def validate_baseline_records(records: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -43,23 +42,18 @@ def _read_pdf_text(path: Path) -> str:
 
 
 def _default_seed_items() -> list[dict[str, Any]]:
-    meiji_pdf = ROOT / "data" / "uploads" / "meiji_2027_schedule_official.pdf"
-    waseda_pdf = ROOT / "data" / "uploads" / "waseda_2027_official.pdf"
-    items: list[dict[str, Any]] = [
-        {
-            "id": "meiji-2027-schedule",
-            "expected_path": ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json",
-            "source_path": meiji_pdf,
-            "extractor": lambda text: extract_meiji_2027_schedule_records(text),
-        }
-    ]
-    if waseda_pdf.exists():
+    items: list[dict[str, Any]] = []
+    for seed in registered_seed_extractors().values():
+        candidates = list(seed.get("source_candidates") or [])
+        source_path = ROOT / candidates[0] if candidates else Path("")
+        if not source_path.exists():
+            continue
         items.append(
             {
-                "id": "waseda-2027-official",
-                "expected_path": ROOT / "quality_baselines" / "waseda_2027_official.expected.json",
-                "source_path": waseda_pdf,
-                "extractor": lambda text: extract_waseda_2027_records(text),
+                "id": seed.get("id"),
+                "expected_path": ROOT / str(seed.get("expected_path") or ""),
+                "source_path": source_path,
+                "extractor": seed.get("extractor"),
             }
         )
     return items
