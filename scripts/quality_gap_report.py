@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -88,6 +89,14 @@ def _validate_local_source(root: Path, candidates: list[str], markers: list[Any]
     return {"available": False, "status": "missing", "path": "", "markers": markers}
 
 
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _source_receipt(root: Path, stem: str) -> dict[str, Any] | None:
     path = root / "quality_sources" / f"{stem}.source.json"
     if not path.exists():
@@ -106,6 +115,32 @@ def _source_receipt(root: Path, stem: str) -> dict[str, Any] | None:
         "size_bytes": payload.get("size_bytes", 0),
         "checked_at": str(payload.get("checked_at") or ""),
     }
+
+
+def _apply_receipt_hash_check(root: Path, source_validation: dict[str, Any], receipt: dict[str, Any] | None) -> dict[str, Any]:
+    if not source_validation.get("available") or not receipt:
+        return source_validation
+    expected_hash = str(receipt.get("sha256") or "")
+    if not expected_hash:
+        return source_validation
+    source_path = root / str(source_validation.get("path") or "")
+    if not source_path.exists():
+        return source_validation
+    actual_hash = _sha256(source_path)
+    if actual_hash == expected_hash:
+        checked = dict(source_validation)
+        checked["receipt_hash_status"] = "matched"
+        return checked
+    checked = dict(source_validation)
+    checked.update(
+        {
+            "available": False,
+            "status": "receipt_hash_mismatch",
+            "expected_sha256": expected_hash,
+            "actual_sha256": actual_hash,
+        }
+    )
+    return checked
 
 
 def _record_count(records: list[dict[str, Any]], review_status: str) -> int:
@@ -183,7 +218,9 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
         registration = REGISTERED_SEED_EXTRACTORS.get(stem)
         has_extractor = bool(registration)
         candidates = _source_candidates(stem, registration)
+        receipt = _source_receipt(root, stem)
         source_validation = _validate_local_source(root, candidates, _source_markers(stem, registration))
+        source_validation = _apply_receipt_hash_check(root, source_validation, receipt)
         has_source = bool(source_validation["available"])
         status = _status(has_source=has_source, has_extractor=has_extractor, human_checked=human_checked)
         items.append(
@@ -196,7 +233,7 @@ def build_quality_gap_report(*, root: Path = ROOT) -> dict[str, Any]:
                 "local_source_available": has_source,
                 "source_candidates": candidates,
                 "source_validation": source_validation,
-                "source_receipt": _source_receipt(root, stem),
+                "source_receipt": receipt,
                 "registered_seed_extractor": has_extractor,
                 "status": status,
                 "next_actions": _next_actions(status),

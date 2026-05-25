@@ -119,7 +119,7 @@ To restore all registered local quality sources on a new machine, run:
 python scripts/sync_quality_sources.py
 ```
 
-The importer copies the PDF into `data/uploads/` and writes a small receipt under `quality_sources/` with the SHA-256 hash, size, source URL, and checked markers. Commit the receipt if useful; do not commit the PDF itself.
+The importer copies the PDF into `data/uploads/` and writes a small receipt under `quality_sources/` with the SHA-256 hash, size, source URL, and checked markers. Commit the receipt if useful; do not commit the PDF itself. The quality gap report checks the local PDF against the receipt hash when a receipt is present.
 With `--verify-overview`, the printed receipt also includes `quality_overview_status` and `quality_overview_summary`; use this after adding a missing local source to confirm the next quality blocker without running a second command.
 `scripts/quality_gap_report.py` includes the receipt in each baseline item when present, but a receipt alone does not make the source available. The local PDF must still exist and pass marker validation.
 
