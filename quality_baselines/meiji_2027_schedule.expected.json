@@ -74,6 +74,9 @@
       "screening_method": {
         "contains": ["小論文", "面接"]
       },
+      "screening_schedule": {
+        "contains": ["１２月１５日"]
+      },
       "result_date": {
         "contains": ["１２月１５日"]
       }
