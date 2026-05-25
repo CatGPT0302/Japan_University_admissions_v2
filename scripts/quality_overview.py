@@ -21,6 +21,11 @@ from scripts.quality_gap_report import build_quality_gap_report  # noqa: E402
 CRITICAL_FIELD_MINIMUMS = {
     "application_period": 5,
     "eju_session": 5,
+    "eju_japanese": 5,
+    "eju_general": 5,
+    "eju_math": 2,
+    "eju_physics": 1,
+    "eju_chemistry": 1,
     "english_requirement": 5,
     "result_date": 5,
     "screening_schedule": 5,
@@ -66,7 +71,11 @@ def _field_coverage_totals(seed_suite: dict[str, Any]) -> dict[str, int]:
 
 def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[dict[str, Any]]:
     totals = _field_coverage_totals(seed_suite)
-    weak = [(field, checked) for field, checked in totals.items() if checked <= max_checked]
+    weak = [
+        (field, checked)
+        for field, checked in totals.items()
+        if checked <= max_checked and checked < int(CRITICAL_FIELD_MINIMUMS.get(field, max_checked + 1))
+    ]
     return [{"field": field, "checked": checked} for field, checked in sorted(weak, key=lambda item: (item[1], item[0]))[:5]]
 
 

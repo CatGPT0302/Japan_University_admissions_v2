@@ -58,6 +58,11 @@ class QualityOverviewTest(unittest.TestCase):
                                 "field_coverage": {
                                     "application_period": {"checked": 5, "passed": 5},
                                     "eju_session": {"checked": 5, "passed": 5},
+                                    "eju_japanese": {"checked": 5, "passed": 5},
+                                    "eju_general": {"checked": 5, "passed": 5},
+                                    "eju_math": {"checked": 2, "passed": 2},
+                                    "eju_physics": {"checked": 1, "passed": 1},
+                                    "eju_chemistry": {"checked": 1, "passed": 1},
                                     "english_requirement": {"checked": 6, "passed": 6},
                                     "result_date": {"checked": 5, "passed": 5},
                                     "screening_schedule": {"checked": 5, "passed": 5},
@@ -103,6 +108,12 @@ class QualityOverviewTest(unittest.TestCase):
                             "baseline": {
                                 "field_coverage": {
                                     "application_period": {"checked": 2, "passed": 2},
+                                    "eju_session": {"checked": 5, "passed": 5},
+                                    "eju_japanese": {"checked": 5, "passed": 5},
+                                    "eju_general": {"checked": 5, "passed": 5},
+                                    "eju_math": {"checked": 2, "passed": 2},
+                                    "eju_physics": {"checked": 1, "passed": 1},
+                                    "eju_chemistry": {"checked": 1, "passed": 1},
                                     "english_requirement": {"checked": 6, "passed": 6},
                                     "result_date": {"checked": 6, "passed": 6},
                                     "screening_schedule": {"checked": 6, "passed": 6},
@@ -114,6 +125,12 @@ class QualityOverviewTest(unittest.TestCase):
                             "baseline": {
                                 "field_coverage": {
                                     "application_period": {"checked": 2, "passed": 2},
+                                    "eju_session": {"checked": 5, "passed": 5},
+                                    "eju_japanese": {"checked": 5, "passed": 5},
+                                    "eju_general": {"checked": 5, "passed": 5},
+                                    "eju_math": {"checked": 2, "passed": 2},
+                                    "eju_physics": {"checked": 1, "passed": 1},
+                                    "eju_chemistry": {"checked": 1, "passed": 1},
                                     "english_requirement": {"checked": 5, "passed": 5},
                                     "result_date": {"checked": 5, "passed": 5},
                                     "screening_schedule": {"checked": 5, "passed": 5},
@@ -163,6 +180,11 @@ class QualityOverviewTest(unittest.TestCase):
                                     "result_date": {"checked": 5, "passed": 5},
                                     "screening_schedule": {"checked": 5, "passed": 5},
                                     "eju_session": {"checked": 4, "passed": 4},
+                                    "eju_japanese": {"checked": 5, "passed": 5},
+                                    "eju_general": {"checked": 5, "passed": 5},
+                                    "eju_math": {"checked": 2, "passed": 2},
+                                    "eju_physics": {"checked": 1, "passed": 1},
+                                    "eju_chemistry": {"checked": 1, "passed": 1},
                                 }
                             },
                         }
@@ -189,6 +211,109 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(critical[0]["field"], "eju_session")
         self.assertEqual(critical[0]["checked"], 4)
         self.assertEqual(critical[0]["minimum"], 5)
+
+    def test_treats_granular_eju_subjects_as_critical_coverage(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "baseline": {
+                                "field_coverage": {
+                                    "application_period": {"checked": 5, "passed": 5},
+                                    "eju_session": {"checked": 5, "passed": 5},
+                                    "eju_japanese": {"checked": 4, "passed": 4},
+                                    "eju_general": {"checked": 4, "passed": 4},
+                                    "eju_math": {"checked": 1, "passed": 1},
+                                    "eju_physics": {"checked": 0, "passed": 0},
+                                    "eju_chemistry": {"checked": 0, "passed": 0},
+                                    "english_requirement": {"checked": 5, "passed": 5},
+                                    "result_date": {"checked": 5, "passed": 5},
+                                    "screening_schedule": {"checked": 5, "passed": 5},
+                                }
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        critical = [todo for todo in overview["quality_todo"] if todo["action"] == "critical_field_coverage_below_target"]
+        by_field = {todo["field"]: todo for todo in critical}
+        self.assertEqual(overview["overall_status"], "needs_owner_action")
+        self.assertEqual(by_field["eju_japanese"]["minimum"], 5)
+        self.assertEqual(by_field["eju_general"]["minimum"], 5)
+        self.assertEqual(by_field["eju_math"]["minimum"], 2)
+        self.assertEqual(by_field["eju_physics"]["minimum"], 1)
+        self.assertEqual(by_field["eju_chemistry"]["minimum"], 1)
+
+    def test_does_not_mark_critical_field_as_weak_when_it_meets_target(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "baseline": {
+                                "field_coverage": {
+                                    "application_period": {"checked": 5, "passed": 5},
+                                    "eju_session": {"checked": 5, "passed": 5},
+                                    "eju_japanese": {"checked": 5, "passed": 5},
+                                    "eju_general": {"checked": 5, "passed": 5},
+                                    "eju_math": {"checked": 2, "passed": 2},
+                                    "eju_physics": {"checked": 1, "passed": 1},
+                                    "eju_chemistry": {"checked": 1, "passed": 1},
+                                    "english_requirement": {"checked": 5, "passed": 5},
+                                    "result_date": {"checked": 5, "passed": 5},
+                                    "screening_schedule": {"checked": 5, "passed": 5},
+                                }
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        weak_fields = [todo["field"] for todo in overview["quality_todo"] if todo["action"] == "expand_field_baseline"]
+        self.assertEqual(overview["overall_status"], "quality_gate_ready")
+        self.assertNotIn("eju_math", weak_fields)
 
     def test_formats_compact_summary_for_owner(self) -> None:
         from scripts.quality_overview import format_owner_summary

@@ -19,6 +19,15 @@
       "eju_subjects": {
         "contains": ["日本語", "総合科目", "数学"]
       },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_general": {
+        "contains": ["総合科目"]
+      },
+      "eju_math": {
+        "contains": ["数学"]
+      },
       "english_requirement": {
         "contains": ["TOEFL iBT", "45以上"]
       },
@@ -50,6 +59,12 @@
       },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
+      },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_general": {
+        "contains": ["総合科目"]
       },
       "english_requirement": {
         "contains": ["TOEFL iBT", "48以上", "TOEIC L&R", "600以上"]
@@ -86,6 +101,12 @@
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
       },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_general": {
+        "contains": ["総合科目"]
+      },
       "english_requirement": {
         "contains": ["TOEFL iBT", "42以上", "TOEIC L&R", "550以上"]
       },
@@ -120,6 +141,18 @@
       "eju_subjects": {
         "contains": ["日本語", "理科", "物理", "化学", "数学"]
       },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_math": {
+        "contains": ["数学"]
+      },
+      "eju_physics": {
+        "contains": ["物理"]
+      },
+      "eju_chemistry": {
+        "contains": ["化学"]
+      },
       "english_requirement": {
         "contains": ["TOEFL iBT", "TOEIC L&R", "出願基準点なし"]
       },
@@ -150,6 +183,12 @@
       },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
+      },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_general": {
+        "contains": ["総合科目"]
       },
       "english_requirement": {
         "contains": ["TOEFL iBT", "TOEIC L&R", "IELTS", "出願基準点なし"]
@@ -182,6 +221,12 @@
       },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
+      },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_general": {
+        "contains": ["総合科目"]
       },
       "english_requirement": {
         "contains": ["TOEFL iBT", "TOEIC L&R", "600以上", "IELTS", "4.0以上"]

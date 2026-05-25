@@ -103,7 +103,8 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
             {
                 "eju_subjects": "日本語 / 理科(物理・化学) / 数学(コース2)",
                 "eju_japanese": "日本語",
-                "eju_science": "理科(物理・化学)",
+                "eju_physics": "物理",
+                "eju_chemistry": "化学",
                 "eju_math": "数学(コース2)",
                 "english_requirement": "TOEFL iBT / TOEIC L&R / 出願基準点なし",
                 "screening_method": "小論文 / 口頭試問",
