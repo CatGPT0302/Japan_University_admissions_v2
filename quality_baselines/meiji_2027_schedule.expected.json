@@ -10,6 +10,9 @@
       "department": "法律学科"
     },
     "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目", "数学"]
       },
@@ -36,6 +39,9 @@
       "department": "商学科"
     },
     "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
       },
@@ -65,6 +71,9 @@
       "department": "情報コミュニケーション学科"
     },
     "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
       },
@@ -93,6 +102,9 @@
       "faculty": "理工学部"
     },
     "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "理科", "物理", "化学", "数学"]
       },
@@ -101,6 +113,9 @@
       },
       "screening_method": {
         "contains": ["小論文", "口頭試問"]
+      },
+      "result_date": {
+        "contains": ["１１月１７日"]
       }
     },
     "review_status": "human_checked_seed"
@@ -115,6 +130,9 @@
       "faculty": "経営学部"
     },
     "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
       },
@@ -123,6 +141,9 @@
       },
       "screening_method": {
         "contains": ["書類選考", "口頭試問"]
+      },
+      "result_date": {
+        "contains": ["１２月２２日"]
       }
     },
     "review_status": "human_checked_seed"
@@ -138,6 +159,9 @@
       "department": "国際日本学科"
     },
     "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
       "eju_subjects": {
         "contains": ["日本語", "総合科目"]
       },

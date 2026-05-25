@@ -33,6 +33,7 @@ def _base_record(*, faculty: str, department: str, selection_type: str = "Ⅰ") 
         "faculty": faculty,
         "department": department,
         "selection_type": selection_type,
+        "application_period": "2026年8月25日(火)～9月1日(火)",
         "confidence": 0.99,
         "needs_review": True,
         "warnings": ["Deterministic seed extraction from the official Meiji 2027 schedule PDF; extend by human review."],
@@ -105,6 +106,7 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
                 "eju_math": "数学(コース2)",
                 "english_requirement": "TOEFL iBT / TOEIC L&R / 出願基準点なし",
                 "screening_method": "小論文 / 口頭試問",
+                "result_date": "2026年11月17日（火）",
             }
         )
         records.append(record)
@@ -119,6 +121,7 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
                 "eju_math": "",
                 "english_requirement": "TOEFL iBT / TOEIC L&R / IELTS / 出願基準点なし",
                 "screening_method": "書類選考 / 口頭試問",
+                "result_date": "2026年12月22日（火）",
             }
         )
         records.append(record)
