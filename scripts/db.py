@@ -2055,18 +2055,12 @@ def _public_document_list(value: Any) -> list[str]:
     return [part.strip() for part in parts if part.strip()]
 
 
-def _public_program_from_row(row: dict[str, Any]) -> dict[str, Any]:
+def _public_program_from_row(row: dict[str, Any], *, include_quality: bool = False) -> dict[str, Any]:
     risk = _public_risk(row)
     stored_risk_level = str(row.get("staging_risk_level") or "").strip()
     if stored_risk_level:
         risk["level"] = stored_risk_level
-    field_evidence = _decode_json_value("field_evidence", row.get("field_evidence"))
-    confidence_value = row.get("staging_confidence")
-    try:
-        confidence = float(confidence_value) if confidence_value not in ("", None) else None
-    except (TypeError, ValueError):
-        confidence = None
-    return {
+    program = {
         "id": int(row.get("id") or 0),
         "school_name": row.get("university") or "",
         "admission_year": row.get("admission_year") or "",
@@ -2096,16 +2090,15 @@ def _public_program_from_row(row: dict[str, Any]) -> dict[str, Any]:
             "eligibility": row.get("eligibility") or "",
             "required_documents": _public_document_list(row.get("required_documents")),
         },
-        "risk": risk,
-        "risk_level": risk.get("level"),
-        "confidence": confidence,
-        "evidence": {**field_evidence, **({"summary": {"text": row.get("evidence"), "page": None}} if str(row.get("evidence") or "").strip() else {})},
         "source_document": {
             "id": row.get("document_id"),
             "file_name": row.get("source_file_name") or "",
             "pdf_url": row.get("source_pdf_url") or row.get("pdf_url") or "",
         },
     }
+    if include_quality:
+        program["_quality_level"] = risk.get("level") or "medium"
+    return program
 
 
 def get_public_programs(
@@ -2114,6 +2107,7 @@ def get_public_programs(
     faculty: str | None = None,
     limit: int = 100,
     offset: int = 0,
+    include_quality: bool = False,
 ) -> list[dict[str, Any]]:
     clauses: list[str] = []
     params: list[Any] = []
@@ -2146,10 +2140,10 @@ def get_public_programs(
     conn = get_conn()
     rows = _fetchall(conn, sql, tuple(params))
     conn.close()
-    return [_public_program_from_row(row) for row in rows]
+    return [_public_program_from_row(row, include_quality=include_quality) for row in rows]
 
 
-def get_public_program(program_id: int) -> dict[str, Any] | None:
+def get_public_program(program_id: int, *, include_quality: bool = False) -> dict[str, Any] | None:
     sql = (
         "SELECT ar.id, ar.document_id, ar.university, ar.pdf_url, ar.admission_year, "
         "ar.admission_period, ar.faculty, ar.department, ar.application_period, ar.deadline_rule, "
@@ -2166,7 +2160,7 @@ def get_public_program(program_id: int) -> dict[str, Any] | None:
     conn = get_conn()
     row = _fetchone(conn, sql, (int(program_id),))
     conn.close()
-    return _public_program_from_row(row) if row else None
+    return _public_program_from_row(row, include_quality=include_quality) if row else None
 
 
 def _profile_terms(values: Any) -> list[str]:
@@ -2192,9 +2186,14 @@ def _risk_rank(value: str) -> int:
 
 
 def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> dict[str, Any]:
-    programs = get_public_programs(year=profile.get("target_year") or None, limit=500, offset=0)
+    programs = get_public_programs(
+        year=profile.get("target_year") or None,
+        limit=500,
+        offset=0,
+        include_quality=True,
+    )
     if not programs and profile.get("target_year"):
-        programs = get_public_programs(limit=500, offset=0)
+        programs = get_public_programs(limit=500, offset=0, include_quality=True)
     desired_fields = _profile_terms(profile.get("desired_fields"))
     preferred_prefectures = _profile_terms(profile.get("preferred_prefectures"))
     english_tests = [item.lower() for item in _profile_terms(profile.get("english_tests"))]
@@ -2237,7 +2236,7 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
                 score += 10
                 reasons.append(f"EJU 条件提到“{term}”")
 
-        risk_level = str((program.get("risk") or {}).get("level") or "medium")
+        risk_level = str(program.get("_quality_level") or "medium")
         if risk_level == "low":
             score += 8
         elif risk_level == "high":
@@ -2278,6 +2277,7 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
                 "program": program,
                 "score": score,
                 "fit_level": fit_level,
+                "_quality_level": risk_level,
                 "reasons": reasons,
                 "check_items": deduped_check_items[:6] or ["请顾问确认最新募集要项和个人成绩条件"],
             }
@@ -2287,12 +2287,20 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
     results.sort(
         key=lambda item: (
             fit_rank.get(str(item["fit_level"]), 3),
-            _risk_rank(str((item["program"].get("risk") or {}).get("level") or "medium")),
+            _risk_rank(str(item.get("_quality_level") or "medium")),
             -int(item["score"]),
             str(item["program"].get("school_name") or ""),
         )
     )
-    return {"profile": profile, "results": results[: int(limit)]}
+    public_results = []
+    for item in results[: int(limit)]:
+        public_item = dict(item)
+        public_item.pop("_quality_level", None)
+        public_program = dict(public_item["program"])
+        public_program.pop("_quality_level", None)
+        public_item["program"] = public_program
+        public_results.append(public_item)
+    return {"profile": profile, "results": public_results}
 
 
 def create_consultation_booking(payload: dict[str, Any]) -> int:

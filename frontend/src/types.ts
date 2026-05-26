@@ -489,11 +489,6 @@ export interface ExportOptionsResponse {
 
 export type FitLevel = "likely_fit" | "check_carefully" | "high_risk";
 
-export interface PublicProgramRisk {
-  level: RiskLevel;
-  reasons: string[];
-}
-
 export interface PublicProgram {
   id: number;
   school_name: string;
@@ -528,10 +523,6 @@ export interface PublicProgram {
     eligibility?: string;
     required_documents: string[];
   };
-  risk: PublicProgramRisk;
-  risk_level?: RiskLevel;
-  confidence?: number | null;
-  evidence?: Record<string, { text?: string; page?: number | null; source?: string }>;
   source_document: {
     id?: number | null;
     file_name?: string;

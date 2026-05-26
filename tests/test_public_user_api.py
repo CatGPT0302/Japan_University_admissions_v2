@@ -130,8 +130,18 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(programs[0]["school_name"], "明治大学")
         self.assertEqual(programs[0]["faculty"], "理工学部")
         self.assertIn("requirements", programs[0])
-        self.assertIn("risk", programs[0])
-        for admin_key in ("source_staging_id", "raw_llm_json", "warnings_json", "is_confirmed", "confirmed_by"):
+        for admin_key in (
+            "source_staging_id",
+            "raw_llm_json",
+            "warnings_json",
+            "is_confirmed",
+            "confirmed_by",
+            "risk",
+            "risk_level",
+            "confidence",
+            "evidence",
+            "field_evidence",
+        ):
             self.assertNotIn(admin_key, programs[0])
 
     def test_public_program_detail_and_recommendations_use_confirmed_data(self) -> None:
@@ -166,6 +176,8 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertGreater(len(results[0]["reasons"]), 0)
         self.assertTrue(any("理工" in reason for reason in results[0]["reasons"]))
         self.assertIn("check_items", results[0])
+        for internal_key in ("risk", "risk_level", "confidence", "evidence", "_quality_level", "field_evidence"):
+            self.assertNotIn(internal_key, results[0]["program"])
         self.assertTrue(any("出愿时间" in item for item in results[0]["check_items"]))
         self.assertTrue(any("EJU" in item for item in results[0]["check_items"]))
         self.assertTrue(any("英语" in item or "TOEFL" in item for item in results[0]["check_items"]))
@@ -364,7 +376,7 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(owner_queue.status_code, 200)
         self.assertEqual(owner_queue.json()[0]["original_file_name"], "keio.pdf")
 
-    def test_public_program_can_include_safe_quality_metadata_from_staging(self) -> None:
+    def test_public_program_hides_internal_quality_metadata_from_staging(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))
             doc_id = db.create_source_document(
@@ -405,14 +417,20 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(confirm.status_code, 200)
         self.assertEqual(records.status_code, 200)
         program = records.json()[0]
-        self.assertEqual(program["confidence"], 0.82)
-        self.assertEqual(program["risk_level"], "medium")
-        self.assertEqual(program["risk"]["level"], "medium")
         self.assertEqual(program["requirements"]["eligibility"], "外国で12年の学校教育を修了した者")
         self.assertEqual(program["requirements"]["required_documents"], ["卒業証明書", "成績証明書", "志望理由書"])
-        self.assertEqual(program["evidence"]["summary"]["text"], "出願資格 p.3 / 出願書類 p.7")
-        self.assertEqual(program["evidence"]["application_period"]["page"], 3)
-        for admin_key in ("raw_llm_json", "warnings_json", "manual_modified_fields", "confirmed_by"):
+        self.assertEqual(program["source_document"]["pdf_url"], "https://example.ac.jp/meiji.pdf")
+        for admin_key in (
+            "raw_llm_json",
+            "warnings_json",
+            "manual_modified_fields",
+            "confirmed_by",
+            "confidence",
+            "risk",
+            "risk_level",
+            "evidence",
+            "field_evidence",
+        ):
             self.assertNotIn(admin_key, program)
 
     def test_licensed_api_requires_active_scoped_key_and_logs_usage(self) -> None:

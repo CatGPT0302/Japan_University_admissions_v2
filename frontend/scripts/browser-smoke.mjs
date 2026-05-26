@@ -433,6 +433,19 @@ async function runSurfaceAction(page, surface) {
   }
 
   if (surface.action === "student-search-confirmed") {
+    const publicProgramsResponse = await page.request.get(`${apiBaseUrl}/public/programs?limit=5`);
+    if (!publicProgramsResponse.ok()) {
+      throw new Error(`${surface.name} public programs failed with ${publicProgramsResponse.status()}`);
+    }
+    const publicPrograms = await publicProgramsResponse.json();
+    for (const program of publicPrograms) {
+      for (const blockedKey of ["confidence", "risk", "risk_level", "evidence", "field_evidence", "_quality_level"]) {
+        if (Object.prototype.hasOwnProperty.call(program, blockedKey)) {
+          throw new Error(`${surface.name} public API leaked internal key: ${blockedKey}`);
+        }
+      }
+    }
+
     await page.getByPlaceholder("例：早稻田 / 商学 / 东京 / TOEFL").fill("东京测试大学");
     await assertBodyIncludes(page, "先按学校和条件查找", `${surface.name} search results`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} search results`);
