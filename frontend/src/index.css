@@ -1853,6 +1853,71 @@ a {
   color: var(--warning);
 }
 
+.review-priority-strip {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(180, 83, 9, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 251, 235, 0.58);
+}
+
+.review-priority-strip strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.review-priority-strip > div:first-child span {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.review-priority-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-priority-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid rgba(180, 83, 9, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-2);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.review-priority-chips button:hover,
+.review-priority-chips button:focus-visible {
+  border-color: rgba(180, 83, 9, 0.28);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text);
+  outline: none;
+}
+
+.review-priority-chips span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.review-priority-chips em {
+  color: var(--warning);
+  font-size: 11px;
+  font-style: normal;
+}
+
 .review-group-tabs {
   position: sticky;
   top: 0;

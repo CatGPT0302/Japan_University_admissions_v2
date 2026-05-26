@@ -99,6 +99,26 @@ function reviewFieldLabel(key: string) {
   return key;
 }
 
+function groupIndexForField(key: keyof StagingRecord) {
+  const index = FIELD_GROUPS.findIndex((group) => group.fields.some((field) => field.key === key));
+  return index < 0 ? 0 : index;
+}
+
+function reviewHints(row: StagingRecord | null, draft: Record<string, string>) {
+  if (!row) return [];
+  const hints: Array<{ key: keyof StagingRecord; label: string; reason: string }> = [];
+  for (const key of REVIEW_KEYS) {
+    const value = String(draft[key] ?? textValue(row, key)).trim();
+    const confidence = Number(row.field_confidence?.[String(key)] ?? 0);
+    if (!value) {
+      hints.push({ key, label: reviewFieldLabel(String(key)), reason: "还没填" });
+    } else if (confidence > 0 && confidence < 0.75) {
+      hints.push({ key, label: reviewFieldLabel(String(key)), reason: "需要对照来源" });
+    }
+  }
+  return hints.slice(0, 8);
+}
+
 function rowTitle(row: StagingRecord) {
   const faculty = row.faculty || "未识别学部";
   const department = row.department || "未识别学科";
@@ -178,6 +198,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   );
   const hasUnsavedChanges = changedFields.length > 0;
   const activeGroup = FIELD_GROUPS[Math.min(activeGroupIndex, FIELD_GROUPS.length - 1)] ?? FIELD_GROUPS[0];
+  const currentHints = useMemo(() => reviewHints(selectedRow, draft), [draft, selectedRow]);
 
   useEffect(() => {
     void refreshDocuments();
@@ -443,6 +464,22 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                     </div>
                   ) : null}
                 </div>
+                {currentHints.length ? (
+                  <div className="review-priority-strip">
+                    <div>
+                      <strong>建议先看</strong>
+                      <span>这些内容会影响后续查询和导出。</span>
+                    </div>
+                    <div className="review-priority-chips" aria-label="建议先看的内容">
+                      {currentHints.map((hint) => (
+                        <button key={String(hint.key)} type="button" onClick={() => setActiveGroupIndex(groupIndexForField(hint.key))}>
+                          <span>{hint.label}</span>
+                          <em>{hint.reason}</em>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="review-group-tabs" aria-label="复审内容分组">
                   {FIELD_GROUPS.map((group, index) => {
                     const modifiedCount = group.fields.filter((field) => changedFields.includes(field.key)).length;
