@@ -125,6 +125,7 @@ Owner data assets remain in the owner-hosted database. Partner users receive lim
 python -m pytest -q
 cd frontend
 npm run build
+npm run smoke:surfaces
 ```
 
 ## Ownership
