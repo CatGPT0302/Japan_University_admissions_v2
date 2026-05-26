@@ -13,6 +13,7 @@ import type {
   DocumentListItem,
   DocumentSummary,
   ExtractResponse,
+  ExportPreviewResponse,
   FetchPdfResponse,
   FetchPdfSearchResponse,
   FetchPdfProbeResponse,
@@ -182,6 +183,17 @@ export async function getRecords(params?: {
   return data;
 }
 
+export async function getExportPreview(params?: {
+  universities?: string;
+  years?: string;
+  faculties?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ExportPreviewResponse> {
+  const { data } = await client.get<ExportPreviewResponse>("/exports/preview", { params });
+  return data;
+}
+
 export async function getPublicPrograms(params?: {
   university?: string;
   year?: string;
@@ -284,13 +296,33 @@ export async function getCorrectionEvents(params?: {
   return data;
 }
 
-export function downloadExcel(params?: { university?: string; year?: number; faculty?: string }): void {
+export function downloadExcel(params?: {
+  university?: string;
+  year?: number;
+  faculty?: string;
+  universities?: string;
+  years?: string;
+  faculties?: string;
+}): void {
   const search = new URLSearchParams();
   if (params?.university) search.set("university", params.university);
   if (params?.year) search.set("year", String(params.year));
   if (params?.faculty) search.set("faculty", params.faculty);
+  if (params?.universities) search.set("universities", params.universities);
+  if (params?.years) search.set("years", params.years);
+  if (params?.faculties) search.set("faculties", params.faculties);
   const qs = search.toString();
   const url = `${BASE_URL}/export/excel${qs ? `?${qs}` : ""}`;
+  window.open(url, "_blank");
+}
+
+export function downloadCsv(params?: { universities?: string; years?: string; faculties?: string }): void {
+  const search = new URLSearchParams();
+  if (params?.universities) search.set("universities", params.universities);
+  if (params?.years) search.set("years", params.years);
+  if (params?.faculties) search.set("faculties", params.faculties);
+  const qs = search.toString();
+  const url = `${BASE_URL}/export/csv${qs ? `?${qs}` : ""}`;
   window.open(url, "_blank");
 }
 

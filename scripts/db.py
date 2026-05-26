@@ -1778,6 +1778,52 @@ def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
     return {"processed": len(decoded_rows), "written": written, "skipped": skipped}
 
 
+RECORD_SELECT_COLUMNS = (
+    "id,university,admission_year,faculty,department,"
+    "admission_period,application_period,deadline_rule,eju_session,eju_japanese,eju_general,"
+    "eju_math,eju_physics,eju_chemistry,eju_biology,english_requirement,"
+    "screening_method,screening_schedule,result_date,enrollment_period,prefecture,campus"
+)
+
+
+def _clean_filter_values(values: list[str] | tuple[str, ...] | None) -> list[str]:
+    return [str(value).strip() for value in values or [] if str(value or "").strip()]
+
+
+def get_export_records(
+    *,
+    universities: list[str] | None = None,
+    years: list[str] | None = None,
+    faculties: list[str] | None = None,
+    limit: int = 10000,
+    offset: int = 0,
+) -> list[dict]:
+    clauses: list[str] = []
+    params: list[Any] = []
+    like = "ILIKE" if _pg() else "LIKE"
+    university_values = _clean_filter_values(universities)
+    year_values = _clean_filter_values(years)
+    faculty_values = _clean_filter_values(faculties)
+
+    if university_values:
+        clauses.append("(" + " OR ".join(f"university {like} {_ph()}" for _ in university_values) + ")")
+        params.extend(f"%{value}%" for value in university_values)
+    if year_values:
+        clauses.append(f"admission_year IN ({_phn(len(year_values))})")
+        params.extend(year_values)
+    if faculty_values:
+        clauses.append("(" + " OR ".join(f"faculty {like} {_ph()}" for _ in faculty_values) + ")")
+        params.extend(f"%{value}%" for value in faculty_values)
+
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    params.extend([int(limit), int(offset)])
+    sql = f"SELECT {RECORD_SELECT_COLUMNS} FROM admission_records {where} ORDER BY university, admission_year DESC, faculty, department, id LIMIT {_ph()} OFFSET {_ph()}"
+    conn = get_conn()
+    rows = _fetchall(conn, sql, tuple(params))
+    conn.close()
+    return rows
+
+
 def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -> list[dict]:
     clauses: list[str] = []
     params: list[Any] = []
@@ -1793,13 +1839,7 @@ def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -
         params.append(f"%{faculty}%")
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     params.extend([limit, offset])
-    sql = (
-        "SELECT id,university,admission_year,faculty,department,"
-        "admission_period,application_period,deadline_rule,eju_session,eju_japanese,eju_general,"
-        "eju_math,eju_physics,eju_chemistry,eju_biology,english_requirement,"
-        "screening_method,screening_schedule,result_date,enrollment_period,prefecture,campus "
-        f"FROM admission_records {where} ORDER BY id DESC LIMIT {_ph()} OFFSET {_ph()}"
-    )
+    sql = f"SELECT {RECORD_SELECT_COLUMNS} FROM admission_records {where} ORDER BY id DESC LIMIT {_ph()} OFFSET {_ph()}"
     conn = get_conn()
     rows = _fetchall(conn, sql, params)
     conn.close()

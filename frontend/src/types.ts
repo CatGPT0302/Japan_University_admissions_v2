@@ -1,4 +1,4 @@
-export type NavPage = "run" | "review" | "records" | "quality";
+export type NavPage = "run" | "review" | "records" | "exports" | "quality";
 export type OwnerPage = NavPage;
 export type AppRole = "owner_admin" | "partner_staff";
 
@@ -270,6 +270,16 @@ export interface ConfirmedRecord {
   enrollment_period?: string;
   prefecture?: string;
   campus?: string;
+}
+
+export interface ExportPreviewResponse {
+  summary: {
+    records: number;
+    universities: number;
+    years: string[];
+    faculties: number;
+  };
+  rows: ConfirmedRecord[];
 }
 
 export type FitLevel = "likely_fit" | "check_carefully" | "high_risk";

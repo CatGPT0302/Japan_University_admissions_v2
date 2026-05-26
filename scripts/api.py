@@ -4,6 +4,8 @@ import json
 import os
 import sys
 import uuid
+import csv
+import io
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +39,7 @@ from scripts.db import (  # noqa: E402
     get_documents as db_get_documents,
     get_document_summary as db_get_document_summary,
     get_document_submission_for_owner,
+    get_export_records,
     get_public_program,
     get_public_programs,
     get_quality_metrics as db_get_quality_metrics,
@@ -274,6 +277,47 @@ def _log_success(request: Request, context: dict[str, Any], scope: str) -> None:
         scope,
         200,
     )
+
+
+def _split_filter(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in str(value).replace("，", ",").split(",") if part.strip()]
+
+
+def _export_rows(
+    *,
+    university: str | None = None,
+    year: int | str | None = None,
+    faculty: str | None = None,
+    universities: str | None = None,
+    years: str | None = None,
+    faculties: str | None = None,
+    limit: int = 10000,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    university_values = _split_filter(universities) or _split_filter(university)
+    year_values = _split_filter(years) or ([str(year)] if year not in ("", None) else [])
+    faculty_values = _split_filter(faculties) or _split_filter(faculty)
+    return get_export_records(
+        universities=university_values,
+        years=year_values,
+        faculties=faculty_values,
+        limit=limit,
+        offset=offset,
+    )
+
+
+def _export_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    universities = {str(row.get("university") or "").strip() for row in rows if str(row.get("university") or "").strip()}
+    years = {str(row.get("admission_year") or "").strip() for row in rows if str(row.get("admission_year") or "").strip()}
+    faculties = {str(row.get("faculty") or "").strip() for row in rows if str(row.get("faculty") or "").strip()}
+    return {
+        "records": len(rows),
+        "universities": len(universities),
+        "years": sorted(years, reverse=True),
+        "faculties": len(faculties),
+    }
 
 
 def _run_extract_direct(file_name: str, university: str, year: str, url: str = "") -> dict[str, Any]:
@@ -951,12 +995,23 @@ def export_excel(
     university: str | None = None,
     year: int | None = None,
     faculty: str | None = None,
+    universities: str | None = None,
+    years: str | None = None,
+    faculties: str | None = None,
 ) -> StreamingResponse:
     """Export confirmed records as the standard admissions master workbook."""
     _require_owner(request)
-    import io
 
-    rows = get_records(university=university, year=year, faculty=faculty, limit=10000, offset=0)
+    rows = _export_rows(
+        university=university,
+        year=year,
+        faculty=faculty,
+        universities=universities,
+        years=years,
+        faculties=faculties,
+        limit=10000,
+        offset=0,
+    )
     if not rows:
         raise HTTPException(status_code=404, detail="No records found for the given filters")
     try:
@@ -970,6 +1025,66 @@ def export_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@app.get("/export/csv")
+def export_csv(
+    request: Request,
+    university: str | None = None,
+    year: int | None = None,
+    faculty: str | None = None,
+    universities: str | None = None,
+    years: str | None = None,
+    faculties: str | None = None,
+) -> StreamingResponse:
+    _require_owner(request)
+    rows = _export_rows(
+        university=university,
+        year=year,
+        faculty=faculty,
+        universities=universities,
+        years=years,
+        faculties=faculties,
+        limit=10000,
+        offset=0,
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="No records found for the given filters")
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=list(rows[0].keys()))
+    writer.writeheader()
+    writer.writerows(rows)
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="admissions_export.csv"'},
+    )
+
+
+@app.get("/exports/preview")
+def export_preview(
+    request: Request,
+    university: str | None = None,
+    year: int | None = None,
+    faculty: str | None = None,
+    universities: str | None = None,
+    years: str | None = None,
+    faculties: str | None = None,
+    limit: int = 200,
+    offset: int = 0,
+) -> dict[str, Any]:
+    _require_owner(request)
+    rows = _export_rows(
+        university=university,
+        year=year,
+        faculty=faculty,
+        universities=universities,
+        years=years,
+        faculties=faculties,
+        limit=max(1, min(int(limit), 1000)),
+        offset=max(0, int(offset)),
+    )
+    return {"summary": _export_summary(rows), "rows": rows}
 
 
 assets_dir = FRONTEND_DIST_DIR / "assets"

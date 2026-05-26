@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { checkHealth, getCurrentUser, login, logout, toErrorMessage } from "./api/client";
+import ExportPage from "./pages/ExportPage";
 import OwnerPartnersPage from "./pages/OwnerPartnersPage";
 import QualityPage from "./pages/QualityPage";
 import RunPage from "./pages/RunPage";
@@ -14,6 +15,7 @@ const NAV: Array<{ key: OwnerPage; label: string; hint: string; short: string }>
   { key: "review", label: "人工核对", hint: "修正不确定内容，确认后保存", short: "02" },
   { key: "records", label: "正式资料", hint: "查看已确认资料，按需导出 Excel", short: "03" },
   { key: "quality", label: "抽取质量", hint: "查看整理结果的稳定性和人工修正重点", short: "04" },
+  { key: "exports", label: "导出中心", hint: "按学校、年度和学部取出确认后的表格", short: "05" },
 ];
 
 const OWNER_PARTNER_ROUTE = String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "");
@@ -234,6 +236,8 @@ export default function App() {
             />
           ) : page === "records" ? (
             <RecordsPage />
+          ) : page === "exports" ? (
+            <ExportPage />
           ) : (
             <QualityPage />
           )}
