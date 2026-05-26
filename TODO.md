@@ -13,7 +13,7 @@
 - Add an owner-facing submission detail view with clearer links into the review page.
 - Add lightweight access protection before any external deployment of the owner/admin workspace.
 - Improve student result ranking with more real confirmed records.
-- Extend browser smoke checks into logged-in owner and partner flows.
+- Add deeper browser smoke checks for owner review/export and partner submission flows.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

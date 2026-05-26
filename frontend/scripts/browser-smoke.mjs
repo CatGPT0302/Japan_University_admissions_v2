@@ -1,31 +1,45 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { get } from "node:http";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright";
 
 const root = process.cwd();
+const repoRoot = join(root, "..");
 const basePort = Number(process.env.SMOKE_BROWSER_PORT || 4273);
-const apiBaseUrl = process.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const apiPort = Number(process.env.SMOKE_API_PORT || 8173);
+const apiBaseUrl = process.env.VITE_API_BASE_URL || `http://127.0.0.1:${apiPort}`;
+const ownerCredentials = { email: "owner.browser-smoke@example.com", password: "owner-browser-smoke" };
+const partnerCredentials = { email: "partner.browser-smoke@example.com", password: "partner-browser-smoke" };
 
 const surfaces = [
   {
     name: "owner",
     path: "/",
     expect: ["登录资料中心", "邮箱", "密码"],
+    login: ownerCredentials,
+    afterLoginExpect: ["招生资料中心", "资料生产", "资料库"],
     reject: ["学生・家长入口", "登录服务中心"],
+    afterLoginReject: ["学生・家长入口", "登录服务中心"],
   },
   {
     name: "owner-service",
     path: "/",
     expect: ["登录资料中心", "邮箱", "密码"],
+    login: ownerCredentials,
+    afterLoginExpect: ["合作方服务中心", "今日待办", "资料进度"],
     reject: ["学生・家长入口", "登录服务中心"],
+    afterLoginReject: ["学生・家长入口", "招生资料中心"],
   },
   {
     name: "partner",
     path: "/",
     expect: ["登录服务中心", "提交资料、查看整理进度。"],
+    login: partnerCredentials,
+    afterLoginExpect: ["提交资料，看整理进度", "服务中心", "整理进度"],
     reject: ["招生资料中心", "学生・家长入口"],
+    afterLoginReject: ["招生资料中心", "Owner 管理"],
   },
   {
     name: "student",
@@ -69,6 +83,13 @@ function previewCommand(port) {
   return {
     name: process.execPath,
     args: [viteBin, "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
+  };
+}
+
+function apiCommand() {
+  return {
+    name: process.env.PYTHON || "python",
+    args: ["-m", "uvicorn", "scripts.api:app", "--host", "127.0.0.1", "--port", String(apiPort), "--log-level", "warning"],
   };
 }
 
@@ -126,6 +147,36 @@ async function withPreview(port, run) {
   }
 }
 
+async function withApi(run) {
+  const tempRoot = mkdtempSync(join(tmpdir(), "admissions-browser-smoke-"));
+  const api = apiCommand();
+  const corsOrigins = surfaces.map((_, index) => `http://127.0.0.1:${basePort + index}`).join(",");
+  const child = spawn(api.name, api.args, {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      SQLITE_PATH: join(tempRoot, "browser-smoke.db"),
+      OWNER_EMAIL: ownerCredentials.email,
+      OWNER_PASSWORD: ownerCredentials.password,
+      PARTNER_EMAIL: partnerCredentials.email,
+      PARTNER_PASSWORD: partnerCredentials.password,
+      PARTNER_ORG_NAME: "合作方",
+      CORS_ORIGINS: corsOrigins,
+    },
+    shell: false,
+    stdio: "pipe",
+  });
+  child.stdout.on("data", (chunk) => process.stdout.write(chunk));
+  child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+  try {
+    await waitForHttp(`${apiBaseUrl}/health`, 20_000);
+    await run();
+  } finally {
+    await stopChildTree(child);
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+}
+
 async function launchBrowser() {
   for (const channel of ["chrome", "msedge"]) {
     try {
@@ -150,7 +201,8 @@ async function checkSurface(browser, surface, port) {
   }
 
   await withPreview(port, async (baseUrl) => {
-    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const page = await context.newPage();
     const consoleErrors = [];
     page.on("console", (message) => {
       if (message.type() === "error") consoleErrors.push(message.text());
@@ -169,22 +221,50 @@ async function checkSurface(browser, surface, port) {
       if (bodyText.includes(blocked)) throw new Error(`${surface.name} leaked text from another surface: ${blocked}`);
     }
 
+    if (surface.login) {
+      await page.locator("input").nth(0).fill(surface.login.email);
+      await page.locator("input").nth(1).fill(surface.login.password);
+      const loginResponsePromise = page.waitForResponse((response) => response.url().endsWith("/auth/login"), {
+        timeout: 10_000,
+      });
+      await page.getByRole("button", { name: "登录" }).click();
+      const loginResponse = await loginResponsePromise;
+      if (!loginResponse.ok()) {
+        throw new Error(`${surface.name} login failed with ${loginResponse.status()}`);
+      }
+      await page.waitForLoadState("networkidle");
+      await page.waitForFunction(() => !document.body.innerText.includes("正在登录"), undefined, { timeout: 10_000 });
+      const afterLoginText = await page.locator("body").innerText({ timeout: 10_000 });
+      for (const expected of surface.afterLoginExpect || []) {
+        if (!afterLoginText.includes(expected)) {
+          throw new Error(`${surface.name} missing logged-in text: ${expected}\nVisible text:\n${afterLoginText.slice(0, 1200)}`);
+        }
+      }
+      for (const blocked of surface.afterLoginReject || []) {
+        if (afterLoginText.includes(blocked)) {
+          throw new Error(`${surface.name} leaked logged-in text from another surface: ${blocked}`);
+        }
+      }
+    }
+
     const seriousErrors = consoleErrors.filter(
       (text) => !ignoredConsoleErrorSnippets.some((snippet) => text.includes(snippet)),
     );
     if (seriousErrors.length) {
       throw new Error(`${surface.name} console errors:\n${seriousErrors.join("\n")}`);
     }
-    await page.close();
+    await context.close();
     console.log(`[browser-smoke] ${surface.name} ok`);
   });
 }
 
 const browser = await launchBrowser();
 try {
-  for (const [index, surface] of surfaces.entries()) {
-    await checkSurface(browser, surface, basePort + index);
-  }
+  await withApi(async () => {
+    for (const [index, surface] of surfaces.entries()) {
+      await checkSurface(browser, surface, basePort + index);
+    }
+  });
 } finally {
   await browser.close();
 }

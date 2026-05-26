@@ -129,7 +129,8 @@ npm run smoke:surfaces
 npm run smoke:browser
 ```
 
-`smoke:browser` uses the local Chrome or Edge installation and checks that the owner, owner-service, partner, and student surfaces render as separate browser pages.
+`smoke:browser` uses the local Chrome or Edge installation, starts a temporary SQLite-backed API, signs into the owner and partner surfaces with throwaway accounts, and checks that the owner, owner-service, partner, and student surfaces stay separated in real browser pages.
+Run the two frontend smoke commands one after another because both rebuild `frontend/dist`.
 
 ## Ownership
 
