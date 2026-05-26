@@ -32,7 +32,7 @@ Use separate deployments/sites for the three systems. They can share this reposi
 - Partner service center site: `VITE_APP_SURFACE=partner`
 - Student/parent frontend site: `VITE_APP_SURFACE=student`
 
-`VITE_APP_SURFACE=combined` is only for local debugging. Do not use it as the public product entry.
+`VITE_APP_SURFACE=combined` is only for local debugging. It is disabled unless `VITE_ENABLE_COMBINED_SURFACE=true` is set, and should not be used as the public product entry.
 
 ## Backend Interfaces
 

@@ -50,6 +50,9 @@ type AppSurface = "owner" | "owner-service" | "partner" | "student" | "combined"
 
 function appSurface(): AppSurface {
   const value = String(import.meta.env.VITE_APP_SURFACE || "").trim();
+  if (value === "combined" && String(import.meta.env.VITE_ENABLE_COMBINED_SURFACE || "").trim() !== "true") {
+    return "owner";
+  }
   if (value === "owner" || value === "owner-service" || value === "partner" || value === "student" || value === "combined") {
     return value;
   }

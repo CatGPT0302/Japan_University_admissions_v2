@@ -73,6 +73,13 @@ const surfaces = [
     reject: ["学生・家长入口", "登录服务中心"],
     afterLoginReject: ["学生・家长入口", "登录服务中心"],
   },
+  {
+    name: "combined-disabled",
+    buildSurface: "combined",
+    path: "/#/student",
+    expect: ["登录资料中心", "邮箱", "密码"],
+    reject: ["学生・家长入口", "登录服务中心"],
+  },
 ];
 
 const ignoredConsoleErrorSnippets = [
