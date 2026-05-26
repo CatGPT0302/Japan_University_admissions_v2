@@ -57,3 +57,46 @@ def update_source_review_state(
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps(states, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
     return entry
+
+
+def accept_source_review_receipt(
+    item: dict[str, Any],
+    *,
+    root: Path = ROOT,
+    now: str | None = None,
+) -> dict[str, Any]:
+    stem = str(item.get("stem") or "").strip()
+    new_sha256 = str(item.get("new_sha256") or "").strip()
+    if not stem:
+        raise ValueError("source review item has no stem")
+    if not new_sha256:
+        raise ValueError("source review item has no new source hash")
+
+    receipt_path = root / "quality_sources" / f"{stem}.source.json"
+    try:
+        payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else {}
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+
+    old_sha256 = str(payload.get("sha256") or item.get("old_sha256") or "").strip()
+    accepted_at = now or _now_iso()
+    payload["sha256"] = new_sha256
+    payload["checked_at"] = str(item.get("checked_at") or accepted_at)
+    payload["source_url"] = str(item.get("final_url") or item.get("source_url") or payload.get("source_url") or "").strip()
+    payload["last_accepted_old_sha256"] = old_sha256
+    payload["accepted_at"] = accepted_at
+    payload["accepted_review_status"] = str(item.get("status") or "")
+    payload["accepted_review_item_id"] = source_review_item_id(item)
+
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    return {
+        "stem": stem,
+        "old_sha256": old_sha256,
+        "sha256": new_sha256,
+        "accepted_at": accepted_at,
+        "receipt_path": str(receipt_path),
+        "confirmed_records_unchanged": True,
+    }

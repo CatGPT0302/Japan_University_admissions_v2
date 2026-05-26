@@ -25,6 +25,7 @@ import type {
   QualityMetricsResponse,
   QualityOverviewResponse,
   RecommendationResponse,
+  SourceReviewAcceptResponse,
   SourceCheckRunResponse,
   SourceReviewReextractResponse,
   SourceReviewResponse,
@@ -383,6 +384,11 @@ export async function updateSourceReviewItem(
 
 export async function reextractSourceReviewItem(itemId: string): Promise<SourceReviewReextractResponse> {
   const { data } = await client.post<SourceReviewReextractResponse>(`/admin/source-review-queue/${itemId}/reextract`);
+  return data;
+}
+
+export async function acceptSourceReviewItem(itemId: string): Promise<SourceReviewAcceptResponse> {
+  const { data } = await client.post<SourceReviewAcceptResponse>(`/admin/source-review-queue/${itemId}/accept-source`);
   return data;
 }
 

@@ -67,7 +67,7 @@ from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.quality_overview import build_quality_overview  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
-from scripts.source_review_state import update_source_review_state  # noqa: E402
+from scripts.source_review_state import accept_source_review_receipt, update_source_review_state  # noqa: E402
 from scripts.source_watchlist import build_watchlist_report  # noqa: E402
 from scripts.validator import validate  # noqa: E402
 
@@ -1215,6 +1215,26 @@ def update_source_review_queue_item(item_id: str, payload: SourceReviewStateRequ
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return state
+
+
+@app.post("/admin/source-review-queue/{item_id}/accept-source")
+def accept_source_review_queue_item(item_id: str, request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    report = build_change_report(load_review_queue())
+    item = next((entry for entry in report.get("items", []) if entry.get("item_id") == item_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="source review item not found")
+    try:
+        receipt = accept_source_review_receipt(item)
+        state = update_source_review_state(item_id, "reviewed", note="已接受新的官方来源凭证")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {
+        "status": "accepted",
+        "receipt": receipt,
+        "review_state": state,
+        "confirmed_records_unchanged": True,
+    }
 
 
 @app.post("/admin/source-review-queue/{item_id}/reextract")

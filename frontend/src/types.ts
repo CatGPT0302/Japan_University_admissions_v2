@@ -292,6 +292,19 @@ export interface SourceReviewReextractResponse {
   source?: AgentSource;
 }
 
+export interface SourceReviewAcceptResponse {
+  status: "accepted" | string;
+  receipt: {
+    stem: string;
+    old_sha256: string;
+    sha256: string;
+    accepted_at: string;
+    confirmed_records_unchanged: boolean;
+  };
+  review_state: SourceReviewStateResponse;
+  confirmed_records_unchanged: boolean;
+}
+
 export interface UploadResponse {
   file_name: string;
   original_file_name?: string;

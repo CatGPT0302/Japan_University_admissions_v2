@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  acceptSourceReviewItem,
   getCorrectionEvents,
   getDocuments,
   getQualityMetrics,
@@ -197,6 +198,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [checkingSources, setCheckingSources] = useState(false);
   const [updatingSourceId, setUpdatingSourceId] = useState("");
   const [reextractingSourceId, setReextractingSourceId] = useState("");
+  const [acceptingSourceId, setAcceptingSourceId] = useState("");
   const [sourceFilter, setSourceFilter] = useState<SourceQueueFilter>("open");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -292,6 +294,21 @@ export default function QualityPage({ onOpenReview }: Props) {
       setError(toErrorMessage(nextError));
     } finally {
       setReextractingSourceId("");
+    }
+  }
+
+  async function acceptSourceItem(itemId: string) {
+    setAcceptingSourceId(itemId);
+    setError("");
+    setMessage("");
+    try {
+      const result = await acceptSourceReviewItem(itemId);
+      await load(selectedDocId);
+      setMessage(`已接受新的官方来源凭证。正式资料没有被自动改动。新凭证：${result.receipt.sha256.slice(0, 12)}`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setAcceptingSourceId("");
     }
   }
 
@@ -572,6 +589,16 @@ export default function QualityPage({ onOpenReview }: Props) {
                           >
                             {reextractingSourceId === item.item_id ? "正在整理" : "重新整理并复审"}
                           </button>
+                          {item.status === "changed" && item.new_sha256 ? (
+                            <button
+                              className="btn btn-ghost btn-small"
+                              disabled={acceptingSourceId === item.item_id}
+                              type="button"
+                              onClick={() => void acceptSourceItem(item.item_id)}
+                            >
+                              {acceptingSourceId === item.item_id ? "正在接受" : "接受新凭证"}
+                            </button>
+                          ) : null}
                           {item.source_url ? (
                             <a className="btn btn-ghost btn-small" href={item.source_url} target="_blank" rel="noreferrer">
                               打开官网资料
