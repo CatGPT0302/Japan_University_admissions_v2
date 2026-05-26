@@ -63,17 +63,6 @@ const surfaces = [
     reject: ["登录资料中心", "登录服务中心"],
   },
   {
-    name: "owner-bookings",
-    buildSurface: "owner",
-    path: "/",
-    expect: ["登录资料中心", "邮箱", "密码"],
-    login: ownerCredentials,
-    afterLoginExpect: ["招生资料中心", "咨询请求", "资料库"],
-    action: "owner-booking-inbox",
-    reject: ["学生・家长入口", "登录服务中心"],
-    afterLoginReject: ["学生・家长入口", "登录服务中心"],
-  },
-  {
     name: "combined-disabled",
     buildSurface: "combined",
     path: "/#/student",
@@ -448,25 +437,17 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} program detail`);
     await assertBodyIncludes(page, "EJU 日本语", `${surface.name} program detail`);
     await assertBodyIncludes(page, "需要提前准备", `${surface.name} preparation checklist`);
-    await assertBodyIncludes(page, "预约咨询", `${surface.name} booking form`);
+    await assertBodyIncludes(page, "下一步", `${surface.name} next step panel`);
+    await assertBodyIncludes(page, "回到学校列表", `${surface.name} return action`);
 
-    await page.getByPlaceholder("例如 王同学").fill("浏览器测试学生");
-    await page.getByPlaceholder("邮箱或手机号").fill("student-smoke@example.com");
-    await page.getByPlaceholder("例如 周六下午、平日晚上").fill("周六下午");
-    await page.getByPlaceholder("例如 想看 EJU 科目、英语成绩、出愿时间是否合适").fill("想确认 EJU 日本语和出愿时间。");
-    const bookingResponsePromise = page.waitForResponse((response) => response.url().endsWith("/public/bookings"), {
-      timeout: 10_000,
-    });
-    await page.getByRole("button", { name: "提交预约" }).click();
-    const bookingResponse = await bookingResponsePromise;
-    if (!bookingResponse.ok()) {
-      throw new Error(`${surface.name} booking failed with ${bookingResponse.status()}`);
+    const studentText = await page.locator("body").innerText({ timeout: 10_000 });
+    for (const blocked of ["预约咨询", "提交预约", "邮箱或手机号", "方便的时间"]) {
+      if (studentText.includes(blocked)) {
+        throw new Error(`${surface.name} still exposes consultation UI: ${blocked}`);
+      }
     }
-    const booking = await bookingResponse.json();
-    if (!booking.id || booking.status !== "received") {
-      throw new Error(`${surface.name} booking returned an unexpected response`);
-    }
-    await assertBodyIncludes(page, "已经收到。我们会按你留下的联系方式继续沟通。", `${surface.name} booking success`);
+    await page.getByRole("button", { name: "回到学校列表" }).click();
+    await assertBodyIncludes(page, "先按学校和条件查找", `${surface.name} back to results`);
     return;
   }
 

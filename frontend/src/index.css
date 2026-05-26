@@ -4727,7 +4727,7 @@ a {
 .student-shell-ios .student-requirement,
 .student-shell-ios .student-prepare-panel,
 .student-shell-ios .student-source-panel,
-.student-shell-ios .student-booking-panel,
+.student-shell-ios .student-next-panel,
 .student-shell-ios .student-empty {
   padding: 16px;
   border-style: solid;
@@ -4753,9 +4753,13 @@ a {
   gap: 12px;
 }
 
-.student-shell-ios .student-booking-panel {
+.student-shell-ios .student-next-panel {
   display: grid;
   gap: 14px;
+}
+
+.student-shell-ios .student-return-button {
+  justify-self: start;
 }
 
 .student-shell-ios .student-booking-fields {

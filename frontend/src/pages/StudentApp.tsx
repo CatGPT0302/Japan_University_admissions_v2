@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  createConsultationBooking,
   getPublicProgram,
   getPublicPrograms,
   getPublicRecommendations,
@@ -268,11 +267,6 @@ export default function StudentApp() {
   const [japaneseLevel, setJapaneseLevel] = useState("");
   const [notes, setNotes] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [bookingName, setBookingName] = useState("");
-  const [bookingContact, setBookingContact] = useState("");
-  const [bookingRole, setBookingRole] = useState("学生本人");
-  const [bookingTimes, setBookingTimes] = useState("");
-  const [bookingQuestion, setBookingQuestion] = useState("");
   const [expandedPickers, setExpandedPickers] = useState<Record<PickerKey, boolean>>({
     fields: false,
     areas: false,
@@ -290,8 +284,6 @@ export default function StudentApp() {
   const [programsLoading, setProgramsLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingMessage, setBookingMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -357,7 +349,6 @@ export default function StudentApp() {
     setSelectedResult(result);
     setSelectedProgram(result.program);
     setActiveTab("detail");
-    setBookingMessage("");
     setDetailLoading(true);
     try {
       const detail = await getPublicProgram(result.program.id);
@@ -396,34 +387,6 @@ export default function StudentApp() {
       setError(toErrorMessage(err));
     } finally {
       setRecommendationLoading(false);
-    }
-  }
-
-  async function handleBookingSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!activeProgram) return;
-    const contact = bookingContact.trim();
-    setBookingLoading(true);
-    setBookingMessage("");
-    setError(null);
-    try {
-      await createConsultationBooking({
-        student_name: bookingName.trim(),
-        contact_email: contact.includes("@") ? contact : "",
-        contact_phone: contact.includes("@") ? "" : contact,
-        role: bookingRole.trim(),
-        target_year: targetYear.trim(),
-        program_id: activeProgram.id,
-        preferred_times: bookingTimes.trim(),
-        question: bookingQuestion.trim(),
-      });
-      setBookingMessage("已经收到。我们会按你留下的联系方式继续沟通。");
-      setBookingQuestion("");
-      setBookingTimes("");
-    } catch (err) {
-      setError(toErrorMessage(err));
-    } finally {
-      setBookingLoading(false);
     }
   }
 
@@ -722,68 +685,17 @@ export default function StudentApp() {
                   ) : null}
                 </div>
 
-                <form className="student-booking-panel" onSubmit={handleBookingSubmit}>
+                <div className="student-next-panel">
                   <div className="student-section-head">
-                    <p className="student-kicker">预约咨询</p>
-                    <h2>想进一步聊这所学校？</h2>
-                    <p>留下联系方式和方便的时间，我们会带着这所学校的要求一起看。</p>
+                    <p className="student-kicker">下一步</p>
+                    <h2>把这所学校放进自己的申请清单</h2>
+                    <p>先确认时间、考试科目和材料准备。需要继续比较时，可以回到学校列表换一所看。</p>
                   </div>
 
-                  <div className="student-booking-fields">
-                    <label className="student-field">
-                      <span>姓名</span>
-                      <input
-                        value={bookingName}
-                        onChange={(event) => setBookingName(event.target.value)}
-                        placeholder="例如 王同学"
-                        required
-                      />
-                    </label>
-
-                    <label className="student-field">
-                      <span>联系方式</span>
-                      <input
-                        value={bookingContact}
-                        onChange={(event) => setBookingContact(event.target.value)}
-                        placeholder="邮箱或手机号"
-                        required
-                      />
-                    </label>
-
-                    <label className="student-field">
-                      <span>身份</span>
-                      <select value={bookingRole} onChange={(event) => setBookingRole(event.target.value)}>
-                        <option>学生本人</option>
-                        <option>家长</option>
-                        <option>其他</option>
-                      </select>
-                    </label>
-
-                    <label className="student-field">
-                      <span>方便的时间</span>
-                      <input
-                        value={bookingTimes}
-                        onChange={(event) => setBookingTimes(event.target.value)}
-                        placeholder="例如 周六下午、平日晚上"
-                      />
-                    </label>
-                  </div>
-
-                  <label className="student-field">
-                    <span>想先问什么</span>
-                    <textarea
-                      value={bookingQuestion}
-                      onChange={(event) => setBookingQuestion(event.target.value)}
-                      placeholder="例如 想看 EJU 科目、英语成绩、出愿时间是否合适"
-                    />
-                  </label>
-
-                  {bookingMessage ? <div className="student-message student-message-success">{bookingMessage}</div> : null}
-
-                  <button className="student-primary-button" type="submit" disabled={bookingLoading}>
-                    {bookingLoading ? "正在提交" : "提交预约"}
+                  <button className="student-primary-button student-return-button" type="button" onClick={() => setActiveTab("explore")}>
+                    回到学校列表
                   </button>
-                </form>
+                </div>
               </>
             ) : (
               <div className="student-empty">请选择一所学校，或先填写个人情况。</div>
