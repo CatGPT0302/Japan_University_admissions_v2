@@ -398,6 +398,7 @@ export interface ConfirmedRecord {
   enrollment_period?: string;
   prefecture?: string;
   campus?: string;
+  export_missing?: string[];
 }
 
 export interface ExportPreviewResponse {

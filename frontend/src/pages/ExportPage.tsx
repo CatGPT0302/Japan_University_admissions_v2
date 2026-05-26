@@ -14,6 +14,14 @@ const COLUMNS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "result_date", label: "结果公布" },
 ];
 
+const EXPORT_MISSING_LABELS: Record<string, string> = {
+  application_period: "出愿时间",
+  eju_japanese: "EJU 日语",
+  english_requirement: "英语要求",
+  screening_schedule: "考试日程",
+  result_date: "结果公布",
+};
+
 const PRESET_STORAGE_KEY = "admissions-export-presets-v1";
 
 type ExportPreset = {
@@ -78,9 +86,10 @@ function RowPreview({
   onSelect: () => void;
   onToggle: () => void;
 }) {
+  const missingLabels = (row.export_missing || []).map((key) => EXPORT_MISSING_LABELS[key] || key);
   return (
     <tr
-      className={selected ? "is-selected" : ""}
+      className={`${selected ? "is-selected" : ""}${missingLabels.length ? " has-export-gaps" : ""}`}
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onSelect();
@@ -97,7 +106,12 @@ function RowPreview({
         />
       </td>
       {COLUMNS.map((column) => (
-        <td key={column.key}>{String(row[column.key] || "-")}</td>
+        <td key={column.key}>
+          {String(row[column.key] || "-")}
+          {column.key === "university" && missingLabels.length ? (
+            <span className="export-row-gap">缺少 {missingLabels.slice(0, 2).join("、")}{missingLabels.length > 2 ? "等" : ""}</span>
+          ) : null}
+        </td>
       ))}
     </tr>
   );

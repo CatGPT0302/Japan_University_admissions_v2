@@ -76,6 +76,14 @@ INPUT_DIR = uploads_dir()
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
 FRONTEND_DIST_DIR = frontend_dist_dir()
 
+EXPORT_REQUIRED_COLUMNS = {
+    "application_period": "application_period",
+    "eju_japanese": "eju_japanese",
+    "english_requirement": "english_requirement",
+    "screening_schedule": "screening_schedule",
+    "result_date": "result_date",
+}
+
 
 def _cors_origins() -> list[str]:
     raw = os.environ.get("CORS_ORIGINS", "")
@@ -347,16 +355,9 @@ def _export_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     universities = {str(row.get("university") or "").strip() for row in rows if str(row.get("university") or "").strip()}
     years = {str(row.get("admission_year") or "").strip() for row in rows if str(row.get("admission_year") or "").strip()}
     faculties = {str(row.get("faculty") or "").strip() for row in rows if str(row.get("faculty") or "").strip()}
-    required_columns = {
-        "application_period": "application_period",
-        "eju_japanese": "eju_japanese",
-        "english_requirement": "english_requirement",
-        "screening_schedule": "screening_schedule",
-        "result_date": "result_date",
-    }
     missing_required = {
-        key: sum(1 for row in rows if not str(row.get(column) or "").strip())
-        for key, column in required_columns.items()
+        key: sum(1 for row in rows if key in _export_missing_required(row))
+        for key in EXPORT_REQUIRED_COLUMNS
     }
     return {
         "records": len(rows),
@@ -366,6 +367,18 @@ def _export_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "missing_required": missing_required,
         "ready_for_export": bool(rows) and all(count == 0 for count in missing_required.values()),
     }
+
+
+def _export_missing_required(row: dict[str, Any]) -> list[str]:
+    return [
+        key
+        for key, column in EXPORT_REQUIRED_COLUMNS.items()
+        if not str(row.get(column) or "").strip()
+    ]
+
+
+def _export_preview_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{**row, "export_missing": _export_missing_required(row)} for row in rows]
 
 
 def _export_review_targets(rows: list[dict[str, Any]], *, limit: int = 50) -> list[dict[str, Any]]:
@@ -1453,7 +1466,11 @@ def export_preview(
         limit=max(1, min(int(limit), 1000)),
         offset=max(0, int(offset)),
     )
-    return {"summary": _export_summary(rows), "review_targets": _export_review_targets(rows), "rows": rows}
+    return {
+        "summary": _export_summary(rows),
+        "review_targets": _export_review_targets(rows),
+        "rows": _export_preview_rows(rows),
+    }
 
 
 @app.get("/exports/options")

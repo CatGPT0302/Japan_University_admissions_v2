@@ -144,6 +144,7 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["universities"], 2)
         self.assertTrue(payload["summary"]["ready_for_export"])
         self.assertEqual(payload["summary"]["missing_required"]["application_period"], 0)
+        self.assertEqual(payload["rows"][0]["export_missing"], [])
         self.assertEqual(
             {(target["university"], target["admission_year"]) for target in payload["review_targets"]},
             {("Meiji University", "2027"), ("Waseda University", "2027")},
@@ -173,6 +174,11 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["missing_required"]["screening_schedule"], 1)
         self.assertEqual(payload["summary"]["missing_required"]["result_date"], 1)
         self.assertEqual(len(payload["review_targets"]), 2)
+        gap_row = next(row for row in payload["rows"] if row["university"] == "Gap University")
+        self.assertEqual(
+            set(gap_row["export_missing"]),
+            {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date"},
+        )
         for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
             self.assertNotIn(hidden_key, str(payload))
 
