@@ -5,6 +5,7 @@ from typing import Any, Callable
 from scripts.chukyo_gakuin_2027_undergrad_extractor import extract_chukyo_gakuin_2027_undergrad_records
 from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
+from scripts.kyoto_institute_tech_2027_undergrad_extractor import extract_kit_2027_undergrad_records
 from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
 from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_metropolitan_2027_undergrad_records
@@ -119,6 +120,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["2027", "中京学院大学", "外国人留学生選抜"],
         "text_markers": ["中京学院大学", "2027", "外国人留学生選抜"],
         "extractor": extract_chukyo_gakuin_2027_undergrad_records,
+    },
+    "kyoto_institute_tech_2027_undergrad": {
+        "stem": "kyoto_institute_tech_2027_undergrad",
+        "id": "kit-2027-undergrad",
+        "university": "京都工芸繊維大学",
+        "admission_year": "2027",
+        "script": "scripts/kyoto_institute_tech_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/kyoto_institute_tech_2027_undergrad.expected.json",
+        "source_url": "https://ac.web.kit.ac.jp/02/nyushi/yoko/gakubu/2027_shihi_yoko.pdf",
+        "source_candidates": ["data/uploads/kyoto_institute_tech_2027_undergrad.pdf"],
+        "source_markers": ["2027年度", "京都工芸繊維大学", "私費外国人留学生入試"],
+        "text_markers": ["京都工芸繊維大学", "2027", "私費外国人留学生入試"],
+        "extractor": extract_kit_2027_undergrad_records,
     },
 }
 

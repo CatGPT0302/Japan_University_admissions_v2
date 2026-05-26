@@ -1,0 +1,14 @@
+{
+  "status": "cached",
+  "stem": "kyoto_institute_tech_2027_undergrad",
+  "source_url": "https://ac.web.kit.ac.jp/02/nyushi/yoko/gakubu/2027_shihi_yoko.pdf",
+  "cached_path": "data/uploads/kyoto_institute_tech_2027_undergrad.pdf",
+  "sha256": "bcb714691ecac742b79e3fa2e0d80a5e63a48faf513055204b56db83948ac3e3",
+  "size_bytes": 1671089,
+  "markers": [
+    "2027年度",
+    "京都工芸繊維大学",
+    "私費外国人留学生入試"
+  ],
+  "checked_at": "2026-05-26T02:06:49+00:00"
+}
