@@ -78,6 +78,19 @@ function textValue(row: StagingRecord | null, key: keyof StagingRecord) {
   return value === undefined || value === null ? "" : String(value);
 }
 
+function evidenceForField(row: StagingRecord | null, key: keyof StagingRecord) {
+  const item = row?.field_evidence?.[String(key)];
+  if (!item) return null;
+  const text = String(item.text || "").trim();
+  const page = item.page === null || item.page === undefined ? null : Number(item.page);
+  if (!text && !page) return null;
+  return { text, page: Number.isFinite(page) ? page : null };
+}
+
+function shortEvidence(text: string) {
+  return text.length > 180 ? `${text.slice(0, 180)}...` : text;
+}
+
 function reviewFieldLabel(key: string) {
   for (const group of FIELD_GROUPS) {
     const field = group.fields.find((item) => item.key === key);
@@ -146,6 +159,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [saving, setSaving] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("pending");
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
+  const [focusedEvidencePage, setFocusedEvidencePage] = useState<number | null>(null);
 
   const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
   const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
@@ -157,7 +171,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const reviewedCount = rows.filter((row) => Number(row.is_reviewed) || Number(row.is_confirmed)).length;
   const remainingCount = Math.max(rows.length - reviewedCount, 0);
   const priorityCount = rows.filter((row) => needsAttention(row)).length;
-  const currentPage = selectedRow?.page_number || 1;
+  const currentPage = focusedEvidencePage || selectedRow?.page_number || 1;
   const changedFields = useMemo(
     () => REVIEW_KEYS.filter((key) => selectedRow && (draft[key] ?? "") !== textValue(selectedRow, key)),
     [draft, selectedRow],
@@ -179,6 +193,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     for (const key of REVIEW_KEYS) nextDraft[key] = textValue(selectedRow, key);
     setDraft(nextDraft);
     setActiveGroupIndex(0);
+    setFocusedEvidencePage(null);
   }, [selectedRow]);
 
   async function refreshDocuments() {
@@ -446,17 +461,35 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 </div>
                 <fieldset className="review-fieldset review-fieldset-active">
                   <legend>{activeGroup.title}</legend>
-                  {activeGroup.fields.map((field) => (
-                    <label key={field.key} className="field-wrap">
-                      <span className="field-label">{field.label}</span>
-                      <textarea
-                        className="field review-field"
-                        rows={field.rows || 1}
-                        value={draft[field.key] ?? ""}
-                        onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
-                      />
-                    </label>
-                  ))}
+                  {activeGroup.fields.map((field) => {
+                    const evidence = evidenceForField(selectedRow, field.key);
+                    return (
+                      <div key={field.key} className="review-field-block">
+                        <label className="field-wrap">
+                          <span className="field-label">{field.label}</span>
+                          <textarea
+                            className="field review-field"
+                            rows={field.rows || 1}
+                            value={draft[field.key] ?? ""}
+                            onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
+                          />
+                        </label>
+                        {evidence ? (
+                          <div className="review-evidence-note">
+                            <div>
+                              <span>来源提示{evidence.page ? ` · 第 ${evidence.page} 页` : ""}</span>
+                              <p>{evidence.text ? shortEvidence(evidence.text) : "这一项有页码提示，请对照原文确认。"}</p>
+                            </div>
+                            {evidence.page ? (
+                              <button className="btn btn-ghost btn-small" type="button" onClick={() => setFocusedEvidencePage(evidence.page)}>
+                                看这一页
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </fieldset>
               </div>
 

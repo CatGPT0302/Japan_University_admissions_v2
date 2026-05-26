@@ -1937,6 +1937,11 @@ a {
   font-weight: 700;
 }
 
+.review-field-block {
+  display: grid;
+  gap: 8px;
+}
+
 .review-field {
   min-height: 40px;
   line-height: 1.65;
@@ -1947,6 +1952,32 @@ a {
   border-color: rgba(37, 99, 235, 0.42);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   outline: none;
+}
+
+.review-evidence-note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.7);
+}
+
+.review-evidence-note span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.review-evidence-note p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .review-editor-actions {
