@@ -1031,6 +1031,30 @@ a {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(239, 246, 255, 0.46));
 }
 
+.booking-followup-group {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-followup-group + .booking-followup-group {
+  margin-top: 8px;
+}
+
+.booking-followup-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.booking-followup-group-head strong {
+  color: var(--text);
+  font-weight: 680;
+}
+
 .dropzone {
   min-height: 420px;
   display: grid;

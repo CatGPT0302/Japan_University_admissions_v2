@@ -10,6 +10,15 @@ const STATUS_OPTIONS: Array<{ key: ConsultationBookingStatus | ""; label: string
   { key: "closed", label: "暂不跟进" },
 ];
 
+type FollowUpBucket = "overdue" | "today" | "later" | "unscheduled";
+
+const FOLLOW_UP_BUCKET_LABELS: Record<FollowUpBucket, string> = {
+  overdue: "逾期跟进",
+  today: "今天要跟进",
+  later: "之后跟进",
+  unscheduled: "未安排",
+};
+
 function statusText(status?: string): string {
   if (status === "new") return "待联系";
   if (status === "contacted") return "已联系";
@@ -33,6 +42,30 @@ function programText(item: AdminConsultationBooking): string {
   const school = item.school_name || "未选择学校";
   const program = [item.faculty, item.department].filter(Boolean).join(" / ");
   return program ? `${school} · ${program}` : school;
+}
+
+function dateKey(value?: string): string {
+  const match = String(value || "").match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (!match) return "";
+  const [, year, month, day] = match;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function todayKey(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function followUpBucket(item: AdminConsultationBooking, today = todayKey()): FollowUpBucket {
+  if (item.status === "done" || item.status === "closed") return "unscheduled";
+  const key = dateKey(item.next_action_at);
+  if (!key) return "unscheduled";
+  if (key < today) return "overdue";
+  if (key === today) return "today";
+  return "later";
 }
 
 export default function BookingsPage() {
@@ -69,6 +102,18 @@ export default function BookingsPage() {
     [items, selectedId],
   );
   const openCount = items.filter((item) => item.status === "new").length;
+  const groupedItems = useMemo(() => {
+    const today = todayKey();
+    return (["overdue", "today", "later", "unscheduled"] as FollowUpBucket[])
+      .map((bucket) => ({
+        bucket,
+        label: FOLLOW_UP_BUCKET_LABELS[bucket],
+        items: items.filter((item) => followUpBucket(item, today) === bucket),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [items]);
+  const overdueCount = groupedItems.find((group) => group.bucket === "overdue")?.items.length ?? 0;
+  const todayCount = groupedItems.find((group) => group.bucket === "today")?.items.length ?? 0;
 
   useEffect(() => {
     setOwnerNote(selected?.owner_note || "");
@@ -131,6 +176,14 @@ export default function BookingsPage() {
               <span className="metric-label">待联系</span>
               <strong className="metric-value">{openCount}</strong>
             </div>
+            <div className="metric-card">
+              <span className="metric-label">逾期跟进</span>
+              <strong className="metric-value">{overdueCount}</strong>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">今天跟进</span>
+              <strong className="metric-value">{todayCount}</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -175,21 +228,30 @@ export default function BookingsPage() {
             </div>
 
             <div className="document-list">
-              {items.map((item) => (
-                <button
-                  className={`item-card${selected?.id === item.id ? " is-active" : ""}`}
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  <div className="item-card-topline">
-                    <span className={statusClass(item.status)}>{statusText(item.status)}</span>
-                    <span className="badge badge-gray">{item.target_year || item.admission_year || "未填年度"}</span>
+              {groupedItems.map((group) => (
+                <section className="booking-followup-group" key={group.bucket} aria-label={group.label}>
+                  <div className="booking-followup-group-head">
+                    <strong>{group.label}</strong>
+                    <span>{group.items.length} 条</span>
                   </div>
-                  <h4 className="item-title">{item.student_name || "未填写姓名"}</h4>
-                  <p className="item-subtitle">{programText(item)}</p>
-                  <p className="item-subtitle">{contactText(item)}</p>
-                </button>
+                  {group.items.map((item) => (
+                    <button
+                      className={`item-card${selected?.id === item.id ? " is-active" : ""}`}
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedId(item.id)}
+                    >
+                      <div className="item-card-topline">
+                        <span className={statusClass(item.status)}>{statusText(item.status)}</span>
+                        <span className="badge badge-gray">{item.target_year || item.admission_year || "未填年度"}</span>
+                      </div>
+                      <h4 className="item-title">{item.student_name || "未填写姓名"}</h4>
+                      <p className="item-subtitle">{programText(item)}</p>
+                      <p className="item-subtitle">{contactText(item)}</p>
+                      {item.next_action_at ? <p className="item-subtitle">下次跟进：{item.next_action_at}</p> : null}
+                    </button>
+                  ))}
+                </section>
               ))}
             </div>
 
