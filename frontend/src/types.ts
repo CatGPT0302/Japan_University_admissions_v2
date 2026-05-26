@@ -267,6 +267,8 @@ export interface SourceReviewItem {
   review_status: "open" | "reviewed" | "needs_reextract" | "deferred" | string;
   review_note?: string;
   review_updated_at?: string;
+  data_update_status?: "confirmed_records_unchanged" | string;
+  safety_note?: string;
   confirmed_records_unchanged: boolean;
 }
 

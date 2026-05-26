@@ -142,6 +142,8 @@ def build_change_report(queue: dict[str, Any], states: dict[str, Any] | None = N
                 "review_status": review_status,
                 "review_note": state.get("note", ""),
                 "review_updated_at": state.get("updated_at", ""),
+                "data_update_status": "confirmed_records_unchanged",
+                "safety_note": "来源变化只进入复审提醒；正式资料不会自动改动。",
                 "confirmed_records_unchanged": True,
             }
         )
@@ -191,6 +193,7 @@ def format_markdown_report(report: dict[str, Any]) -> str:
                 f"- 年度：{item.get('admission_year') or '-'}",
                 f"- 状态：{item.get('status_label') or item.get('status') or '-'}",
                 f"- 摘要：{item.get('owner_summary') or '-'}",
+                f"- 数据边界：{item.get('safety_note') or '正式资料不会自动改动。'}",
                 f"- 先看：{', '.join(item.get('likely_changed_areas') or []) or '-'}",
                 f"- 来源：{item.get('source_url') or '-'}",
                 f"- 旧凭证：{_short_hash(item.get('old_sha256'))}",

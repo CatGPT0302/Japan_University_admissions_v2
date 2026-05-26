@@ -663,6 +663,12 @@ export default function QualityPage({ onOpenReview }: Props) {
                       </div>
                       <h4 className="item-title">{item.university || item.stem || "未命名来源"}</h4>
                       <p className="item-subtitle">{item.owner_summary || item.error || sourceActionText(item.status)}</p>
+                      {item.confirmed_records_unchanged ? (
+                        <div className="source-review-safety">
+                          <strong>正式资料未自动改动</strong>
+                          <span>{item.safety_note || "来源变化只作为提醒，是否重新整理和确认仍由你决定。"}</span>
+                        </div>
+                      ) : null}
                       {item.likely_changed_areas?.length ? (
                         <div className="source-review-focus" aria-label="建议先看的内容">
                           <span>先看</span>

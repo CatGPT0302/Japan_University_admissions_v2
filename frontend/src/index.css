@@ -5134,6 +5134,26 @@ a {
   font-weight: 650;
 }
 
+.source-review-safety {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 14px;
+  background: rgba(240, 253, 250, 0.72);
+}
+
+.source-review-safety strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.source-review-safety span {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .source-review-next-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
