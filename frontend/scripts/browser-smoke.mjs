@@ -494,6 +494,12 @@ async function checkSurface(browser, surface, port) {
     if (surface.name === "student" || surface.name === "partner") {
       assertNoBlockedTerms(bodyText, nonOwnerBlockedTerms, surface.name);
     }
+    if (surface.name === "student") {
+      const brandHref = await page.locator(".student-brand").getAttribute("href");
+      if (brandHref && brandHref.includes("#/")) {
+        throw new Error(`${surface.name} brand link should stay within its split site root, got ${brandHref}`);
+      }
+    }
 
     if (surface.login) {
       await page.locator("input").nth(0).fill(surface.login.email);
@@ -519,6 +525,10 @@ async function checkSurface(browser, surface, port) {
       }
       if (surface.name === "partner") {
         assertNoBlockedTerms(afterLoginText, nonOwnerBlockedTerms, `${surface.name} logged-in`);
+        const brandHref = await page.locator(".settings-brand").getAttribute("href");
+        if (brandHref && brandHref.includes("#/")) {
+          throw new Error(`${surface.name} brand link should stay within its split site root, got ${brandHref}`);
+        }
       }
       await runSurfaceAction(page, surface);
     }
