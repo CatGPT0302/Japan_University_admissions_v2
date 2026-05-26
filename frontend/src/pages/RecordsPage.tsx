@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { downloadExcel, getRecords, getStats, toErrorMessage } from "../api/client";
+import { downloadCsv, downloadExcel, getRecords, getStats, toErrorMessage } from "../api/client";
 import type { ConfirmedRecord, StatsResponse } from "../types";
 
 const RECORD_FIELDS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
@@ -135,6 +135,19 @@ export default function RecordsPage() {
               </button>
               <button
                 className="btn btn-ghost"
+                onClick={() =>
+                  downloadCsv({
+                    university: university || undefined,
+                    faculty: faculty || undefined,
+                    year: year ? Number(year) : undefined,
+                  })
+                }
+                type="button"
+              >
+                导出 CSV 表
+              </button>
+              <button
+                className="btn btn-ghost"
                 onClick={() => {
                   setUniversity("");
                   setFaculty("");
@@ -219,6 +232,19 @@ export default function RecordsPage() {
                     }
                   >
                     导出当前学部
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() =>
+                      downloadCsv({
+                        university: selectedRow.university || undefined,
+                        faculty: selectedRow.faculty || undefined,
+                        year: yearNumber(selectedRow.admission_year),
+                      })
+                    }
+                  >
+                    导出 CSV
                   </button>
                 </div>
               </div>

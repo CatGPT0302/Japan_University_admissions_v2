@@ -391,8 +391,19 @@ export function downloadExcel(params?: {
   window.open(url, "_blank");
 }
 
-export function downloadCsv(params?: { universities?: string; years?: string; faculties?: string; record_ids?: string }): void {
+export function downloadCsv(params?: {
+  university?: string;
+  year?: number;
+  faculty?: string;
+  universities?: string;
+  years?: string;
+  faculties?: string;
+  record_ids?: string;
+}): void {
   const search = new URLSearchParams();
+  if (params?.university) search.set("university", params.university);
+  if (params?.year) search.set("year", String(params.year));
+  if (params?.faculty) search.set("faculty", params.faculty);
   if (params?.universities) search.set("universities", params.universities);
   if (params?.years) search.set("years", params.years);
   if (params?.faculties) search.set("faculties", params.faculties);

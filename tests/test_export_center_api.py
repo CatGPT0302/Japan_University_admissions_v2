@@ -378,6 +378,21 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
 
+    def test_export_csv_supports_single_school_filters(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Meiji University", "2027", "Science")
+            self._insert_confirmed(db, "Kyushu University", "2026", "Engineering")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/export/csv", params={"university": "Meiji", "year": 2027, "faculty": "Science"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("admissions_Meiji_University_2027_Science.csv", response.headers["content-disposition"])
+        self.assertIn("Meiji University", response.text)
+        self.assertNotIn("Kyushu University", response.text)
+
     def test_export_filters_accept_common_spreadsheet_separators(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))
