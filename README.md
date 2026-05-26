@@ -131,6 +131,14 @@ python scripts/seed_data_package.py --output-dir data/exports/seed_data_package
 
 This writes `package_summary.json`, `documents.json`, `records.jsonl`, `records_table.csv`, and `review_queue.json`. Every row is marked `database_status: not_imported` so it can be reviewed before any future import into the owner database.
 
+To preview a staging import without writing to the database:
+
+```powershell
+python scripts/import_seed_package_to_staging.py --package-dir data/exports/seed_data_package
+```
+
+Add `--apply` only when you intentionally want to create owner-review staging rows. The importer never writes directly to confirmed records.
+
 ## Verification
 
 ```powershell
