@@ -1205,6 +1205,13 @@ def admin_submission_queue(
 @app.patch("/admin/submissions/{submission_id}")
 def admin_update_submission(submission_id: int, payload: AdminSubmissionUpdateRequest, request: Request) -> dict[str, Any]:
     _require_owner(request)
+    existing = get_document_submission_for_owner(submission_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="submission not found")
+    if payload.processing_status == "confirmed":
+        linked_document_id = payload.document_id if payload.document_id is not None else existing.get("document_id")
+        if not linked_document_id:
+            raise HTTPException(status_code=400, detail="confirmed submission requires a processed document")
     try:
         updated = update_document_submission(
             submission_id,

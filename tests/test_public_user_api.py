@@ -538,6 +538,10 @@ class PublicUserApiTest(unittest.TestCase):
             submission_id = created.json()["id"]
             self._login_owner(client)
             queue = client.get("/admin/submissions")
+            unsafe_confirm = client.patch(
+                f"/admin/submissions/{submission_id}",
+                json={"processing_status": "confirmed"},
+            )
             updated = client.patch(
                 f"/admin/submissions/{submission_id}",
                 json={"processing_status": "needs_more_info"},
@@ -561,6 +565,14 @@ class PublicUserApiTest(unittest.TestCase):
 
             api.run_agent_workflow = fake_workflow
             started = client.post(f"/admin/submissions/{submission_id}/start")
+            completed = client.patch(
+                f"/admin/submissions/{submission_id}",
+                json={"processing_status": "confirmed"},
+            )
+            partner_detail = client.get(
+                f"/v1/documents/submissions/{submission_id}",
+                headers={"X-API-Key": key["secret"]},
+            )
             detail = client.get("/admin/submissions", params={"status": "needs_owner_review"})
 
         self.assertEqual(queue.status_code, 200)
@@ -568,16 +580,23 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(queue.json()[0]["organization_name"], "Tokyo Cram School")
         self.assertNotIn("api_key_id", queue.json()[0])
         self.assertNotIn("key_hash", str(queue.json()))
+        self.assertEqual(unsafe_confirm.status_code, 400)
+        self.assertIn("processed document", unsafe_confirm.json()["detail"])
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["processing_status"], "needs_more_info")
         self.assertEqual(started.status_code, 200)
         self.assertEqual(started.json()["processing_status"], "needs_owner_review")
         self.assertEqual(started.json()["document_id"], int(captured["doc_id"]))
+        self.assertEqual(completed.status_code, 200)
+        self.assertEqual(completed.json()["processing_status"], "confirmed")
+        self.assertEqual(partner_detail.status_code, 200)
+        self.assertEqual(partner_detail.json()["processing_status"], "confirmed")
+        self.assertNotIn("document_id", partner_detail.json())
         self.assertEqual(captured["university"], "Waseda University")
         self.assertEqual(captured["year"], "2027")
         self.assertEqual(captured["pdf_url"], "https://example.ac.jp/admission.pdf")
         self.assertEqual(detail.status_code, 200)
-        self.assertEqual(detail.json()[0]["id"], submission_id)
+        self.assertEqual(detail.json(), [])
 
     def test_browser_smoke_fake_workflow_is_explicitly_gated(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

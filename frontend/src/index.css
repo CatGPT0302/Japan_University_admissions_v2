@@ -3966,6 +3966,13 @@ a {
   text-decoration: none;
 }
 
+.settings-submission-action-note {
+  align-self: center;
+  color: rgba(60, 60, 67, 0.62);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .settings-submission-detail {
   position: sticky;
   top: 88px;

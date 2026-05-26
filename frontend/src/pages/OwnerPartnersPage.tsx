@@ -464,6 +464,7 @@ export default function SettingsPage({ onOpenReview }: Props) {
                 <div className="settings-submission-list">
                   {submissions.map((item) => {
                     const canStart = ["submitted", "needs_more_info", "failed"].includes(item.processing_status);
+                    const canComplete = Boolean(item.document_id);
                     const busy = workingSubmissionId === item.id;
                     return (
                       <article className={`settings-submission-card${selectedSubmission?.id === item.id ? " is-active" : ""}`} key={item.id}>
@@ -489,9 +490,13 @@ export default function SettingsPage({ onOpenReview }: Props) {
                               <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(item)}>
                                 {reviewActionLabel}
                               </button>
-                              <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void handleSetSubmissionStatus(item.id, "confirmed")}>
-                                标记已完成
-                              </button>
+                              {canComplete ? (
+                                <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void handleSetSubmissionStatus(item.id, "confirmed")}>
+                                  标记已完成
+                                </button>
+                              ) : (
+                                <span className="settings-submission-action-note">先完成整理后再标记</span>
+                              )}
                             </>
                           ) : null}
                           {item.processing_status === "processing" ? (
