@@ -273,6 +273,27 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "ブラウザテスト学部", `${surface.name} review row`);
     await assertBodyIncludes(page, "留学生入試", `${surface.name} review row`);
     await assertBodyIncludes(page, "源 PDF", `${surface.name} pdf panel`);
+    await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部");
+    const saveResponsePromise = page.waitForResponse((response) => response.url().includes("/staging/") && response.request().method() === "PATCH", {
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: "保存并复审下一条" }).click();
+    const saveResponse = await saveResponsePromise;
+    if (!saveResponse.ok()) {
+      throw new Error(`${surface.name} review save failed with ${saveResponse.status()}`);
+    }
+    await assertBodyIncludes(page, "已保存，并标记为复审完成。", `${surface.name} saved review`);
+
+    const confirmResponsePromise = page.waitForResponse((response) => response.url().includes("/confirm/") && response.request().method() === "POST", {
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: "确认整份入库" }).click();
+    const confirmResponse = await confirmResponsePromise;
+    if (!confirmResponse.ok()) {
+      throw new Error(`${surface.name} confirm failed with ${confirmResponse.status()}`);
+    }
+    await assertBodyIncludes(page, "已确认的招生资料", `${surface.name} confirmed records`);
+    await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirmed records`);
   }
 }
 
