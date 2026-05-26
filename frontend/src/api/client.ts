@@ -239,7 +239,7 @@ export async function getAdminBookings(params?: {
 
 export async function updateAdminBooking(
   bookingId: number,
-  payload: { status: ConsultationBookingStatus },
+  payload: { status?: ConsultationBookingStatus; owner_note?: string; next_action_at?: string },
 ): Promise<AdminConsultationBooking> {
   const { data } = await client.patch<AdminConsultationBooking>(`/admin/bookings/${bookingId}`, payload);
   return data;

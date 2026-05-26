@@ -57,7 +57,7 @@ from scripts.db import (  # noqa: E402
     log_api_usage,
     mark_api_key_used,
     recommend_public_programs,
-    update_consultation_booking_status,
+    update_consultation_booking,
     update_document_submission,
     update_staging_record,
 )
@@ -207,7 +207,9 @@ class AdminSubmissionUpdateRequest(BaseModel):
 
 
 class AdminBookingUpdateRequest(BaseModel):
-    status: str
+    status: str | None = None
+    owner_note: str | None = None
+    next_action_at: str | None = None
 
 
 class SourceReviewStateRequest(BaseModel):
@@ -745,9 +747,14 @@ def admin_bookings(
 def admin_update_booking(booking_id: int, payload: AdminBookingUpdateRequest, request: Request) -> dict[str, Any]:
     _require_owner(request)
     allowed = {"new", "contacted", "done", "closed"}
-    if payload.status not in allowed:
+    if payload.status is not None and payload.status not in allowed:
         raise HTTPException(status_code=400, detail="booking status is not supported")
-    updated = update_consultation_booking_status(booking_id, payload.status)
+    updated = update_consultation_booking(
+        booking_id,
+        status=payload.status,
+        owner_note=payload.owner_note,
+        next_action_at=payload.next_action_at,
+    )
     if not updated:
         raise HTTPException(status_code=404, detail="booking not found")
     return updated

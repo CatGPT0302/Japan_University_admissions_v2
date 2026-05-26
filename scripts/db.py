@@ -446,6 +446,8 @@ CREATE TABLE IF NOT EXISTS consultation_bookings (
     preferred_times TEXT,
     question TEXT,
     status TEXT DEFAULT 'new',
+    owner_note TEXT,
+    next_action_at TEXT,
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS')
 );
 CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
@@ -655,6 +657,8 @@ CREATE TABLE IF NOT EXISTS consultation_bookings (
     preferred_times TEXT,
     question TEXT,
     status TEXT DEFAULT 'new',
+    owner_note TEXT,
+    next_action_at TEXT,
     created_at TEXT DEFAULT (datetime('now','localtime'))
 );
 CREATE INDEX IF NOT EXISTS idx_stg_doc ON admission_records_staging(document_id);
@@ -681,6 +685,11 @@ _STAGING_MIGRATION_COLUMNS = {
     "reviewed_at": "TEXT",
 }
 
+_BOOKING_MIGRATION_COLUMNS = {
+    "owner_note": "TEXT",
+    "next_action_at": "TEXT",
+}
+
 
 def _ensure_staging_columns(conn) -> None:
     if _pg():
@@ -698,6 +707,24 @@ def _ensure_staging_columns(conn) -> None:
     for column, definition in _STAGING_MIGRATION_COLUMNS.items():
         if column not in existing:
             _execute(conn, f"ALTER TABLE admission_records_staging ADD COLUMN {column} {definition}")
+
+
+def _ensure_booking_columns(conn) -> None:
+    if _pg():
+        for column, definition in _BOOKING_MIGRATION_COLUMNS.items():
+            _execute(
+                conn,
+                f"ALTER TABLE consultation_bookings ADD COLUMN IF NOT EXISTS {column} {definition}",
+            )
+        return
+
+    existing = {
+        row["name"]
+        for row in _fetchall(conn, "PRAGMA table_info(consultation_bookings)")
+    }
+    for column, definition in _BOOKING_MIGRATION_COLUMNS.items():
+        if column not in existing:
+            _execute(conn, f"ALTER TABLE consultation_bookings ADD COLUMN {column} {definition}")
 
 
 def _ensure_auth_seed() -> None:
@@ -733,6 +760,7 @@ def init_db() -> None:
     else:
         conn.executescript(_SCHEMA_SQLITE)
     _ensure_staging_columns(conn)
+    _ensure_booking_columns(conn)
     conn.commit()
     conn.close()
     _ensure_auth_seed()
@@ -2111,6 +2139,8 @@ def list_consultation_bookings(
             cb.preferred_times,
             cb.question,
             cb.status,
+            cb.owner_note,
+            cb.next_action_at,
             cb.created_at,
             ar.university AS school_name,
             ar.faculty,
@@ -2128,9 +2158,29 @@ def list_consultation_bookings(
     return rows
 
 
-def update_consultation_booking_status(booking_id: int, status: str) -> dict[str, Any] | None:
+def update_consultation_booking(
+    booking_id: int,
+    *,
+    status: str | None = None,
+    owner_note: str | None = None,
+    next_action_at: str | None = None,
+) -> dict[str, Any] | None:
+    assignments: list[str] = []
+    params: list[Any] = []
+    if status is not None:
+        assignments.append(f"status={_ph()}")
+        params.append(status)
+    if owner_note is not None:
+        assignments.append(f"owner_note={_ph()}")
+        params.append(owner_note)
+    if next_action_at is not None:
+        assignments.append(f"next_action_at={_ph()}")
+        params.append(next_action_at)
+    if not assignments:
+        assignments.append("id=id")
     conn = get_conn()
-    _execute(conn, f"UPDATE consultation_bookings SET status={_ph()} WHERE id={_ph()}", (status, int(booking_id)))
+    params.append(int(booking_id))
+    _execute(conn, f"UPDATE consultation_bookings SET {', '.join(assignments)} WHERE id={_ph()}", tuple(params))
     conn.commit()
     row = _fetchone(
         conn,
@@ -2146,6 +2196,8 @@ def update_consultation_booking_status(booking_id: int, status: str) -> dict[str
             cb.preferred_times,
             cb.question,
             cb.status,
+            cb.owner_note,
+            cb.next_action_at,
             cb.created_at,
             ar.university AS school_name,
             ar.faculty,

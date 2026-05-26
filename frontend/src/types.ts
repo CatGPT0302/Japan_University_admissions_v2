@@ -447,6 +447,8 @@ export interface AdminConsultationBooking {
   preferred_times?: string;
   question?: string;
   status: ConsultationBookingStatus;
+  owner_note?: string;
+  next_action_at?: string;
   created_at: string;
   school_name?: string;
   faculty?: string;

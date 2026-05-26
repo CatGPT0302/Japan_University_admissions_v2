@@ -41,6 +41,8 @@ export default function BookingsPage() {
   const [status, setStatus] = useState<ConsultationBookingStatus | "">("new");
   const [loading, setLoading] = useState(false);
   const [workingId, setWorkingId] = useState<number | null>(null);
+  const [ownerNote, setOwnerNote] = useState("");
+  const [nextActionAt, setNextActionAt] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -68,15 +70,42 @@ export default function BookingsPage() {
   );
   const openCount = items.filter((item) => item.status === "new").length;
 
+  useEffect(() => {
+    setOwnerNote(selected?.owner_note || "");
+    setNextActionAt(selected?.next_action_at || "");
+  }, [selected?.id, selected?.next_action_at, selected?.owner_note]);
+
+  function replaceBooking(updated: AdminConsultationBooking) {
+    setItems((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+    setSelectedId(updated.id);
+  }
+
   async function setBookingStatus(item: AdminConsultationBooking, nextStatus: ConsultationBookingStatus) {
     setWorkingId(item.id);
     setError("");
     setMessage("");
     try {
       const updated = await updateAdminBooking(item.id, { status: nextStatus });
-      setItems((current) => current.map((row) => (row.id === updated.id ? updated : row)));
-      setSelectedId(updated.id);
+      replaceBooking(updated);
       setMessage(`已标记为：${statusText(updated.status)}。`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setWorkingId(null);
+    }
+  }
+
+  async function saveFollowUp(item: AdminConsultationBooking) {
+    setWorkingId(item.id);
+    setError("");
+    setMessage("");
+    try {
+      const updated = await updateAdminBooking(item.id, {
+        owner_note: ownerNote.trim(),
+        next_action_at: nextActionAt.trim(),
+      });
+      replaceBooking(updated);
+      setMessage("跟进安排已保存。");
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -211,11 +240,37 @@ export default function BookingsPage() {
                   <span className="detail-label">提交时间</span>
                   <div className="detail-value">{selected.created_at || "-"}</div>
                 </div>
+                <label className="detail-field is-span-2 field-wrap">
+                  <span className="detail-label">跟进备注</span>
+                  <textarea
+                    className="field"
+                    value={ownerNote}
+                    onChange={(event) => setOwnerNote(event.target.value)}
+                    placeholder="例如：先确认 EJU 分数，再约一次家长沟通"
+                  />
+                </label>
+                <label className="detail-field field-wrap">
+                  <span className="detail-label">下次跟进</span>
+                  <input
+                    className="field"
+                    value={nextActionAt}
+                    onChange={(event) => setNextActionAt(event.target.value)}
+                    placeholder="例如：2026-06-01 14:00"
+                  />
+                </label>
               </div>
 
               <div className="inline-actions">
                 <button
                   className="btn btn-primary"
+                  type="button"
+                  disabled={workingId === selected.id}
+                  onClick={() => void saveFollowUp(selected)}
+                >
+                  保存跟进安排
+                </button>
+                <button
+                  className="btn btn-ghost"
                   type="button"
                   disabled={workingId === selected.id}
                   onClick={() => void setBookingStatus(selected, "contacted")}

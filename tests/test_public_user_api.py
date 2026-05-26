@@ -228,7 +228,14 @@ class PublicUserApiTest(unittest.TestCase):
             client.post("/auth/logout")
             self._login_owner(client)
             inbox = client.get("/admin/bookings")
-            updated = client.patch(f"/admin/bookings/{created.json()['id']}", json={"status": "contacted"})
+            updated = client.patch(
+                f"/admin/bookings/{created.json()['id']}",
+                json={
+                    "status": "contacted",
+                    "owner_note": "先确认EJU成绩，再约家长面谈。",
+                    "next_action_at": "2026-06-01 14:00",
+                },
+            )
             filtered = client.get("/admin/bookings", params={"status": "contacted"})
 
         self.assertEqual(created.status_code, 200)
@@ -240,8 +247,11 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(inbox.json()[0]["faculty"], "理工学部")
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["status"], "contacted")
+        self.assertEqual(updated.json()["owner_note"], "先确认EJU成绩，再约家长面谈。")
+        self.assertEqual(updated.json()["next_action_at"], "2026-06-01 14:00")
         self.assertEqual(filtered.status_code, 200)
         self.assertEqual(filtered.json()[0]["status"], "contacted")
+        self.assertEqual(filtered.json()[0]["owner_note"], "先确认EJU成绩，再约家长面谈。")
 
     def test_admin_staging_confirm_records_flow_still_works(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

@@ -401,6 +401,18 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "student-smoke@example.com", `${surface.name} inbox`);
 
     await page.getByRole("button", { name: /浏览器测试学生/ }).click();
+    await page.getByPlaceholder("例如：先确认 EJU 分数，再约一次家长沟通").fill("先确认 EJU 日本语，再约家长沟通。");
+    await page.getByPlaceholder("例如：2026-06-01 14:00").fill("2026-06-01 14:00");
+    const followUpResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/bookings/") && response.request().method() === "PATCH", {
+      timeout: 10_000,
+    });
+    await page.getByRole("button", { name: "保存跟进安排" }).click();
+    const followUpResponse = await followUpResponsePromise;
+    if (!followUpResponse.ok()) {
+      throw new Error(`${surface.name} booking follow-up failed with ${followUpResponse.status()}`);
+    }
+    await assertBodyIncludes(page, "跟进安排已保存。", `${surface.name} booking follow-up saved`);
+
     const updateResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/bookings/") && response.request().method() === "PATCH", {
       timeout: 10_000,
     });
