@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -66,7 +66,7 @@ from scripts.export_excel import export_confirmed_excel_bytes_from_records  # no
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.quality_overview import build_quality_overview  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
-from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
+from scripts.source_change_report import build_change_report, format_markdown_report, load_review_queue  # noqa: E402
 from scripts.source_review_state import accept_source_review_receipt, update_source_review_state  # noqa: E402
 from scripts.source_watchlist import build_watchlist_report  # noqa: E402
 from scripts.validator import validate  # noqa: E402
@@ -1199,6 +1199,18 @@ def correction_events(request: Request, doc_id: int | None = None, limit: int = 
 def source_review_queue(request: Request) -> dict[str, Any]:
     _require_owner(request)
     return build_change_report(load_review_queue())
+
+
+@app.get("/admin/source-review-report.md")
+def source_review_report_markdown(request: Request) -> Response:
+    _require_owner(request)
+    report = build_change_report(load_review_queue())
+    markdown = format_markdown_report(report)
+    return Response(
+        content=markdown,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="source-review-report.md"'},
+    )
 
 
 @app.get("/admin/source-watchlist")

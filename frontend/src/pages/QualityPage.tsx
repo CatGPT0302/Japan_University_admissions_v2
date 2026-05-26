@@ -9,6 +9,7 @@ import {
   getSourceWatchlist,
   reextractSourceReviewItem,
   runSourceChecks,
+  sourceReviewReportUrl,
   toErrorMessage,
   updateSourceReviewItem,
 } from "../api/client";
@@ -505,9 +506,14 @@ export default function QualityPage({ onOpenReview }: Props) {
                   <h3 className="panel-title">官方来源变化</h3>
                   <p className="panel-copy">检查学校官网或 PDF 是否更新。发现变化后，只进入待查看清单，不会改动正式资料。</p>
                 </div>
-                <button className="btn btn-primary" disabled={checkingSources} type="button" onClick={() => void checkSources()}>
-                  {checkingSources ? "正在检查" : "检查官方来源"}
-                </button>
+                <div className="inline-actions inline-actions-tight">
+                  <a className="btn btn-ghost" href={sourceReviewReportUrl()} target="_blank" rel="noreferrer">
+                    下载复审报告
+                  </a>
+                  <button className="btn btn-primary" disabled={checkingSources} type="button" onClick={() => void checkSources()}>
+                    {checkingSources ? "正在检查" : "检查官方来源"}
+                  </button>
+                </div>
               </div>
 
               <div className="source-review-summary">

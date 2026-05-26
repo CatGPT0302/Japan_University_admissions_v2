@@ -275,6 +275,7 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "来源登记", `${surface.name} source watchlist`);
     await assertBodyIncludes(page, "维护节奏", `${surface.name} source watch cadence`);
     await assertBodyIncludes(page, "官方来源变化", `${surface.name} source review`);
+    await assertBodyIncludes(page, "下载复审报告", `${surface.name} source review report`);
     await assertBodyIncludes(page, "留学生要求覆盖", `${surface.name} language quality`);
     return;
   }

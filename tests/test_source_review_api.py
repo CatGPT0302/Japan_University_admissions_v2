@@ -36,6 +36,15 @@ class SourceReviewApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
+    def test_source_review_report_download_requires_owner_login(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+
+            response = client.get("/admin/source-review-report.md")
+
+        self.assertEqual(response.status_code, 401)
+
     def test_source_watchlist_requires_owner_login(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api = self._load_api(Path(tmp))
@@ -165,6 +174,41 @@ class SourceReviewApiTest(unittest.TestCase):
         self.assertEqual(payload["items"][0]["review_status"], "open")
         self.assertTrue(payload["items"][0]["item_id"])
         self.assertIn("confirmed_records_unchanged", payload["items"][0])
+
+    def test_source_review_report_can_be_downloaded_as_markdown(self) -> None:
+        queue = {
+            "generated_at": "2026-05-26T00:00:00+00:00",
+            "summary": {"needs_review": 1, "changed": 1},
+            "items": [
+                {
+                    "stem": "sample",
+                    "university": "Sample University",
+                    "admission_year": "2027",
+                    "admission_type": "undergraduate",
+                    "source_url": "https://example.test/admissions.pdf",
+                    "source_type": "pdf",
+                    "status": "changed",
+                    "old_sha256": "aaaaaaaaaaaa1111",
+                    "new_sha256": "bbbbbbbbbbbb2222",
+                    "checked_at": "2026-05-26T00:00:00+00:00",
+                    "needs_review": True,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            with patch.object(api, "load_review_queue", return_value=queue):
+                response = client.get("/admin/source-review-report.md")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/markdown", response.headers.get("content-type", ""))
+        self.assertIn("source-review-report.md", response.headers.get("content-disposition", ""))
+        self.assertIn("# 官方来源变化复审报告", response.text)
+        self.assertIn("Sample University", response.text)
+        self.assertIn("正式资料不会被自动改动", response.text)
 
     def test_run_source_checks_returns_queue_without_data_update_claims(self) -> None:
         queue = {"generated_at": "2026-05-26T00:00:00+00:00", "summary": {"needs_review": 0}, "items": []}

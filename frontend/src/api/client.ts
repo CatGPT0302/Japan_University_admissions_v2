@@ -362,6 +362,10 @@ export async function getSourceReviewQueue(): Promise<SourceReviewResponse> {
   return data;
 }
 
+export function sourceReviewReportUrl(): string {
+  return `${BASE_URL}/admin/source-review-report.md`;
+}
+
 export async function getSourceWatchlist(): Promise<SourceWatchlistResponse> {
   const { data } = await client.get<SourceWatchlistResponse>("/admin/source-watchlist");
   return data;
