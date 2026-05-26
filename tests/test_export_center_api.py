@@ -293,6 +293,7 @@ class ExportCenterApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/csv", response.headers["content-type"])
+        self.assertIn("admissions_Kyushu_University_2026_Engineering.csv", response.headers["content-disposition"])
         body = response.text
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
@@ -316,6 +317,7 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["records"], 2)
         self.assertEqual({row["university"] for row in payload["rows"]}, {"Meiji University", "Kyushu University"})
         self.assertEqual(excel.status_code, 200)
+        self.assertIn("admissions_selected_2rows.xlsx", excel.headers["content-disposition"])
         wb = load_workbook(BytesIO(excel.content))
         ws = wb["招生资料"]
         exported_universities = {ws.cell(row=row_number, column=1).value for row_number in range(4, ws.max_row + 1)}
@@ -395,6 +397,7 @@ class ExportCenterApiTest(unittest.TestCase):
             response = client.get("/export/excel", params={"universities": "Meiji", "years": "2027"})
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn("admissions_Meiji_University_2027_Science.xlsx", response.headers["content-disposition"])
         wb = load_workbook(BytesIO(response.content))
         self.assertEqual(wb.sheetnames, ["招生资料"])
         ws = wb["招生资料"]

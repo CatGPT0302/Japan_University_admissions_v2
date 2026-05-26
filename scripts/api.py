@@ -6,8 +6,10 @@ import sys
 import uuid
 import csv
 import io
+import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -1649,6 +1651,38 @@ def run_source_checks(request: Request, limit: int | None = None) -> dict[str, A
     }
 
 
+def _download_name_token(value: Any) -> str:
+    text = re.sub(r"\s+", "_", str(value or "").strip())
+    text = re.sub(r'[\\/:*?"<>|]+', "_", text).strip("._")
+    return text[:60]
+
+
+def _export_download_name(rows: list[dict[str, Any]], extension: str, *, record_ids: str | None = None) -> str:
+    universities = sorted({_download_name_token(row.get("university")) for row in rows if _download_name_token(row.get("university"))})
+    years = sorted({_download_name_token(row.get("admission_year")) for row in rows if _download_name_token(row.get("admission_year"))})
+    faculties = sorted({_download_name_token(row.get("faculty")) for row in rows if _download_name_token(row.get("faculty"))})
+    if record_ids:
+        base = f"admissions_selected_{len(rows)}rows"
+    elif len(universities) == 1:
+        parts = ["admissions", universities[0]]
+        if len(years) == 1:
+            parts.append(years[0])
+        if len(faculties) == 1:
+            parts.append(faculties[0])
+        base = "_".join(parts)
+    elif universities:
+        year_part = f"_{years[0]}" if len(years) == 1 else ""
+        base = f"admissions_merged_{len(universities)}schools{year_part}"
+    else:
+        base = "admissions_export"
+    return f"{base}.{extension.lstrip('.')}"
+
+
+def _download_headers(filename: str) -> dict[str, str]:
+    fallback = re.sub(r"[^A-Za-z0-9_.-]+", "_", filename) or "admissions_export"
+    return {"Content-Disposition": f'attachment; filename="{fallback}"; filename*=UTF-8\'\'{quote(filename)}'}
+
+
 @app.get("/export/excel")
 def export_excel(
     request: Request,
@@ -1681,11 +1715,11 @@ def export_excel(
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
-    filename = "admissions_master.xlsx"
+    filename = _export_download_name(rows, "xlsx", record_ids=record_ids)
     return StreamingResponse(
         io.BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers=_download_headers(filename),
     )
 
 
@@ -1721,7 +1755,7 @@ def export_csv(
     return StreamingResponse(
         iter([buffer.getvalue()]),
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": 'attachment; filename="admissions_export.csv"'},
+        headers=_download_headers(_export_download_name(rows, "csv", record_ids=record_ids)),
     )
 
 
