@@ -22,6 +22,7 @@ except Exception:
 
 from scripts.pdf_text_extractor import extract_text_per_page  # noqa: E402
 from scripts.quality_overview import build_quality_overview, format_owner_summary  # noqa: E402
+from scripts.seed_registry import registered_seed_extractors  # noqa: E402
 
 
 BROWSER_DOWNLOAD_HEADERS = {
@@ -72,6 +73,14 @@ def _ensure_pdf(path: Path) -> None:
         raise SourceCacheError("not_pdf")
 
 
+def _canonical_cached_path(root: Path, stem: str) -> Path:
+    seed = registered_seed_extractors().get(stem) or {}
+    candidates = list(seed.get("source_candidates") or [])
+    if candidates:
+        return root / str(candidates[0])
+    return root / "data" / "uploads" / f"{stem}.pdf"
+
+
 def import_checked_source(
     source_path: str | Path,
     *,
@@ -89,18 +98,18 @@ def import_checked_source(
     if missing:
         raise SourceCacheError("marker_mismatch: " + json.dumps(missing, ensure_ascii=False))
 
-    upload_dir = root / "data" / "uploads"
     receipt_dir = root / "quality_sources"
-    upload_dir.mkdir(parents=True, exist_ok=True)
     receipt_dir.mkdir(parents=True, exist_ok=True)
 
-    cached = upload_dir / f"{stem}.pdf"
+    cached = _canonical_cached_path(root, stem)
+    cached.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source, cached)
+    cached_path = cached.relative_to(root).as_posix()
     receipt = {
         "status": "cached",
         "stem": stem,
         "source_url": source_url,
-        "cached_path": f"data/uploads/{stem}.pdf",
+        "cached_path": cached_path,
         "sha256": _sha256(cached),
         "size_bytes": cached.stat().st_size,
         "markers": markers,

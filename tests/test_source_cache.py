@@ -34,6 +34,30 @@ class SourceCacheTest(unittest.TestCase):
             self.assertEqual(len(receipt["sha256"]), 64)
             self.assertEqual(json.loads(receipt_path.read_text(encoding="utf-8"))["sha256"], receipt["sha256"])
 
+    def test_import_uses_registered_source_candidate_as_canonical_cache_path(self) -> None:
+        from scripts.source_cache import import_checked_source
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "downloaded.pdf"
+            source.write_bytes(b"%PDF-1.4\nSample official admissions guide")
+
+            with patch(
+                "scripts.source_cache.registered_seed_extractors",
+                return_value={"sample": {"source_candidates": ["data/uploads/sample_official.pdf"]}},
+            ):
+                receipt = import_checked_source(
+                    source,
+                    stem="sample",
+                    source_url="https://example.test/sample.pdf",
+                    markers=["Sample"],
+                    root=root,
+                )
+
+            self.assertEqual(receipt["cached_path"], "data/uploads/sample_official.pdf")
+            self.assertTrue((root / "data" / "uploads" / "sample_official.pdf").exists())
+            self.assertFalse((root / "data" / "uploads" / "sample.pdf").exists())
+
     def test_rejects_non_pdf_input(self) -> None:
         from scripts.source_cache import SourceCacheError, import_checked_source
 
