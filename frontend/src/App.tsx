@@ -239,7 +239,13 @@ export default function App() {
           ) : page === "exports" ? (
             <ExportPage />
           ) : (
-            <QualityPage />
+            <QualityPage
+              onOpenReview={(docId) => {
+                setActiveDocId(docId);
+                setPage("review");
+                window.location.hash = "#/review";
+              }}
+            />
           )}
         </main>
       </div>

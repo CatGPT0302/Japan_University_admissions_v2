@@ -8,7 +8,11 @@ import {
   toErrorMessage,
 } from "../api/client";
 import { PieSummary, TreemapSummary } from "../components/DashboardCharts";
-import type { CorrectionEvent, DocumentListItem, QualityMetricsResponse, SourceReviewResponse } from "../types";
+import type { CorrectionEvent, DocumentListItem, QualityMetricsResponse, SourceReviewItem, SourceReviewResponse } from "../types";
+
+interface Props {
+  onOpenReview?: (docId: number) => void;
+}
 
 const CONTENT_LABELS: Record<string, string> = {
   application_period: "出愿时间",
@@ -50,7 +54,39 @@ function sourceStatusClass(value: string) {
   return "badge badge-gray";
 }
 
-export default function QualityPage() {
+function sourceActionText(value: string) {
+  if (value === "changed") return "打开对应资料，对照官网确认是否需要更新。";
+  if (value === "marker_mismatch") return "来源内容和预期不一致，先确认链接是否仍然正确。";
+  if (value === "not_pdf") return "学校可能换了链接或页面形式，需要重新确认来源。";
+  if (value === "failed") return "这次没有检查成功，可以稍后重试或手动打开官网。";
+  return "查看来源后决定是否需要复审。";
+}
+
+function normalized(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[#?].*$/, "")
+    .replace(/\/$/, "");
+}
+
+function findDocumentForSource(item: SourceReviewItem, documents: DocumentListItem[]) {
+  const itemUrl = normalized(item.source_url);
+  if (itemUrl) {
+    const exact = documents.find((doc) => normalized(doc.source_url) === itemUrl);
+    if (exact) return exact;
+  }
+  const itemUniversity = normalized(item.university);
+  const itemYear = normalized(item.admission_year);
+  return documents.find((doc) => {
+    const docUniversity = normalized(doc.university_name);
+    const sameSchool = Boolean(itemUniversity && docUniversity && (docUniversity.includes(itemUniversity) || itemUniversity.includes(docUniversity)));
+    const sameYear = !itemYear || normalized(doc.admission_year) === itemYear;
+    return sameSchool && sameYear;
+  });
+}
+
+export default function QualityPage({ onOpenReview }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<QualityMetricsResponse | null>(null);
@@ -227,24 +263,34 @@ export default function QualityPage() {
               </div>
 
               <div className="source-review-list">
-                {sourceItems.slice(0, 8).map((item) => (
-                  <article className="source-review-card" key={`${item.stem}-${item.checked_at}-${item.status}`}>
-                    <div className="item-card-topline">
-                      <span className={sourceStatusClass(item.status)}>{sourceStatusText(item.status)}</span>
-                      <span className="badge badge-gray">{item.admission_year || "未标年度"}</span>
-                    </div>
-                    <h4 className="item-title">{item.university || item.stem || "未命名来源"}</h4>
-                    <p className="item-subtitle">{item.error || item.recommended_action}</p>
-                    <div className="source-review-actions">
-                      {item.source_url ? (
-                        <a className="btn btn-ghost btn-small" href={item.source_url} target="_blank" rel="noreferrer">
-                          打开官网资料
-                        </a>
-                      ) : null}
-                      <span>{item.checked_at || sourceQueue?.generated_at || ""}</span>
-                    </div>
-                  </article>
-                ))}
+                {sourceItems.slice(0, 8).map((item) => {
+                  const matchedDoc = findDocumentForSource(item, documents);
+                  return (
+                    <article className="source-review-card" key={`${item.stem}-${item.checked_at}-${item.status}`}>
+                      <div className="item-card-topline">
+                        <span className={sourceStatusClass(item.status)}>{sourceStatusText(item.status)}</span>
+                        <span className="badge badge-gray">{item.admission_year || "未标年度"}</span>
+                      </div>
+                      <h4 className="item-title">{item.university || item.stem || "未命名来源"}</h4>
+                      <p className="item-subtitle">{item.error || sourceActionText(item.status)}</p>
+                      <div className="source-review-actions">
+                        <div className="inline-actions inline-actions-tight">
+                          {matchedDoc && onOpenReview ? (
+                            <button className="btn btn-primary btn-small" type="button" onClick={() => onOpenReview(matchedDoc.doc_id)}>
+                              进入复审
+                            </button>
+                          ) : null}
+                          {item.source_url ? (
+                            <a className="btn btn-ghost btn-small" href={item.source_url} target="_blank" rel="noreferrer">
+                              打开官网资料
+                            </a>
+                          ) : null}
+                        </div>
+                        <span>{item.checked_at || sourceQueue?.generated_at || ""}</span>
+                      </div>
+                    </article>
+                  );
+                })}
                 {!sourceItems.length ? <div className="empty-state empty-state-quiet">目前没有需要查看的来源变化。</div> : null}
               </div>
             </section>
