@@ -113,6 +113,26 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
 
+    def test_export_options_list_confirmed_values_for_owner(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Meiji University", "2027", "Science")
+            self._insert_confirmed(db, "Meiji University", "2027", "Law")
+            self._insert_confirmed(db, "Kyushu University", "2026", "Engineering")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/exports/options")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["universities"][0]["value"], "Meiji University")
+        self.assertEqual(payload["universities"][0]["count"], 2)
+        self.assertIn({"value": "2027", "count": 2}, payload["years"])
+        self.assertIn({"value": "Science", "count": 1}, payload["faculties"])
+        for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
+            self.assertNotIn(hidden_key, str(payload))
+
     def test_export_excel_hides_internal_quality_columns(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))
@@ -139,9 +159,11 @@ class ExportCenterApiTest(unittest.TestCase):
             client = TestClient(api.app)
 
             preview = client.get("/exports/preview")
+            options = client.get("/exports/options")
             csv_response = client.get("/export/csv")
 
         self.assertEqual(preview.status_code, 401)
+        self.assertEqual(options.status_code, 401)
         self.assertEqual(csv_response.status_code, 401)
 
 

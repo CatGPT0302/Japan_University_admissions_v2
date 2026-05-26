@@ -1852,6 +1852,50 @@ def get_export_records(
     return rows
 
 
+def get_export_options(limit: int = 200) -> dict[str, list[dict[str, Any]]]:
+    conn = get_conn()
+    try:
+        universities = _fetchall(
+            conn,
+            f"""
+            SELECT university AS value, COUNT(*) AS count
+            FROM admission_records
+            WHERE COALESCE(university, '') <> ''
+            GROUP BY university
+            ORDER BY COUNT(*) DESC, university
+            LIMIT {_ph()}
+            """,
+            (int(limit),),
+        )
+        years = _fetchall(
+            conn,
+            f"""
+            SELECT admission_year AS value, COUNT(*) AS count
+            FROM admission_records
+            WHERE COALESCE(admission_year, '') <> ''
+            GROUP BY admission_year
+            ORDER BY admission_year DESC
+            LIMIT {_ph()}
+            """,
+            (int(limit),),
+        )
+        faculties = _fetchall(
+            conn,
+            f"""
+            SELECT faculty AS value, COUNT(*) AS count
+            FROM admission_records
+            WHERE COALESCE(faculty, '') <> ''
+            GROUP BY faculty
+            ORDER BY COUNT(*) DESC, faculty
+            LIMIT {_ph()}
+            """,
+            (int(limit),),
+        )
+    finally:
+        conn.close()
+    return {"universities": universities, "years": years, "faculties": faculties}
+
+
 def get_records(university=None, year=None, faculty=None, limit=100, offset=0) -> list[dict]:
     clauses: list[str] = []
     params: list[Any] = []

@@ -41,6 +41,7 @@ from scripts.db import (  # noqa: E402
     get_documents as db_get_documents,
     get_document_summary as db_get_document_summary,
     get_document_submission_for_owner,
+    get_export_options,
     get_export_records,
     get_public_program,
     get_public_programs,
@@ -1306,6 +1307,12 @@ def export_preview(
         offset=max(0, int(offset)),
     )
     return {"summary": _export_summary(rows), "rows": rows}
+
+
+@app.get("/exports/options")
+def export_options(request: Request, limit: int = 200) -> dict[str, Any]:
+    _require_owner(request)
+    return get_export_options(limit=max(1, min(int(limit), 500)))
 
 
 assets_dir = FRONTEND_DIST_DIR / "assets"

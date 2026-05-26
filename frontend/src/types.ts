@@ -369,6 +369,17 @@ export interface ExportPreviewResponse {
   rows: ConfirmedRecord[];
 }
 
+export interface ExportOptionItem {
+  value: string;
+  count: number;
+}
+
+export interface ExportOptionsResponse {
+  universities: ExportOptionItem[];
+  years: ExportOptionItem[];
+  faculties: ExportOptionItem[];
+}
+
 export type FitLevel = "likely_fit" | "check_carefully" | "high_risk";
 
 export interface PublicProgramRisk {

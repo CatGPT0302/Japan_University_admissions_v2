@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { downloadCsv, downloadExcel, getExportPreview, toErrorMessage } from "../api/client";
-import type { ConfirmedRecord, ExportPreviewResponse } from "../types";
+import { downloadCsv, downloadExcel, getExportOptions, getExportPreview, toErrorMessage } from "../api/client";
+import type { ConfirmedRecord, ExportOptionItem, ExportOptionsResponse, ExportPreviewResponse } from "../types";
 
 const COLUMNS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "university", label: "学校" },
@@ -55,6 +55,34 @@ function RowPreview({ row }: { row: ConfirmedRecord }) {
   );
 }
 
+function appendFilterValue(current: string, value: string) {
+  const values = splitItems(current);
+  if (values.includes(value)) return current;
+  return [...values, value].join(", ");
+}
+
+function OptionChips({
+  items,
+  emptyText,
+  onPick,
+}: {
+  items: ExportOptionItem[];
+  emptyText: string;
+  onPick: (value: string) => void;
+}) {
+  if (!items.length) return <p className="export-preset-empty">{emptyText}</p>;
+  return (
+    <div className="export-option-chips">
+      {items.slice(0, 8).map((item) => (
+        <button key={item.value} type="button" onClick={() => onPick(item.value)}>
+          <span>{item.value}</span>
+          <strong>{item.count}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function ExportPage() {
   const [quickSchool, setQuickSchool] = useState("");
   const [universities, setUniversities] = useState("");
@@ -65,6 +93,7 @@ export default function ExportPage() {
   const [error, setError] = useState("");
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<ExportPreset[]>(() => loadPresets());
+  const [options, setOptions] = useState<ExportOptionsResponse | null>(null);
 
   const params = useMemo(
     () => ({
@@ -94,6 +123,14 @@ export default function ExportPage() {
       setError(toErrorMessage(nextError));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadOptions() {
+    try {
+      setOptions(await getExportOptions());
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
     }
   }
 
@@ -138,6 +175,7 @@ export default function ExportPage() {
 
   useEffect(() => {
     void loadPreview();
+    void loadOptions();
   }, []);
 
   const filterCount = splitItems(universities).length + splitItems(years).length + splitItems(faculties).length;
@@ -195,6 +233,19 @@ export default function ExportPage() {
             </button>
           </div>
 
+          <div className="export-option-block">
+            <span>当前可取学校</span>
+            <OptionChips
+              items={options?.universities || []}
+              emptyText="确认资料入库后，这里会显示学校。"
+              onPick={(value) => {
+                setQuickSchool(value);
+                setUniversities(value);
+                void loadPreview({ universities: value, years: years.trim() || undefined, faculties: undefined });
+              }}
+            />
+          </div>
+
           <div className="export-divider" />
 
           <div className="export-panel-header">
@@ -217,10 +268,28 @@ export default function ExportPage() {
             <input className="field" value={years} onChange={(event) => setYears(event.target.value)} placeholder="例：2026, 2027" />
           </label>
 
+          <div className="export-option-block">
+            <span>已有年度</span>
+            <OptionChips
+              items={options?.years || []}
+              emptyText="暂无年度可选。"
+              onPick={(value) => setYears((current) => appendFilterValue(current, value))}
+            />
+          </div>
+
           <label className="field-wrap">
             <span className="field-label">学部</span>
             <input className="field" value={faculties} onChange={(event) => setFaculties(event.target.value)} placeholder="例：文学部, 工学部" />
           </label>
+
+          <div className="export-option-block">
+            <span>常见学部</span>
+            <OptionChips
+              items={options?.faculties || []}
+              emptyText="暂无学部可选。"
+              onPick={(value) => setFaculties((current) => appendFilterValue(current, value))}
+            />
+          </div>
 
           {error ? <div className="message-box error">{error}</div> : null}
 

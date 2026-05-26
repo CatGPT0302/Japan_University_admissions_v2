@@ -15,6 +15,7 @@ import type {
   DocumentListItem,
   DocumentSummary,
   ExtractResponse,
+  ExportOptionsResponse,
   ExportPreviewResponse,
   FetchPdfResponse,
   FetchPdfSearchResponse,
@@ -198,6 +199,11 @@ export async function getExportPreview(params?: {
   offset?: number;
 }): Promise<ExportPreviewResponse> {
   const { data } = await client.get<ExportPreviewResponse>("/exports/preview", { params });
+  return data;
+}
+
+export async function getExportOptions(limit = 200): Promise<ExportOptionsResponse> {
+  const { data } = await client.get<ExportOptionsResponse>("/exports/options", { params: { limit } });
   return data;
 }
 
