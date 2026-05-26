@@ -503,9 +503,15 @@ export default function QualityPage({ onOpenReview }: Props) {
                       <span className={ownerIssueKindClass(item.kind)}>{ownerIssueKindText(item.kind)}</span>
                       {item.admission_year ? <span className="badge badge-gray">{item.admission_year}</span> : null}
                       {item.field_label ? <span className="badge badge-blue">{item.field_label}</span> : null}
+                      {(item.changed_areas || []).slice(0, 3).map((area) => (
+                        <span className="badge badge-amber" key={area}>
+                          {area}
+                        </span>
+                      ))}
                     </div>
                     <h4 className="item-title">{item.title}</h4>
                     <p className="item-subtitle">{item.suggested_action}</p>
+                    {item.source_excerpt ? <p className="item-subtitle">{item.source_excerpt}</p> : null}
                     <div className="owner-issue-meta">
                       <span>{item.university || item.source_document || "整体质量"}</span>
                       {item.faculty ? <span>{item.faculty}</span> : null}

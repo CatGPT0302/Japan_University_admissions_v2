@@ -192,6 +192,50 @@ class SourceReviewApiTest(unittest.TestCase):
         self.assertTrue(payload["items"][0]["item_id"])
         self.assertIn("confirmed_records_unchanged", payload["items"][0])
 
+    def test_owner_issues_explain_source_change_areas_and_excerpt(self) -> None:
+        queue = {
+            "generated_at": "2026-05-26T00:00:00+00:00",
+            "summary": {"needs_review": 1, "changed": 1},
+            "items": [
+                {
+                    "stem": "sample",
+                    "university": "Sample University",
+                    "admission_year": "2027",
+                    "source_url": "https://example.test/admissions.pdf",
+                    "status": "changed",
+                    "old_sha256": "aaa",
+                    "new_sha256": "bbb",
+                    "checked_at": "2026-05-26T00:00:00+00:00",
+                    "missing_markers": ["出願期間", "EJU"],
+                    "diff_preview": {
+                        "old_excerpt": ["出願期間 2026年9月1日から9月10日まで"],
+                        "new_excerpt": ["出願期間 2026年9月5日から9月20日まで"],
+                        "has_text_comparison": True,
+                    },
+                    "needs_review": True,
+                }
+            ],
+        }
+        overview = {"overall_status": "quality_gate_ready", "quality_todo": []}
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            with patch.object(api, "load_review_queue", return_value=queue), patch.object(api, "build_quality_overview", return_value=overview):
+                response = client.get("/metrics/owner-issues")
+                csv_response = client.get("/metrics/owner-issues.csv")
+
+        self.assertEqual(response.status_code, 200)
+        issue = next(item for item in response.json()["issues"] if item["kind"] == "source_change")
+        self.assertEqual(issue["university"], "Sample University")
+        self.assertIn("申请时间", issue["changed_areas"])
+        self.assertIn("EJU 要求", issue["changed_areas"])
+        self.assertIn("9月20日", issue["source_excerpt"])
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn("changed_areas", csv_response.text.splitlines()[0])
+        self.assertIn("9月20日", csv_response.text)
+
     def test_source_review_report_can_be_downloaded_as_markdown(self) -> None:
         queue = {
             "generated_at": "2026-05-26T00:00:00+00:00",

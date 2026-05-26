@@ -566,6 +566,13 @@ def _source_review_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
             continue
         status = str(item.get("status") or "")
         priority = 90 if status == "changed" else 85 if status in {"failed", "marker_mismatch", "first_check"} else 75
+        changed_areas = [str(area) for area in item.get("likely_changed_areas") or [] if str(area).strip()]
+        diff_preview = item.get("diff_preview") if isinstance(item.get("diff_preview"), dict) else {}
+        old_excerpt = [str(line) for line in diff_preview.get("old_excerpt") or [] if str(line).strip()]
+        new_excerpt = [str(line) for line in diff_preview.get("new_excerpt") or [] if str(line).strip()]
+        source_excerpt = ""
+        if old_excerpt or new_excerpt:
+            source_excerpt = f"以前：{old_excerpt[0] if old_excerpt else '-'} / 现在：{new_excerpt[0] if new_excerpt else '-'}"
         issues.append(
             {
                 "kind": "source_change",
@@ -578,6 +585,8 @@ def _source_review_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
                 "source_document": str(item.get("stem") or ""),
                 "source_url": str(item.get("source_url") or ""),
                 "review_item_id": str(item.get("item_id") or ""),
+                "changed_areas": changed_areas,
+                "source_excerpt": source_excerpt,
                 "suggested_action": item.get("recommended_action") or "先确认官方来源变化，再决定是否重新整理。",
             }
         )
@@ -1578,6 +1587,8 @@ def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingRespons
         "seed_id",
         "source_document",
         "source_url",
+        "changed_areas",
+        "source_excerpt",
         "script",
         "checked",
         "minimum",
@@ -1589,7 +1600,7 @@ def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingRespons
     writer = csv.DictWriter(buffer, fieldnames=fieldnames)
     writer.writeheader()
     for issue in payload.get("issues") or []:
-        writer.writerow({key: issue.get(key, "") for key in fieldnames})
+        writer.writerow({key: " / ".join(issue.get(key, [])) if isinstance(issue.get(key), list) else issue.get(key, "") for key in fieldnames})
     return StreamingResponse(
         iter(["\ufeff" + buffer.getvalue()]),
         media_type="text/csv; charset=utf-8",

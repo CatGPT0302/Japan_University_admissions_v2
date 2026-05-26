@@ -215,6 +215,8 @@ export interface OwnerIssue {
   review_item_id?: string;
   source_document?: string;
   source_url?: string;
+  changed_areas?: string[];
+  source_excerpt?: string;
   count?: number;
   checked?: number;
   minimum?: number;
