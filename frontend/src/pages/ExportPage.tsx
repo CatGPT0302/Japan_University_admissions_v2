@@ -85,6 +85,14 @@ function appendFilterValue(current: string, value: string) {
   return [...values, value].join(", ");
 }
 
+function uniqueValues(rows: ConfirmedRecord[], key: keyof ConfirmedRecord) {
+  return Array.from(new Set(rows.map((row) => String(row[key] || "").trim()).filter(Boolean)));
+}
+
+function missingCount(rows: ConfirmedRecord[], key: keyof ConfirmedRecord) {
+  return rows.filter((row) => !String(row[key] || "").trim()).length;
+}
+
 function OptionChips({
   items,
   emptyText,
@@ -246,6 +254,28 @@ export default function ExportPage({ onOpenReview }: Props) {
         faculties: selectedRow.faculty || undefined,
       }
     : {};
+  const exportCheck = useMemo(() => {
+    const schools = uniqueValues(rows, "university");
+    const exportYears = uniqueValues(rows, "admission_year");
+    const exportFaculties = uniqueValues(rows, "faculty");
+    const requiredChecks = [
+      { key: "application_period" as const, label: "出愿时间" },
+      { key: "eju_japanese" as const, label: "EJU 日语" },
+      { key: "english_requirement" as const, label: "英语要求" },
+      { key: "screening_schedule" as const, label: "考试日程" },
+      { key: "result_date" as const, label: "结果公布" },
+    ];
+    const gaps = requiredChecks
+      .map((item) => ({ ...item, missing: missingCount(rows, item.key) }))
+      .filter((item) => item.missing > 0);
+    return {
+      schools,
+      years: exportYears,
+      faculties: exportFaculties,
+      gaps,
+      ready: Boolean(rows.length) && gaps.length === 0,
+    };
+  }, [rows]);
 
   return (
     <div className="page-shell export-page">
@@ -456,6 +486,46 @@ export default function ExportPage({ onOpenReview }: Props) {
               </div>
             </div>
           ) : null}
+
+          <section className={`export-check-panel${exportCheck.ready ? " is-ready" : ""}`} aria-label="导出前检查">
+            <div className="export-check-head">
+              <div>
+                <span>导出前检查</span>
+                <strong>{!rows.length ? "先选择要导出的资料" : exportCheck.ready ? "主要栏位已齐" : "导出前建议看一眼"}</strong>
+              </div>
+              <em>{!rows.length ? "等待预览" : exportCheck.ready ? "可以直接导出" : `${exportCheck.gaps.length} 类内容有空白`}</em>
+            </div>
+            <div className="export-check-grid">
+              <div>
+                <span>学校</span>
+                <strong>{exportCheck.schools.length}</strong>
+                <p>{exportCheck.schools.slice(0, 3).join("、") || "暂无"}</p>
+              </div>
+              <div>
+                <span>年度</span>
+                <strong>{exportCheck.years.length}</strong>
+                <p>{exportCheck.years.slice(0, 4).join("、") || "暂无"}</p>
+              </div>
+              <div>
+                <span>学部</span>
+                <strong>{exportCheck.faculties.length}</strong>
+                <p>{exportCheck.faculties.slice(0, 3).join("、") || "暂无"}</p>
+              </div>
+            </div>
+            <div className="export-gap-strip" aria-label="空白提醒">
+              {!rows.length ? (
+                <span>预览后会显示合并范围和空白提醒</span>
+              ) : exportCheck.gaps.length ? (
+                exportCheck.gaps.map((gap) => (
+                  <span key={gap.key}>
+                    {gap.label}空白 {gap.missing} 条
+                  </span>
+                ))
+              ) : (
+                <span>出愿、EJU、英语、考试日程和结果公布都有内容</span>
+              )}
+            </div>
+          </section>
 
           <div className="export-table-scroll">
             <table className="export-table">
