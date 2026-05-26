@@ -49,9 +49,29 @@ function savePresets(presets: ExportPreset[]) {
   window.localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
 }
 
-function RowPreview({ row }: { row: ConfirmedRecord }) {
+function yearText(value?: string | number | null): string | undefined {
+  const match = String(value || "").match(/\d{4}/);
+  return match?.[0];
+}
+
+function RowPreview({
+  row,
+  selected,
+  onSelect,
+}: {
+  row: ConfirmedRecord;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <tr>
+    <tr
+      className={selected ? "is-selected" : ""}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onSelect();
+      }}
+      tabIndex={0}
+    >
       {COLUMNS.map((column) => (
         <td key={column.key}>{String(row[column.key] || "-")}</td>
       ))}
@@ -97,6 +117,7 @@ export default function ExportPage({ onOpenReview }: Props) {
   const [error, setError] = useState("");
   const [sourceLookupError, setSourceLookupError] = useState("");
   const [openingSource, setOpeningSource] = useState(false);
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<ExportPreset[]>(() => loadPresets());
   const [options, setOptions] = useState<ExportOptionsResponse | null>(null);
@@ -125,6 +146,7 @@ export default function ExportPage({ onOpenReview }: Props) {
     try {
       const nextPreview = await getExportPreview({ ...nextParams, limit: 300 });
       setPreview(nextPreview);
+      setSelectedRowId(nextPreview.rows[0]?.id ?? null);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -146,14 +168,14 @@ export default function ExportPage({ onOpenReview }: Props) {
     void loadPreview(quickParams);
   }
 
-  async function openQuickSchoolReview() {
-    if (!quickSchool.trim() || !onOpenReview) return;
+  async function openReviewForSchool(university: string, year?: string) {
+    if (!university.trim() || !onOpenReview) return;
     setOpeningSource(true);
     setSourceLookupError("");
     try {
       const docs = await getDocuments({
-        q: quickSchool.trim(),
-        year: years.trim() || undefined,
+        q: university.trim(),
+        year: year || undefined,
         limit: 20,
       });
       const doc = docs.find((item) => item.confirmed_count > 0 || item.staging_count > 0) ?? docs[0];
@@ -167,6 +189,10 @@ export default function ExportPage({ onOpenReview }: Props) {
     } finally {
       setOpeningSource(false);
     }
+  }
+
+  async function openQuickSchoolReview() {
+    await openReviewForSchool(quickSchool, years.trim() || undefined);
   }
 
   function savePreset() {
@@ -209,6 +235,17 @@ export default function ExportPage({ onOpenReview }: Props) {
 
   const filterCount = splitItems(universities).length + splitItems(years).length + splitItems(faculties).length;
   const rows = preview?.rows ?? [];
+  const selectedRow = rows.find((row) => row.id === selectedRowId) ?? rows[0] ?? null;
+  const selectedSchoolParams = selectedRow
+    ? { universities: selectedRow.university || undefined, years: yearText(selectedRow.admission_year), faculties: undefined }
+    : {};
+  const selectedFacultyParams = selectedRow
+    ? {
+        universities: selectedRow.university || undefined,
+        years: yearText(selectedRow.admission_year),
+        faculties: selectedRow.faculty || undefined,
+      }
+    : {};
 
   return (
     <div className="page-shell export-page">
@@ -392,6 +429,34 @@ export default function ExportPage({ onOpenReview }: Props) {
             <span className="badge badge-gray">{rows.length} 条</span>
           </div>
 
+          {selectedRow ? (
+            <div className="export-selected-row">
+              <div>
+                <span>当前选择</span>
+                <strong>{selectedRow.university || "未命名学校"}</strong>
+                <p>{[selectedRow.admission_year, selectedRow.faculty, selectedRow.department].filter(Boolean).join(" / ")}</p>
+              </div>
+              <div className="export-selected-actions">
+                <button className="btn btn-green btn-small" type="button" onClick={() => downloadExcel(selectedSchoolParams)}>
+                  导出学校
+                </button>
+                <button className="btn btn-ghost btn-small" type="button" onClick={() => downloadExcel(selectedFacultyParams)}>
+                  导出学部
+                </button>
+                {onOpenReview ? (
+                  <button
+                    className="btn btn-ghost btn-small"
+                    type="button"
+                    onClick={() => void openReviewForSchool(selectedRow.university, yearText(selectedRow.admission_year))}
+                    disabled={openingSource}
+                  >
+                    {openingSource ? "正在打开" : "查看来源"}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <div className="export-table-scroll">
             <table className="export-table">
               <thead>
@@ -401,7 +466,16 @@ export default function ExportPage({ onOpenReview }: Props) {
                   ))}
                 </tr>
               </thead>
-              <tbody>{rows.map((row) => <RowPreview key={row.id} row={row} />)}</tbody>
+              <tbody>
+                {rows.map((row) => (
+                  <RowPreview
+                    key={row.id}
+                    row={row}
+                    selected={selectedRow?.id === row.id}
+                    onSelect={() => setSelectedRowId(row.id)}
+                  />
+                ))}
+              </tbody>
             </table>
           </div>
 
