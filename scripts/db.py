@@ -2105,6 +2105,20 @@ def _profile_terms(values: Any) -> list[str]:
     return []
 
 
+def _contains_term(text: str, term: str) -> bool:
+    lowered = str(text or "").lower()
+    cleaned = str(term or "").strip().lower()
+    return bool(cleaned and cleaned in lowered)
+
+
+def _risk_rank(value: str) -> int:
+    if value == "low":
+        return 0
+    if value == "medium":
+        return 1
+    return 2
+
+
 def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> dict[str, Any]:
     programs = get_public_programs(year=profile.get("target_year") or None, limit=500, offset=0)
     if not programs and profile.get("target_year"):
@@ -2129,40 +2143,44 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
         eju_text = " ".join(str(value or "") for value in eju.values())
 
         if profile.get("target_year") and str(program.get("admission_year")) == str(profile.get("target_year")):
-            score += 3
-            reasons.append("入学年度匹配")
+            score += 18
+            reasons.append(f"{profile.get('target_year')} 年度可以先看")
         for term in desired_fields:
-            if term and term in searchable:
-                score += 3
-                reasons.append(f"学部/方向包含“{term}”")
+            if _contains_term(searchable, term):
+                score += 28
+                reasons.append(f"方向里有“{term}”")
         for term in preferred_prefectures:
-            if term and term in searchable:
-                score += 2
-                reasons.append(f"地区匹配“{term}”")
+            if _contains_term(searchable, term):
+                score += 18
+                reasons.append(f"地区接近“{term}”")
         for term in english_tests:
-            if term and term in english.lower():
-                score += 2
+            if _contains_term(english, term):
+                score += 12
                 reasons.append(f"英语要求中出现 {term.upper()}")
         for term in eju_subjects:
-            if term and term in eju_text:
-                score += 1
-                reasons.append(f"EJU 条件包含“{term}”")
+            if _contains_term(eju_text, term):
+                score += 10
+                reasons.append(f"EJU 条件提到“{term}”")
 
         risk_level = str((program.get("risk") or {}).get("level") or "medium")
+        if risk_level == "low":
+            score += 8
+        elif risk_level == "high":
+            score -= 18
         if risk_level == "high":
-            check_items.append("该项目有较多缺失或复杂条件，咨询前需要人工确认")
+            check_items.append("这所学校的要求还有不完整或复杂的地方，咨询前需要再看原文")
         elif risk_level == "medium":
-            check_items.append("该项目有选择条件或部分字段需确认")
+            check_items.append("有选择条件或需要进一步确认的地方")
         if not english:
-            check_items.append("英语要求为空，需确认是否不要求或原文未抽出")
+            check_items.append("英语要求没有写清楚，需要确认是否不要求")
         if not eju_text.strip():
-            check_items.append("EJU 要求为空，需确认是否不要求或原文未抽出")
+            check_items.append("EJU 要求没有写清楚，需要确认是否不要求")
         if not reasons:
-            reasons.append("作为已确认记录供参考，匹配度需要顾问复核")
+            reasons.append("可以作为备选先看，具体条件再确认")
 
-        if score >= 7 and risk_level == "low":
+        if score >= 62 and risk_level == "low":
             fit_level = "likely_fit"
-        elif score >= 3 and risk_level != "high":
+        elif score >= 24 and risk_level != "high":
             fit_level = "check_carefully"
         else:
             fit_level = "high_risk"
@@ -2176,7 +2194,15 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
             }
         )
 
-    results.sort(key=lambda item: (item["score"], 0 if item["fit_level"] == "likely_fit" else -1), reverse=True)
+    fit_rank = {"likely_fit": 0, "check_carefully": 1, "high_risk": 2}
+    results.sort(
+        key=lambda item: (
+            fit_rank.get(str(item["fit_level"]), 3),
+            _risk_rank(str((item["program"].get("risk") or {}).get("level") or "medium")),
+            -int(item["score"]),
+            str(item["program"].get("school_name") or ""),
+        )
+    )
     return {"profile": profile, "results": results[: int(limit)]}
 
 

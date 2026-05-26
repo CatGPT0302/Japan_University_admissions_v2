@@ -138,6 +138,7 @@ class PublicUserApiTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))
             program_id = self._insert_confirmed_program(db)
+            other_program_id = self._insert_confirmed_program(db, university="早稲田大学", faculty="文学部")
             client = TestClient(api.app)
 
             detail = client.get(f"/public/programs/{program_id}")
@@ -159,8 +160,11 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(recommendation.status_code, 200)
         results = recommendation.json()["results"]
         self.assertEqual(results[0]["program"]["id"], program_id)
+        self.assertNotEqual(results[0]["program"]["id"], other_program_id)
+        self.assertGreater(results[0]["score"], results[1]["score"])
         self.assertIn(results[0]["fit_level"], {"likely_fit", "check_carefully", "high_risk"})
         self.assertGreater(len(results[0]["reasons"]), 0)
+        self.assertTrue(any("理工" in reason for reason in results[0]["reasons"]))
         self.assertIn("check_items", results[0])
         self.assertEqual(empty_profile.status_code, 200)
         self.assertIn("results", empty_profile.json())
