@@ -22,6 +22,8 @@ type ReviewField = {
   rows?: number;
 };
 
+type ReviewFilter = "all" | "pending" | "priority" | "done";
+
 const FIELD_GROUPS: Array<{ title: string; fields: ReviewField[] }> = [
   {
     title: "基本信息",
@@ -63,6 +65,13 @@ const FIELD_GROUPS: Array<{ title: string; fields: ReviewField[] }> = [
 
 const REVIEW_KEYS = FIELD_GROUPS.flatMap((group) => group.fields.map((field) => field.key));
 
+const REVIEW_FILTERS: Array<{ key: ReviewFilter; label: string }> = [
+  { key: "pending", label: "待处理" },
+  { key: "priority", label: "先看" },
+  { key: "done", label: "已完成" },
+  { key: "all", label: "全部" },
+];
+
 function textValue(row: StagingRecord | null, key: keyof StagingRecord) {
   if (!row) return "";
   const value = row[key];
@@ -90,17 +99,37 @@ function rowStatus(row: StagingRecord) {
   return "待确认";
 }
 
+function isReviewed(row: StagingRecord) {
+  return Boolean(Number(row.is_reviewed) || Number(row.is_confirmed));
+}
+
+function needsAttention(row: StagingRecord) {
+  if (isReviewed(row)) return false;
+  const confidence = Number(row.confidence || 0);
+  return Boolean(Number(row.needs_review) || row.risk_level === "high" || (confidence > 0 && confidence < 0.75));
+}
+
 function statusClass(row: StagingRecord) {
   if (Number(row.is_confirmed)) return "badge badge-green";
   if (Number(row.is_reviewed)) return "badge badge-blue";
   return "badge badge-amber";
 }
 
+function filterRows(rows: StagingRecord[], filter: ReviewFilter) {
+  if (filter === "pending") return rows.filter((row) => !isReviewed(row));
+  if (filter === "priority") return rows.filter((row) => needsAttention(row));
+  if (filter === "done") return rows.filter((row) => isReviewed(row));
+  return rows;
+}
+
 function sortRows(rows: StagingRecord[]) {
   return [...rows].sort((a, b) => {
-    const aDone = Number(a.is_reviewed) || Number(a.is_confirmed);
-    const bDone = Number(b.is_reviewed) || Number(b.is_confirmed);
+    const aDone = Number(isReviewed(a));
+    const bDone = Number(isReviewed(b));
+    const aAttention = Number(needsAttention(a));
+    const bAttention = Number(needsAttention(b));
     if (aDone !== bDone) return aDone - bDone;
+    if (aAttention !== bAttention) return bAttention - aAttention;
     return Number(a.page_number || 0) - Number(b.page_number || 0);
   });
 }
@@ -115,8 +144,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("pending");
 
-  const orderedRows = useMemo(() => sortRows(rows), [rows]);
+  const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
+  const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
   const selectedRow = useMemo(() => rows.find((row) => row.id === selectedRowId) ?? null, [rows, selectedRowId]);
   const selectedIndex = useMemo(
     () => orderedRows.findIndex((row) => row.id === selectedRowId),
@@ -124,6 +155,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   );
   const reviewedCount = rows.filter((row) => Number(row.is_reviewed) || Number(row.is_confirmed)).length;
   const remainingCount = Math.max(rows.length - reviewedCount, 0);
+  const priorityCount = rows.filter((row) => needsAttention(row)).length;
   const currentPage = selectedRow?.page_number || 1;
   const changedFields = useMemo(
     () => REVIEW_KEYS.filter((key) => selectedRow && (draft[key] ?? "") !== textValue(selectedRow, key)),
@@ -177,9 +209,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
       });
       const nextRows = rows.map((row) => (row.id === selectedRow.id ? updated : row));
       const nextOrdered = sortRows(nextRows);
+      const nextVisible = filterRows(nextOrdered, reviewFilter);
       setRows(nextRows);
       if (moveNext) {
-        const next = nextOrdered.find((row) => !Number(row.is_reviewed) && !Number(row.is_confirmed));
+        const next = nextVisible.find((row) => !isReviewed(row)) ?? nextOrdered.find((row) => !isReviewed(row));
         setSelectedRowId(next?.id ?? updated.id);
       } else {
         setSelectedRowId(updated.id);
@@ -206,7 +239,8 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
 
   function selectRelative(offset: number) {
     if (!orderedRows.length) return;
-    const nextIndex = Math.min(Math.max(selectedIndex + offset, 0), orderedRows.length - 1);
+    const baseIndex = selectedIndex < 0 ? 0 : selectedIndex;
+    const nextIndex = Math.min(Math.max(baseIndex + offset, 0), orderedRows.length - 1);
     selectRow(orderedRows[nextIndex]?.id ?? null);
   }
 
@@ -263,6 +297,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               <strong>{remainingCount}</strong>
               <span>待处理</span>
             </div>
+            <div className="review-progress-pill">
+              <strong>{priorityCount}</strong>
+              <span>先看</span>
+            </div>
             <button
               className="btn btn-green"
               disabled={!selectedDocId || !rows.length}
@@ -290,6 +328,29 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                 <h3>词条</h3>
                 <span>{orderedRows.length} 条</span>
               </div>
+              <div className="review-filter-tabs" aria-label="复审范围">
+                {REVIEW_FILTERS.map((item) => {
+                  const count =
+                    item.key === "pending"
+                      ? remainingCount
+                      : item.key === "priority"
+                        ? priorityCount
+                        : item.key === "done"
+                          ? reviewedCount
+                          : rows.length;
+                  return (
+                    <button
+                      className={reviewFilter === item.key ? "is-active" : ""}
+                      key={item.key}
+                      onClick={() => setReviewFilter(item.key)}
+                      type="button"
+                    >
+                      <span>{item.label}</span>
+                      <strong>{count}</strong>
+                    </button>
+                  );
+                })}
+              </div>
               <div className="review-record-list">
                 {orderedRows.map((row, index) => (
                   <button
@@ -305,6 +366,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                     </em>
                   </button>
                 ))}
+                {!orderedRows.length ? <div className="empty-state empty-state-quiet">这个范围里暂时没有需要处理的词条。</div> : null}
               </div>
             </section>
 

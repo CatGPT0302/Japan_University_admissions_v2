@@ -1586,8 +1586,48 @@ a {
 }
 
 .review-row-list {
+  grid-template-rows: auto auto minmax(0, 1fr);
   height: calc(100vh - 150px);
   padding: 14px;
+}
+
+.review-filter-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.review-filter-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.72);
+  color: var(--text-2);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.review-filter-tabs button:hover,
+.review-filter-tabs button:focus-visible,
+.review-filter-tabs button.is-active {
+  border-color: rgba(37, 99, 235, 0.26);
+  background: rgba(239, 246, 255, 0.82);
+  color: var(--text);
+}
+
+.review-filter-tabs span {
+  font-size: 12px;
+}
+
+.review-filter-tabs strong {
+  color: inherit;
+  font-size: 13px;
 }
 
 .review-record-list {
@@ -1596,6 +1636,7 @@ a {
   gap: 8px;
   margin-top: 12px;
   padding-right: 2px;
+  overflow: auto;
 }
 
 .review-record-card {

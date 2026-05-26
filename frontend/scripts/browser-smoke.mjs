@@ -250,6 +250,7 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /人工核对/ }).click();
     await assertBodyIncludes(page, "资料队列", `${surface.name} review page`);
     await assertBodyIncludes(page, "请选择一份资料", `${surface.name} review page`);
+    await assertBodyIncludes(page, "先看", `${surface.name} review filters`);
 
     await page.getByRole("button", { name: /质量与更新/ }).click();
     await assertBodyIncludes(page, "来源登记", `${surface.name} source watchlist`);
@@ -301,6 +302,8 @@ async function runSurfaceAction(page, surface) {
   if (surface.action === "owner-review-seeded") {
     await page.getByRole("button", { name: /人工核对/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} document queue`);
+    await assertBodyIncludes(page, "待处理", `${surface.name} review filters`);
+    await assertBodyIncludes(page, "先看", `${surface.name} review filters`);
     await page.getByRole("button", { name: /东京测试大学/ }).click();
     await assertBodyIncludes(page, "ブラウザテスト学部", `${surface.name} review row`);
     await assertBodyIncludes(page, "留学生入試", `${surface.name} review row`);
