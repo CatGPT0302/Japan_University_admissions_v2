@@ -64,6 +64,7 @@ from scripts.db import (  # noqa: E402
 )
 from scripts.export_excel import export_confirmed_excel_bytes_from_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
+from scripts.quality_overview import build_quality_overview  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
 from scripts.source_review_state import update_source_review_state  # noqa: E402
@@ -1158,6 +1159,19 @@ def get_stats(request: Request) -> dict[str, Any]:
 def quality_metrics(request: Request, doc_id: int | None = None) -> dict[str, Any]:
     _require_owner(request)
     return db_get_quality_metrics(doc_id=doc_id)
+
+
+@app.get("/metrics/quality-overview")
+def quality_overview(request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    overview = build_quality_overview(include_source_text_health=False)
+    return {
+        "overall_status": overview.get("overall_status", ""),
+        "language_requirement_coverage": overview.get("language_requirement_coverage", {}),
+        "per_seed_thin_coverage": overview.get("per_seed_thin_coverage", []),
+        "quality_todo": overview.get("quality_todo", []),
+        "next_owner_action": overview.get("next_owner_action"),
+    }
 
 
 @app.get("/metrics/corrections")

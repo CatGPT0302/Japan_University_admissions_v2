@@ -3,6 +3,7 @@ import {
   getCorrectionEvents,
   getDocuments,
   getQualityMetrics,
+  getQualityOverview,
   getSourceReviewQueue,
   getSourceWatchlist,
   reextractSourceReviewItem,
@@ -15,6 +16,7 @@ import type {
   CorrectionEvent,
   DocumentListItem,
   QualityMetricsResponse,
+  QualityOverviewResponse,
   SourceReviewItem,
   SourceReviewResponse,
   SourceWatchlistResponse,
@@ -43,12 +45,29 @@ const CONTENT_LABELS: Record<string, string> = {
   enrollment_period: "入学手续",
 };
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  eju_japanese: "EJU 日语",
+  jlpt_requirement: "JLPT",
+  english_requirement: "英语要求",
+};
+
 function percent(value?: number) {
   return `${Math.round(Number(value || 0) * 100)}%`;
 }
 
 function contentLabel(value: string) {
   return CONTENT_LABELS[value] || value;
+}
+
+function languageLabel(value: string) {
+  return LANGUAGE_LABELS[value] || contentLabel(value);
+}
+
+function coverageTone(checked: number) {
+  if (checked >= 10) return "覆盖较稳";
+  if (checked >= 5) return "已有基础";
+  if (checked > 0) return "还偏薄";
+  return "未覆盖";
 }
 
 function sourceStatusText(value: string) {
@@ -156,6 +175,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<QualityMetricsResponse | null>(null);
+  const [overview, setOverview] = useState<QualityOverviewResponse | null>(null);
   const [corrections, setCorrections] = useState<CorrectionEvent[]>([]);
   const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
   const [sourceWatchlist, setSourceWatchlist] = useState<SourceWatchlistResponse | null>(null);
@@ -178,8 +198,10 @@ export default function QualityPage({ onOpenReview }: Props) {
         getSourceReviewQueue(),
         getSourceWatchlist(),
       ]);
+      const nextOverview = docId ? overview : await getQualityOverview();
       setDocuments(docs);
       setMetrics(quality);
+      if (!docId) setOverview(nextOverview);
       setCorrections(correctionRows);
       setSourceQueue(queue);
       setSourceWatchlist(watchlist);
@@ -280,6 +302,8 @@ export default function QualityPage({ onOpenReview }: Props) {
   const topCoverage = [...(metrics?.field_coverage || [])].sort((a, b) => a.fill_rate - b.fill_rate).slice(0, 8);
   const topModified = metrics?.top_modified_fields || [];
   const correctedTotal = topModified.reduce((sum, item) => sum + item.count, 0);
+  const languageCoverage = Object.entries(overview?.language_requirement_coverage || {});
+  const thinCoverageRows = overview?.per_seed_thin_coverage || [];
 
   return (
     <div className="page-shell quality-page">
@@ -608,6 +632,43 @@ export default function QualityPage({ onOpenReview }: Props) {
                 {!topCoverage.length ? <div className="empty-state empty-state-quiet">暂无可分析的整理结果。</div> : null}
               </div>
             </section>
+
+            {!selectedDoc ? (
+              <section className="quality-section quality-language-panel">
+                <div className="split-row">
+                  <div>
+                    <h3 className="panel-title">留学生要求覆盖</h3>
+                    <p className="panel-copy">这里只看人工基准里已经核过的语言要求，用来决定下一批要补看的资料。</p>
+                  </div>
+                  <span className="badge badge-blue">{overview?.overall_status === "quality_gate_ready" ? "基线可用" : "需要补看"}</span>
+                </div>
+                <div className="language-coverage-grid">
+                  {languageCoverage.map(([field, stats]) => (
+                    <article className="language-coverage-card" key={field}>
+                      <span>{languageLabel(field)}</span>
+                      <strong>{stats.checked}</strong>
+                      <p>{coverageTone(Number(stats.checked || 0))} · 通过 {stats.passed}</p>
+                    </article>
+                  ))}
+                  {!languageCoverage.length ? <div className="empty-state empty-state-quiet">暂无语言要求覆盖报告。</div> : null}
+                </div>
+                {thinCoverageRows.length ? (
+                  <div className="thin-coverage-list">
+                    <strong>下一批适合补看的地方</strong>
+                    {thinCoverageRows.slice(0, 5).map((row) => (
+                      <span key={`${row.seed}-${row.field}`}>
+                        {row.seed} · {contentLabel(row.field)} 已核 {row.checked}/{row.minimum}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="thin-coverage-list is-quiet">
+                    <strong>当前没有明显偏薄的基准项</strong>
+                    <span>后续扩充学校时，再同步补人工基准。</span>
+                  </div>
+                )}
+              </section>
+            ) : null}
 
             <section className="quality-section">
               <h3 className="panel-title">最近人工修正</h3>

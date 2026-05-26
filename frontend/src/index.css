@@ -4746,6 +4746,70 @@ a {
   border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
+.quality-language-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.language-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.language-coverage-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.language-coverage-card span,
+.language-coverage-card p,
+.thin-coverage-list span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.language-coverage-card strong {
+  color: #172033;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.language-coverage-card p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.thin-coverage-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.thin-coverage-list strong {
+  width: 100%;
+  color: #172033;
+  font-size: 14px;
+}
+
+.thin-coverage-list span {
+  padding: 7px 10px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.thin-coverage-list.is-quiet span {
+  color: #0f766e;
+  border-color: rgba(15, 118, 110, 0.14);
+  background: rgba(240, 253, 250, 0.72);
+}
+
 .quality-table,
 .quality-corrections,
 .source-review-list {
@@ -5102,6 +5166,7 @@ a {
   }
 
   .quality-grid,
+  .language-coverage-grid,
   .quality-row,
   .quality-correction p,
   .source-review-next-steps,

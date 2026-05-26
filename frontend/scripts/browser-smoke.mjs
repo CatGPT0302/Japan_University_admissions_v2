@@ -267,6 +267,7 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /质量与更新/ }).click();
     await assertBodyIncludes(page, "来源登记", `${surface.name} source watchlist`);
     await assertBodyIncludes(page, "官方来源变化", `${surface.name} source review`);
+    await assertBodyIncludes(page, "留学生要求覆盖", `${surface.name} language quality`);
     return;
   }
 

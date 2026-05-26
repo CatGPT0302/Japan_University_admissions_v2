@@ -166,6 +166,22 @@ export interface QualityMetricsResponse {
   top_modified_fields: Array<{ field: string; count: number }>;
 }
 
+export interface QualityOverviewResponse {
+  overall_status: string;
+  language_requirement_coverage: Record<string, { checked: number; passed: number }>;
+  per_seed_thin_coverage: Array<{ seed: string; field: string; checked: number; minimum: number }>;
+  quality_todo: Array<{
+    priority?: number;
+    action?: string;
+    field?: string;
+    seed?: string;
+    checked?: number;
+    minimum?: number;
+    details?: string;
+  }>;
+  next_owner_action?: Record<string, unknown> | null;
+}
+
 export interface CorrectionEvent {
   id: number;
   staging_id: number;

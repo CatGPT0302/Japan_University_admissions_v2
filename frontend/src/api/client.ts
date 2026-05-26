@@ -23,6 +23,7 @@ import type {
   FetchPdfTarget,
   PublicProgram,
   QualityMetricsResponse,
+  QualityOverviewResponse,
   RecommendationResponse,
   SourceCheckRunResponse,
   SourceReviewReextractResponse,
@@ -336,6 +337,11 @@ export async function getQualityMetrics(docId?: number): Promise<QualityMetricsR
   const { data } = await client.get<QualityMetricsResponse>("/metrics/quality", {
     params: docId ? { doc_id: docId } : undefined,
   });
+  return data;
+}
+
+export async function getQualityOverview(): Promise<QualityOverviewResponse> {
+  const { data } = await client.get<QualityOverviewResponse>("/metrics/quality-overview");
   return data;
 }
 

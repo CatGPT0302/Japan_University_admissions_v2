@@ -44,6 +44,43 @@ class SourceReviewApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
+    def test_quality_overview_requires_owner_login(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+
+            response = client.get("/metrics/quality-overview")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_quality_overview_returns_language_baseline_for_owner(self) -> None:
+        report = {
+            "overall_status": "quality_gate_ready",
+            "language_requirement_coverage": {
+                "eju_japanese": {"checked": 8, "passed": 8},
+                "jlpt_requirement": {"checked": 2, "passed": 2},
+                "english_requirement": {"checked": 6, "passed": 6},
+            },
+            "per_seed_thin_coverage": [
+                {"seed": "sample", "field": "screening_schedule", "checked": 2, "minimum": 3}
+            ],
+            "quality_todo": [],
+            "next_owner_action": None,
+        }
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            with patch.object(api, "build_quality_overview", return_value=report):
+                response = client.get("/metrics/quality-overview")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["overall_status"], "quality_gate_ready")
+        self.assertEqual(payload["language_requirement_coverage"]["eju_japanese"]["checked"], 8)
+        self.assertEqual(payload["per_seed_thin_coverage"][0]["field"], "screening_schedule")
+
     def test_source_watchlist_returns_registered_sources_for_owner(self) -> None:
         report = {
             "summary": {
