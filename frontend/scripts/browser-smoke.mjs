@@ -463,6 +463,7 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "EJU 日本语", `${surface.name} program detail`);
     await assertBodyIncludes(page, "需要提前准备", `${surface.name} preparation checklist`);
     await assertBodyIncludes(page, "下一步", `${surface.name} next step panel`);
+    await assertBodyIncludes(page, "复制这所学校", `${surface.name} copy school action`);
     await assertBodyIncludes(page, "回到学校列表", `${surface.name} return action`);
 
     const studentText = await page.locator("body").innerText({ timeout: 10_000 });

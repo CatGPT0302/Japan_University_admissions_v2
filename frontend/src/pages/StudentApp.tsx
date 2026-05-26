@@ -205,6 +205,22 @@ function preparationItems(program: PublicProgram, recommendedItems?: string[]): 
   return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean))).slice(0, 6);
 }
 
+function programShareText(program: PublicProgram, preparation: string[]): string {
+  const rows = requirementRows(program);
+  return [
+    `${program.school_name} ${formatProgramName(program)}`,
+    "",
+    ...rows.map((row) => `${row.label}: ${row.value}`),
+    preparation.length ? "" : "",
+    ...(preparation.length ? ["需要提前准备:", ...preparation.map((item) => `- ${item}`)] : []),
+    "",
+    `资料来源: ${program.source_document?.file_name || "招生资料"}`,
+    program.source_document?.pdf_url ? `来源链接: ${program.source_document.pdf_url}` : "",
+  ]
+    .filter((line, index, lines) => line || (index > 0 && lines[index - 1]))
+    .join("\n");
+}
+
 function ChoicePicker({
   label,
   value,
@@ -288,6 +304,7 @@ export default function StudentApp() {
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -395,6 +412,18 @@ export default function StudentApp() {
 
   function togglePicker(key: PickerKey) {
     setExpandedPickers((current) => ({ ...current, [key]: !current[key] }));
+  }
+
+  async function copyActiveProgram() {
+    if (!activeProgram) return;
+    const text = programShareText(activeProgram, activePreparationItems);
+    setCopyMessage("");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyMessage("已复制这所学校的要求。");
+    } catch {
+      setCopyMessage("浏览器没有开放复制权限，可以手动选择页面内容。");
+    }
   }
 
   const activeProgram = selectedProgram;
@@ -695,6 +724,10 @@ export default function StudentApp() {
                     <p>先确认时间、考试科目和材料准备。需要继续比较时，可以回到学校列表换一所看。</p>
                   </div>
 
+                  {copyMessage ? <div className="student-message student-message-success">{copyMessage}</div> : null}
+                  <button className="student-soft-button student-return-button" type="button" onClick={() => void copyActiveProgram()}>
+                    复制这所学校
+                  </button>
                   <button className="student-primary-button student-return-button" type="button" onClick={() => setActiveTab("explore")}>
                     回到学校列表
                   </button>
