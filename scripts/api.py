@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.agent_workflow import AgentRequest, run_agent_workflow  # noqa: E402
 from scripts import fetch_pdfs as fetch_pdfs  # noqa: E402
 from scripts import full_vision_extractor as full_vision_extractor  # noqa: E402
+from scripts.check_source_updates import check_watchlist_sources  # noqa: E402
 from scripts.db import (  # noqa: E402
     confirm_all_by_doc,
     create_consultation_booking,
@@ -60,6 +61,7 @@ from scripts.db import (  # noqa: E402
 from scripts.export_excel import export_excel_bytes_from_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
+from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
 from scripts.validator import validate  # noqa: E402
 
 ensure_runtime_dirs()
@@ -987,6 +989,24 @@ def quality_metrics(request: Request, doc_id: int | None = None) -> dict[str, An
 def correction_events(request: Request, doc_id: int | None = None, limit: int = 100) -> list[dict[str, Any]]:
     _require_owner(request)
     return db_get_correction_events(doc_id=doc_id, limit=limit)
+
+
+@app.get("/admin/source-review-queue")
+def source_review_queue(request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    return build_change_report(load_review_queue())
+
+
+@app.post("/admin/source-checks/run")
+def run_source_checks(request: Request, limit: int | None = None) -> dict[str, Any]:
+    _require_owner(request)
+    report = check_watchlist_sources(limit=limit if limit and limit > 0 else None)
+    queue = build_change_report(load_review_queue())
+    return {
+        "checked_at": report.get("checked_at", ""),
+        "summary": report.get("summary", {}),
+        "review_queue": queue,
+    }
 
 
 @app.get("/export/excel")

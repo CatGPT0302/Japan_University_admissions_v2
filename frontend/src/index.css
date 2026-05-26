@@ -3914,10 +3914,63 @@ a {
 }
 
 .quality-table,
-.quality-corrections {
+.quality-corrections,
+.source-review-list {
   display: grid;
   gap: 10px;
   margin-top: 14px;
+}
+
+.source-review-panel {
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.6);
+}
+
+.source-review-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.source-review-summary div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.source-review-summary span,
+.source-review-actions span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.source-review-summary strong {
+  color: #172033;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.source-review-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.source-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .quality-row {
@@ -4042,7 +4095,8 @@ a {
 
   .quality-grid,
   .quality-row,
-  .quality-correction p {
+  .quality-correction p,
+  .source-review-summary {
     grid-template-columns: 1fr;
   }
 

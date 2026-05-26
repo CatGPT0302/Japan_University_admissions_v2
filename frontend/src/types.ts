@@ -180,6 +180,42 @@ export interface CorrectionEvent {
   created_at: string;
 }
 
+export interface SourceReviewItem {
+  stem: string;
+  university: string;
+  admission_year: string;
+  admission_type: string;
+  source_url: string;
+  status: "changed" | "failed" | "marker_mismatch" | "not_pdf" | string;
+  old_sha256?: string;
+  new_sha256?: string;
+  checked_at: string;
+  error?: string;
+  missing_markers?: string[];
+  recommended_action: string;
+  confirmed_records_unchanged: boolean;
+}
+
+export interface SourceReviewResponse {
+  generated_at: string;
+  summary: {
+    needs_review: number;
+    changed?: number;
+    failed?: number;
+    marker_mismatch?: number;
+    not_pdf?: number;
+    [key: string]: number | undefined;
+  };
+  items: SourceReviewItem[];
+  confirmed_records_unchanged: boolean;
+}
+
+export interface SourceCheckRunResponse {
+  checked_at: string;
+  summary: Record<string, number>;
+  review_queue: SourceReviewResponse;
+}
+
 export interface UploadResponse {
   file_name: string;
   original_file_name?: string;

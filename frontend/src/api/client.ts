@@ -21,6 +21,8 @@ import type {
   PublicProgram,
   QualityMetricsResponse,
   RecommendationResponse,
+  SourceCheckRunResponse,
+  SourceReviewResponse,
   StagingRecord,
   StatsResponse,
   StudentProfile,
@@ -292,6 +294,18 @@ export async function getCorrectionEvents(params?: {
 }): Promise<CorrectionEvent[]> {
   const { data } = await client.get<CorrectionEvent[]>("/metrics/corrections", {
     params,
+  });
+  return data;
+}
+
+export async function getSourceReviewQueue(): Promise<SourceReviewResponse> {
+  const { data } = await client.get<SourceReviewResponse>("/admin/source-review-queue");
+  return data;
+}
+
+export async function runSourceChecks(limit?: number): Promise<SourceCheckRunResponse> {
+  const { data } = await client.post<SourceCheckRunResponse>("/admin/source-checks/run", undefined, {
+    params: limit ? { limit } : undefined,
   });
   return data;
 }
