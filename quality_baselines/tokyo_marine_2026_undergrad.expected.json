@@ -1,0 +1,101 @@
+[
+  {
+    "id": "tokyo-marine-2026-marine-bioresources",
+    "source_document": "https://www.kaiyodai.ac.jp/upload-file/4bf4353ccc4bc6c8427eaad38d44488a88ab62ae.pdf",
+    "source_note": "Official Tokyo University of Marine Science and Technology 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU subjects, English requirements, application procedure, documents, selection method, and result dates.",
+    "match": {"university": "東京海洋大学", "admission_year": "2026", "faculty": "海洋生命科学部", "department": "海洋生物資源学科"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "2月4日", "17:00郵送必着", "1月23日", "16:00"]},
+      "deadline_rule": {"contains": ["マイページ登録", "検定料支払いだけでは", "書留速達郵便", "直接持参", "受け付けない"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程", "2026年3月31日", "出願できない"]},
+      "required_documents": {"contains": ["入学志願票", "英語資格検定証明書", "志望理由書", "日本留学試験", "住民票", "パスポート"]},
+      "eju_session": {"contains": ["2025年度", "日本留学試験", "出題言語", "日本語"]},
+      "eju_japanese": {"contains": ["海洋生命科学部", "日本語"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["理科", "2科目選択", "物理"]},
+      "eju_chemistry": {"contains": ["理科", "2科目選択", "化学"]},
+      "eju_biology": {"contains": ["理科", "2科目選択", "生物"]},
+      "english_requirement": {"contains": ["TOEIC", "400点以上", "TOEFL iBT 40点以上", "IELTS 3.5", "英検準2級", "TEAP"]},
+      "screening_method": {"contains": ["大学入学共通テストを免除", "個別テスト", "面接", "日本留学試験", "英語資格検定資料は判定資料から除く"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "品川キャンパス", "10:00-12:00", "13:30-15:30", "16:00"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "enrollment_period": {"contains": ["2026年3月9日", "3月15日", "2026年4月1日"]},
+      "evidence": {"contains": ["p.1", "p.17", "p.18-p.19", "p.19-p.22", "p.23-p.24"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tokyo-marine-2026-food-science",
+    "source_document": "https://www.kaiyodai.ac.jp/upload-file/4bf4353ccc4bc6c8427eaad38d44488a88ab62ae.pdf",
+    "source_note": "Official Tokyo University of Marine Science and Technology 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU subjects, English requirements, application procedure, documents, selection method, and result dates.",
+    "match": {"university": "東京海洋大学", "admission_year": "2026", "faculty": "海洋生命科学部", "department": "食品生産科学科"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "2月4日", "17:00郵送必着"]},
+      "deadline_rule": {"contains": ["インターネット出願登録", "書留速達郵便", "直接持参"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年の課程", "在留資格"]},
+      "required_documents": {"contains": ["入学志願票", "英語資格検定証明書", "志望理由書", "履歴書", "日本留学試験"]},
+      "eju_session": {"contains": ["2025年度", "出題言語", "日本語"]},
+      "eju_japanese": {"contains": ["海洋生命科学部", "日本語"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["理科", "2科目選択"]},
+      "eju_chemistry": {"contains": ["理科", "2科目選択"]},
+      "eju_biology": {"contains": ["理科", "2科目選択"]},
+      "english_requirement": {"contains": ["TOEIC-IP", "TOEFL-ITP", "GTEC", "ケンブリッジ英語検定120点以上"]},
+      "screening_method": {"contains": ["日本語", "英語", "数学", "物理", "化学", "生物"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "品川キャンパス", "面接"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "enrollment_period": {"contains": ["2026年3月9日", "3月15日", "2026年4月1日"]},
+      "evidence": {"contains": ["p.17", "p.18-p.19", "p.23-p.24"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tokyo-marine-2026-marine-environment",
+    "source_document": "https://www.kaiyodai.ac.jp/upload-file/4bf4353ccc4bc6c8427eaad38d44488a88ab62ae.pdf",
+    "source_note": "Official Tokyo University of Marine Science and Technology 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU subjects, English requirements, application procedure, documents, selection method, and result dates.",
+    "match": {"university": "東京海洋大学", "admission_year": "2026", "faculty": "海洋資源環境学部", "department": "海洋環境科学科"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "2月4日", "17:00郵送必着"]},
+      "deadline_rule": {"contains": ["検定料支払いだけでは", "書留速達郵便", "直接持参"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程", "2026年3月31日"]},
+      "required_documents": {"contains": ["入学志願票", "英語資格検定証明書", "卒業証明書", "成績証明書", "住民票"]},
+      "eju_session": {"contains": ["2025年度", "日本留学試験", "日本語"]},
+      "eju_japanese": {"contains": ["海洋資源環境学部", "日本語"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["理科", "2科目選択", "物理"]},
+      "eju_chemistry": {"contains": ["理科", "2科目選択", "化学"]},
+      "eju_biology": {"contains": ["理科", "2科目選択", "生物"]},
+      "english_requirement": {"contains": ["TOEIC", "TOEFL iBT", "IELTS", "英検準2級", "TEAP CBT"]},
+      "screening_method": {"contains": ["大学入学共通テストを免除", "個別テスト", "面接", "提出書類"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "品川キャンパス", "10:00-12:00", "16:00"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "enrollment_period": {"contains": ["2026年3月9日", "3月15日", "2026年4月1日"]},
+      "evidence": {"contains": ["p.17", "p.18-p.19", "p.23-p.24"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tokyo-marine-2026-marine-engineering",
+    "source_document": "https://www.kaiyodai.ac.jp/upload-file/4bf4353ccc4bc6c8427eaad38d44488a88ab62ae.pdf",
+    "source_note": "Official Tokyo University of Marine Science and Technology 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU subjects, application procedure, documents, selection method, scoring, and result dates.",
+    "match": {"university": "東京海洋大学", "admission_year": "2026", "faculty": "海洋工学部"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "2月4日", "17:00郵送必着", "1月23日", "16:00"]},
+      "deadline_rule": {"contains": ["マイページ登録", "検定料支払いだけでは", "書留速達郵便", "直接持参"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程", "2026年3月31日", "出願できない"]},
+      "required_documents": {"contains": ["入学志願票", "志望理由書", "履歴書", "日本留学試験", "確認書", "住民票"]},
+      "eju_session": {"contains": ["2025年度", "日本留学試験", "出題言語", "日本語"]},
+      "eju_japanese": {"contains": ["海洋工学部", "日本語"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["物理"]},
+      "eju_chemistry": {"contains": ["化学"]},
+      "english_requirement": {"contains": ["英語資格", "検定試験", "出願要件は無し"]},
+      "screening_method": {"contains": ["大学入学共通テストを免除", "数学300点", "英語100点", "面接200点", "物理150点", "化学150点", "600点以上"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "越中島キャンパス", "10:00-12:00", "13:30-14:00", "14:30"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "enrollment_period": {"contains": ["2026年3月9日", "3月15日", "2026年4月1日"]},
+      "evidence": {"contains": ["p.25", "p.26-p.28", "p.29-p.30"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

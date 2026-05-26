@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "tokyo_marine_2026_undergrad",
+  "source_url": "https://www.kaiyodai.ac.jp/upload-file/4bf4353ccc4bc6c8427eaad38d44488a88ab62ae.pdf",
+  "cached_path": "data/uploads/tokyo_marine_2026_undergrad.pdf",
+  "sha256": "3ddc4ee450897403dc11b2fa376ac65eb126fcc324d2fb22c1a6dddf36cbe2b1",
+  "size_bytes": 2768721,
+  "markers": [
+    "令和",
+    "私費外国人留学生特別入試",
+    "日本留学試験",
+    "出願期間"
+  ],
+  "checked_at": "2026-05-26T03:22:44+00:00"
+}

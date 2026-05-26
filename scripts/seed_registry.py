@@ -14,6 +14,7 @@ from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_me
 from scripts.osaka_university_2026_undergrad_extractor import extract_osaka_university_2026_undergrad_records
 from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
 from scripts.tohoku_2026_undergrad_extractor import extract_tohoku_2026_undergrad_records
+from scripts.tokyo_marine_2026_undergrad_extractor import extract_tokyo_marine_2026_undergrad_records
 from scripts.tokyo_metropolitan_2026_undergrad_extractor import extract_tokyo_metropolitan_2026_undergrad_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
@@ -203,6 +204,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["東京都立大学", "私費外国人留学生入試", "日本留学試験", "TOEFL"],
         "text_markers": ["東京都立大学", "私費外国人留学生入試", "日本留学試験", "TOEFL"],
         "extractor": extract_tokyo_metropolitan_2026_undergrad_records,
+    },
+    "tokyo_marine_2026_undergrad": {
+        "stem": "tokyo_marine_2026_undergrad",
+        "id": "tokyo-marine-2026-undergrad",
+        "university": "東京海洋大学",
+        "admission_year": "2026",
+        "script": "scripts/tokyo_marine_2026_undergrad_extractor.py",
+        "expected_path": "quality_baselines/tokyo_marine_2026_undergrad.expected.json",
+        "source_url": "https://www.kaiyodai.ac.jp/upload-file/4bf4353ccc4bc6c8427eaad38d44488a88ab62ae.pdf",
+        "source_candidates": ["data/uploads/tokyo_marine_2026_undergrad.pdf"],
+        "source_markers": ["東京海洋大学", "私費外国人留学生特別入試", "日本留学試験", "出願期間"],
+        "text_markers": ["東京海洋大学", "私費外国人留学生特別入試", "日本留学試験", "海洋工学部"],
+        "extractor": extract_tokyo_marine_2026_undergrad_records,
     },
 }
 
