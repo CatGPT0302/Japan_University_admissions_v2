@@ -20,17 +20,9 @@ const surfaces = [
     expect: ["登录资料中心", "邮箱", "密码"],
     login: ownerCredentials,
     afterLoginExpect: ["招生资料中心", "资料生产", "资料库"],
+    action: "owner-core-pages",
     reject: ["学生・家长入口", "登录服务中心"],
     afterLoginReject: ["学生・家长入口", "登录服务中心"],
-  },
-  {
-    name: "owner-service",
-    path: "/",
-    expect: ["登录资料中心", "邮箱", "密码"],
-    login: ownerCredentials,
-    afterLoginExpect: ["合作方服务中心", "今日待办", "资料进度"],
-    reject: ["学生・家长入口", "登录服务中心"],
-    afterLoginReject: ["学生・家长入口", "招生资料中心"],
   },
   {
     name: "partner",
@@ -38,8 +30,19 @@ const surfaces = [
     expect: ["登录服务中心", "提交资料、查看整理进度。"],
     login: partnerCredentials,
     afterLoginExpect: ["提交资料，看整理进度", "服务中心", "整理进度"],
+    action: "partner-submission",
     reject: ["招生资料中心", "学生・家长入口"],
     afterLoginReject: ["招生资料中心", "Owner 管理"],
+  },
+  {
+    name: "owner-service",
+    path: "/",
+    expect: ["登录资料中心", "邮箱", "密码"],
+    login: ownerCredentials,
+    afterLoginExpect: ["合作方服务中心", "今日待办", "资料进度"],
+    action: "owner-service-queue",
+    reject: ["学生・家长入口", "登录服务中心"],
+    afterLoginReject: ["学生・家长入口", "招生资料中心"],
   },
   {
     name: "student",
@@ -188,6 +191,58 @@ async function launchBrowser() {
   return chromium.launch({ headless: true });
 }
 
+async function assertBodyIncludes(page, expected, label) {
+  await page.waitForFunction(
+    (value) => document.body.innerText.includes(value),
+    expected,
+    { timeout: 10_000 },
+  );
+  const text = await page.locator("body").innerText({ timeout: 10_000 });
+  if (!text.includes(expected)) {
+    throw new Error(`${label} missing visible text: ${expected}\nVisible text:\n${text.slice(0, 1200)}`);
+  }
+  return text;
+}
+
+async function runSurfaceAction(page, surface) {
+  if (surface.action === "owner-core-pages") {
+    await page.getByRole("button", { name: /导出中心/ }).click();
+    await assertBodyIncludes(page, "单校快速取出", `${surface.name} export page`);
+    await assertBodyIncludes(page, "批量合并取出", `${surface.name} export page`);
+
+    await page.getByRole("button", { name: /人工核对/ }).click();
+    await assertBodyIncludes(page, "资料队列", `${surface.name} review page`);
+    await assertBodyIncludes(page, "请选择一份资料", `${surface.name} review page`);
+    return;
+  }
+
+  if (surface.action === "partner-submission") {
+    await page.locator("input").nth(0).fill("东京测试大学");
+    await page.locator("input").nth(1).fill("2027");
+    await page.locator("input").nth(2).fill("https://example.edu/tokyo-test-2027.pdf");
+    await page.locator("input").nth(3).fill("https://example.edu/admissions");
+    await page.locator("textarea").fill("浏览器 smoke 提交：外国人留学生入试资料");
+    const submissionResponsePromise = page.waitForResponse((response) => response.url().endsWith("/partner/submissions"), {
+      timeout: 10_000,
+    });
+    await page.locator("form button[type='submit']").click();
+    const submissionResponse = await submissionResponsePromise;
+    if (!submissionResponse.ok()) {
+      throw new Error(`${surface.name} submission failed with ${submissionResponse.status()}`);
+    }
+    await page.waitForLoadState("networkidle");
+    await assertBodyIncludes(page, "资料已提交", `${surface.name} submission`);
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} progress`);
+    return;
+  }
+
+  if (surface.action === "owner-service-queue") {
+    await page.getByRole("button", { name: /资料进度/ }).click();
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} queue`);
+    await assertBodyIncludes(page, "开始整理", `${surface.name} queue`);
+  }
+}
+
 async function checkSurface(browser, surface, port) {
   console.log(`\n[browser-smoke] building ${surface.name}`);
   await command("npm", ["run", "build"], {
@@ -234,17 +289,16 @@ async function checkSurface(browser, surface, port) {
       }
       await page.waitForLoadState("networkidle");
       await page.waitForFunction(() => !document.body.innerText.includes("正在登录"), undefined, { timeout: 10_000 });
-      const afterLoginText = await page.locator("body").innerText({ timeout: 10_000 });
       for (const expected of surface.afterLoginExpect || []) {
-        if (!afterLoginText.includes(expected)) {
-          throw new Error(`${surface.name} missing logged-in text: ${expected}\nVisible text:\n${afterLoginText.slice(0, 1200)}`);
-        }
+        await assertBodyIncludes(page, expected, `${surface.name} logged-in`);
       }
+      const afterLoginText = await page.locator("body").innerText({ timeout: 10_000 });
       for (const blocked of surface.afterLoginReject || []) {
         if (afterLoginText.includes(blocked)) {
           throw new Error(`${surface.name} leaked logged-in text from another surface: ${blocked}`);
         }
       }
+      await runSurfaceAction(page, surface);
     }
 
     const seriousErrors = consoleErrors.filter(

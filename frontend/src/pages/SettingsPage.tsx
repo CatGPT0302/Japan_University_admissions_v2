@@ -99,10 +99,10 @@ export default function SettingsPage() {
     setMessage("");
     try {
       await createPartnerSubmission(form);
-      setMessage("资料已提交。你可以在整理进度里查看后续状态。");
       setForm({ university: "", admission_year: form.admission_year, pdf_url: "", page_url: "", notes: "" });
       setSection("progress");
       await load();
+      setMessage("资料已提交。你可以在整理进度里查看后续状态。");
     } catch (error) {
       setMessage(toErrorMessage(error));
     }
