@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,8 @@ except Exception:
     pass
 
 from scripts.seed_registry import registered_seed_extractors  # noqa: E402
+
+STALE_CHECK_DAYS = 30
 
 
 def _read_json(path: Path) -> Any:
@@ -110,15 +113,39 @@ def build_source_watchlist(
     return items
 
 
-def summarize_watchlist(items: list[dict[str, Any]]) -> dict[str, Any]:
+def _parse_checked_at(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def summarize_watchlist(
+    items: list[dict[str, Any]],
+    *,
+    now: datetime | None = None,
+    stale_days: int = STALE_CHECK_DAYS,
+) -> dict[str, Any]:
     by_type: dict[str, int] = {}
+    now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    stale_cutoff = now_utc.timestamp() - max(1, int(stale_days)) * 24 * 60 * 60
     gaps = {
         "missing_source_url": 0,
         "missing_source_type": 0,
         "missing_hash": 0,
         "missing_last_checked_at": 0,
         "missing_source_note": 0,
+        "stale_last_checked_at": 0,
     }
+    oldest_checked_at = ""
     for item in items:
         source_type = str(item.get("source_type") or "unknown")
         by_type[source_type] = by_type.get(source_type, 0) + 1
@@ -128,11 +155,23 @@ def summarize_watchlist(items: list[dict[str, Any]]) -> dict[str, Any]:
             gaps["missing_source_type"] += 1
         if not str(item.get("last_known_sha256") or "").strip():
             gaps["missing_hash"] += 1
-        if not str(item.get("last_checked_at") or "").strip():
+        checked_at = _parse_checked_at(item.get("last_checked_at"))
+        if not checked_at:
             gaps["missing_last_checked_at"] += 1
+        else:
+            if checked_at.timestamp() < stale_cutoff:
+                gaps["stale_last_checked_at"] += 1
+            if not oldest_checked_at or checked_at.isoformat() < oldest_checked_at:
+                oldest_checked_at = checked_at.isoformat()
         if not str(item.get("source_note") or "").strip():
             gaps["missing_source_note"] += 1
-    return {"total": len(items), "by_type": by_type, "metadata_gaps": gaps}
+    return {
+        "total": len(items),
+        "by_type": by_type,
+        "metadata_gaps": gaps,
+        "stale_check_days": stale_days,
+        "oldest_checked_at": oldest_checked_at,
+    }
 
 
 def build_watchlist_report(*, root: Path = ROOT) -> dict[str, Any]:

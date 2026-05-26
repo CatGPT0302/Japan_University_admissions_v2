@@ -262,6 +262,8 @@ export interface SourceWatchlistResponse {
     total: number;
     by_type: Record<string, number>;
     metadata_gaps: Record<string, number>;
+    stale_check_days?: number;
+    oldest_checked_at?: string;
   };
   items: SourceWatchlistItem[];
 }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -93,6 +94,36 @@ class SourceWatchlistTest(unittest.TestCase):
         self.assertEqual(summary["metadata_gaps"]["missing_source_url"], 1)
         self.assertEqual(summary["metadata_gaps"]["missing_hash"], 1)
         self.assertEqual(summary["metadata_gaps"]["missing_source_note"], 1)
+
+    def test_reports_sources_that_have_not_been_checked_recently(self) -> None:
+        from scripts.source_watchlist import summarize_watchlist
+
+        summary = summarize_watchlist(
+            [
+                {
+                    "stem": "old",
+                    "source_url": "https://example.test/old.pdf",
+                    "source_type": "pdf",
+                    "last_known_sha256": "a" * 64,
+                    "last_checked_at": "2026-04-01T00:00:00+00:00",
+                    "source_note": "Official source.",
+                },
+                {
+                    "stem": "fresh",
+                    "source_url": "https://example.test/fresh.pdf",
+                    "source_type": "pdf",
+                    "last_known_sha256": "b" * 64,
+                    "last_checked_at": "2026-05-20T00:00:00+00:00",
+                    "source_note": "Official source.",
+                },
+            ],
+            now=datetime(2026, 5, 26, tzinfo=timezone.utc),
+            stale_days=30,
+        )
+
+        self.assertEqual(summary["metadata_gaps"]["stale_last_checked_at"], 1)
+        self.assertEqual(summary["stale_check_days"], 30)
+        self.assertEqual(summary["oldest_checked_at"], "2026-04-01T00:00:00+00:00")
 
 
 if __name__ == "__main__":

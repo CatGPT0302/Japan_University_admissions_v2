@@ -144,6 +144,7 @@ function watchlistGapText(value: string) {
   if (value === "missing_hash") return "缺保存凭证";
   if (value === "missing_last_checked_at") return "缺最近检查";
   if (value === "missing_source_note") return "缺来源说明";
+  if (value === "stale_last_checked_at") return "超过30天未检查";
   return value;
 }
 
@@ -429,6 +430,19 @@ export default function QualityPage({ onOpenReview }: Props) {
                     ) : (
                       <span className="badge badge-green">来源登记完整</span>
                     )}
+                  </div>
+                </div>
+                <div className="source-watch-block">
+                  <span>维护节奏</span>
+                  <div className="source-watch-chips">
+                    {Number(watchSummary.metadata_gaps?.stale_last_checked_at || 0) > 0 ? (
+                      <span className="badge badge-amber">
+                        {watchSummary.metadata_gaps.stale_last_checked_at} 份超过 {watchSummary.stale_check_days || 30} 天未检查
+                      </span>
+                    ) : (
+                      <span className="badge badge-green">最近检查节奏正常</span>
+                    )}
+                    {watchSummary.oldest_checked_at ? <span className="badge badge-gray">最早 {watchSummary.oldest_checked_at.slice(0, 10)}</span> : null}
                   </div>
                 </div>
               </div>
