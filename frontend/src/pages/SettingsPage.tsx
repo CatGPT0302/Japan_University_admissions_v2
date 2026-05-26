@@ -111,10 +111,10 @@ export default function SettingsPage() {
   return (
     <div className="settings-shell-ios settings-page partner-console">
       <header className="settings-topbar partner-topbar">
-        <a className="settings-brand" href="#/settings" aria-label="私塾服务中心">
+        <a className="settings-brand" href="#/settings" aria-label="合作方服务中心">
           <span>
             <strong>服务中心</strong>
-            <small>{center?.organization.name || "私塾后台"}</small>
+            <small>{center?.organization.name || "资料提交入口"}</small>
           </span>
         </a>
       </header>
@@ -122,9 +122,9 @@ export default function SettingsPage() {
       <main className="settings-main partner-main">
         <section className="settings-hero settings-dashboard-hero partner-hero">
           <div>
-            <p className="section-kicker">私塾后台</p>
+            <p className="section-kicker">合作方入口</p>
             <h2>提交资料，看整理进度</h2>
-            <p>这里是给合作私塾使用的入口。你可以提交招生资料、查看整理进度，也可以把接入信息交给负责系统的人。</p>
+            <p>这里是给合作方使用的入口。你可以提交招生资料、查看整理进度，也可以把接入信息交给负责系统的人。</p>
           </div>
           <div className="settings-status-card is-ready">
             <span>当前资料</span>
@@ -275,7 +275,7 @@ export default function SettingsPage() {
             {section === "account" ? (
               <section className="settings-panel partner-panel">
                 <p className="section-kicker">账号信息</p>
-                <h3>{center?.organization.name || "合作私塾"}</h3>
+                <h3>{center?.organization.name || "合作方"}</h3>
                 <div className="settings-info-list">
                   <div className="settings-copy-row">
                     <span>服务状态</span>

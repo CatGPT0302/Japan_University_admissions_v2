@@ -2,10 +2,10 @@
 
 ## Now
 
-- Stabilize the private-school service center as the first usable cooperation flow.
-- Keep owner/admin, private-school settings, and student frontend visually and semantically separate.
+- Stabilize the partner service center as the first usable cooperation flow.
+- Keep owner/admin, partner service center, and student frontend visually and semantically separate.
 - Keep `/public/*` and `/v1/*` reading confirmed admissions data only.
-- Keep private-school submissions owner-controlled: submitted material enters a queue, extraction can be started by owner/admin, and final confirmation stays in the admin review flow.
+- Keep partner submissions owner-controlled: submitted material enters a queue, extraction can be started by owner/admin, and final confirmation stays in the admin review flow.
 - Remove user-facing engineering wording from the frontend.
 
 ## Next
@@ -27,6 +27,6 @@
 
 -倍率数据
 - Full SaaS tenant management
-- Private-school self-confirmation into the master database
-- Full database export for private schools
-- Rebuilding the extraction workflow as a separate skill
+- Partner self-confirmation into the master database
+- Full database export for partner users
+- Rebuilding the extraction workflow as a separate packaged tool

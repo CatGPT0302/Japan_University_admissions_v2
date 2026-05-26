@@ -702,7 +702,7 @@ def _ensure_staging_columns(conn) -> None:
 
 def _ensure_auth_seed() -> None:
     owner_org = get_or_create_organization("Owner Workspace")
-    partner_org = get_or_create_organization(os.environ.get("PARTNER_ORG_NAME", "合作私塾"))
+    partner_org = get_or_create_organization(os.environ.get("PARTNER_ORG_NAME", "合作方"))
     owner_email = os.environ.get("OWNER_EMAIL", "").strip().lower()
     owner_password = os.environ.get("OWNER_PASSWORD", "")
     partner_email = os.environ.get("PARTNER_EMAIL", "").strip().lower()
@@ -720,7 +720,7 @@ def _ensure_auth_seed() -> None:
             email=partner_email,
             password=partner_password,
             role="partner_staff",
-            display_name=os.environ.get("PARTNER_DISPLAY_NAME", "私塾负责人"),
+            display_name=os.environ.get("PARTNER_DISPLAY_NAME", "合作方负责人"),
             organization_id=int(partner_org["id"]),
         )
 

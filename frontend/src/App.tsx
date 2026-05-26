@@ -67,7 +67,7 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
   return (
     <div className="login-shell">
       <form className="login-card" onSubmit={(event) => void submit(event)}>
-        <p className="section-kicker">{expectedRole === "partner_staff" ? "私塾后台" : "Owner 工作台"}</p>
+        <p className="section-kicker">{expectedRole === "partner_staff" ? "合作方入口" : "Owner 工作台"}</p>
         <h1>{expectedRole === "partner_staff" ? "登录服务中心" : "登录资料中心"}</h1>
         <p>{expectedRole === "partner_staff" ? "提交资料、查看整理进度。" : "上传、整理、核对和维护正式资料。"}</p>
         <label className="field-wrap">

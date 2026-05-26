@@ -22,7 +22,7 @@ const OWNER_PARTNER_ROUTE = `#/${String(import.meta.env.VITE_OWNER_PARTNER_ROUTE
 
 const SECTIONS: Array<{ key: SettingsSection; label: string; hint: string }> = [
   { key: "overview", label: "今日待办", hint: "按顺序走" },
-  { key: "access", label: "开通一家私塾", hint: "输入名称" },
+  { key: "access", label: "开通合作方", hint: "输入名称" },
   { key: "documents", label: "资料进度", hint: "谁交了什么" },
   { key: "activity", label: "使用情况", hint: "有没有用上" },
   { key: "handoff", label: "复制给对方", hint: "发给负责人" },
@@ -136,7 +136,7 @@ export default function SettingsPage() {
     {
       done: canConnect,
       title: canConnect ? "合作方已经开通" : "先开通一家合作方",
-      note: canConnect ? "可以把信息发给对方了。" : "输入私塾名称，生成一份专用密码。",
+      note: canConnect ? "可以把信息发给对方了。" : "输入合作方名称，生成一份专用密码。",
     },
     {
       done: canCopyGuide,
@@ -221,7 +221,7 @@ export default function SettingsPage() {
         <header className="settings-topbar">
           <a className="settings-brand" href={OWNER_PARTNER_ROUTE} aria-label="合作方管理首页">
             <span>
-              <strong>合作私塾</strong>
+              <strong>合作方</strong>
               <small>Owner 管理</small>
             </span>
           </a>
@@ -242,7 +242,7 @@ export default function SettingsPage() {
       <header className="settings-topbar">
         <a className="settings-brand" href={OWNER_PARTNER_ROUTE} aria-label="合作方管理首页">
           <span>
-            <strong>合作私塾</strong>
+            <strong>合作方</strong>
             <small>Owner 管理</small>
           </span>
         </a>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
         <section className="settings-hero settings-dashboard-hero">
           <div>
             <p className="section-kicker">设置</p>
-            <h2>私塾服务中心</h2>
+            <h2>合作方服务中心</h2>
             <p>先开通合作方，再让对方提交资料。收到资料后，你在这里安排整理和确认。</p>
           </div>
           <div className={`settings-status-card${canConnect ? " is-ready" : ""}`}>
@@ -307,13 +307,13 @@ export default function SettingsPage() {
               </div>
               <div className="settings-plain-intro">
                 <strong>一句话说明</strong>
-                <p>这是给合作私塾用的入口。你负责开通和确认数据，对方负责提交资料或录入学生信息。</p>
+                <p>这是给合作方使用的入口。你负责开通和确认数据，对方负责提交资料或录入学生信息。</p>
               </div>
               <div className="settings-action-grid">
                 <button className="settings-action-card" type="button" onClick={() => setSection("access")}>
                   <span>1</span>
-                  <strong>输入私塾名称</strong>
-                  <p>给这家私塾生成一份只给它用的密码。</p>
+                  <strong>输入合作方名称</strong>
+                  <p>给这个合作方生成一份只给它用的密码。</p>
                 </button>
                 <button className="settings-action-card" type="button" onClick={() => setSection("handoff")}>
                   <span>2</span>
@@ -345,7 +345,7 @@ export default function SettingsPage() {
               <div className="settings-section-head">
                 <div>
                   <p className="section-kicker">第一步</p>
-                  <h3>要开通哪家私塾？</h3>
+                  <h3>要开通哪个合作方？</h3>
                   <p>输入对方名称，页面会生成一份只给这家使用的专用密码。</p>
                 </div>
                 <span className="settings-pill">{statusLabel(latestKey?.status || "")}</span>

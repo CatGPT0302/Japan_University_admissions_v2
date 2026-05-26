@@ -298,7 +298,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                 <div className="card-kicker">{selectedDoc ? "单份资料" : "整体概览"}</div>
                 <h3 className="panel-title">{selectedDoc?.university_name || "资料稳定性"}</h3>
                 <p className="panel-copy">
-                  {loading ? "正在更新质量报告..." : selectedDoc?.filename || "用于判断抽取稳定性，不对学生或私塾展示。"}
+                  {loading ? "正在更新质量报告..." : selectedDoc?.filename || "用于判断抽取稳定性，不对学生或合作方展示。"}
                 </p>
               </div>
               <button className="btn btn-ghost" type="button" onClick={() => void load(selectedDocId)}>

@@ -161,4 +161,4 @@ The owner workspace has an `抽取质量` page. It uses:
 - `GET /metrics/quality`
 - `GET /metrics/corrections`
 
-This page must stay owner-only. It should not appear in the private-school service center or the student/parent frontend.
+This page must stay owner-only. It should not appear in the partner service center or the student/parent frontend.

@@ -7,7 +7,7 @@ admissions_v2 is an owner-hosted Japanese university admissions system.
 It has three product surfaces:
 
 - Owner/admin workspace: upload admissions PDFs or source URLs, run extraction, review uncertain content, confirm records, and export the master Excel workbook.
-- Private-school service center: issue limited access, receive submitted PDFs or links, track processing progress, and keep final data confirmation under the owner.
+- Partner service center: issue limited access, receive submitted PDFs or links, track processing progress, and keep final data confirmation under the owner.
 - Student/parent frontend: collect a student's profile, show schools worth checking, explain requirements in plain language, and accept consultation bookings.
 
 The project is not a pure OCR tool and is no longer only a local extraction MVP. The core data and extraction workflow stay owner-controlled.
@@ -15,7 +15,7 @@ The project is not a pure OCR tool and is no longer only a local extraction MVP.
 ## Current Workflow
 
 ```text
-Private school or owner submits source material
+Partner user or owner submits source material
 -> system stores the submission
 -> owner starts the existing extraction workflow
 -> extracted content enters review
@@ -29,7 +29,7 @@ Use separate deployments/sites for the three systems. They can share this reposi
 
 - Owner data workspace site: `VITE_APP_SURFACE=owner`
 - Owner partner-management site: `VITE_APP_SURFACE=owner-service`
-- Private-school service center site: `VITE_APP_SURFACE=partner`
+- Partner service center site: `VITE_APP_SURFACE=partner`
 - Student/parent frontend site: `VITE_APP_SURFACE=student`
 
 `VITE_APP_SURFACE=combined` is only for local debugging. Do not use it as the public product entry.
@@ -115,7 +115,7 @@ This repository is designed for public admissions information, official universi
 
 Do not commit private datasets, real student information, private operational data, secrets, or customer-specific files.
 
-Owner data assets remain in the owner-hosted database. Private schools receive limited use rights through issued access, not ownership of the master database or extraction logic.
+Owner data assets remain in the owner-hosted database. Partner users receive limited use rights through issued access, not ownership of the master database or extraction logic.
 
 ## Verification
 
