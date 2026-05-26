@@ -347,6 +347,23 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["shown"], 1)
         self.assertGreater(payload["summary"]["total"], 1)
         self.assertEqual(payload["summary"]["by_kind"]["export_gap"], payload["summary"]["total"])
+        self.assertEqual(payload["summary"]["export_records"], 2)
+        self.assertTrue(payload["summary"]["has_export_records"])
+
+    def test_owner_issues_distinguishes_empty_export_library_from_export_gaps(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, _db = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/metrics/owner-issues")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["summary"]["total"], 0)
+        self.assertEqual(payload["summary"]["export_records"], 0)
+        self.assertFalse(payload["summary"]["has_export_records"])
+        self.assertFalse(payload["summary"]["export_ready"])
 
     def test_owner_issues_use_exact_document_for_same_school_year_export_gap(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

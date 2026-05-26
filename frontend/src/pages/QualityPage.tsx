@@ -485,6 +485,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                   <p className="panel-copy">把导出空白、官网变化、基准薄弱和最近手修集中到一张清单里，按顺序处理即可。</p>
                 </div>
                 <div className="inline-actions inline-actions-tight">
+                  <span className="badge badge-gray">{ownerIssues?.summary.export_records ?? 0} 条正式资料</span>
                   <span className="badge badge-blue">
                     {ownerIssues?.summary.shown && ownerIssues.summary.shown < ownerIssues.summary.total
                       ? `${ownerIssues.summary.shown}/${ownerIssues.summary.total} 项`

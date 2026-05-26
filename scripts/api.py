@@ -674,6 +674,7 @@ def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
 
 def _owner_top_issues(*, limit: int = 20) -> dict[str, Any]:
     export_rows = _export_rows(limit=10000, offset=0)
+    export_summary = _export_summary(export_rows)
     overview = build_quality_overview(include_source_text_health=False)
     all_issues = (
         _export_gap_owner_issues(export_rows)
@@ -699,7 +700,9 @@ def _owner_top_issues(*, limit: int = 20) -> dict[str, Any]:
             "total": len(all_issues),
             "shown": len(issues),
             "by_kind": summary,
-            "export_ready": _export_summary(export_rows)["ready_for_export"],
+            "export_records": export_summary["records"],
+            "has_export_records": export_summary["records"] > 0,
+            "export_ready": export_summary["ready_for_export"],
             "quality_status": overview.get("overall_status", ""),
         },
         "issues": issues,

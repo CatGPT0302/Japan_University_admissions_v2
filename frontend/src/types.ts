@@ -230,6 +230,8 @@ export interface OwnerIssuesResponse {
     total: number;
     shown?: number;
     by_kind: Record<string, number>;
+    export_records?: number;
+    has_export_records?: boolean;
     export_ready: boolean;
     quality_status: string;
   };
