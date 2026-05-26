@@ -145,6 +145,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("pending");
+  const [activeGroupIndex, setActiveGroupIndex] = useState(0);
 
   const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
   const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
@@ -162,6 +163,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     [draft, selectedRow],
   );
   const hasUnsavedChanges = changedFields.length > 0;
+  const activeGroup = FIELD_GROUPS[Math.min(activeGroupIndex, FIELD_GROUPS.length - 1)] ?? FIELD_GROUPS[0];
 
   useEffect(() => {
     void refreshDocuments();
@@ -176,6 +178,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     const nextDraft: Record<string, string> = {};
     for (const key of REVIEW_KEYS) nextDraft[key] = textValue(selectedRow, key);
     setDraft(nextDraft);
+    setActiveGroupIndex(0);
   }, [selectedRow]);
 
   async function refreshDocuments() {
@@ -425,22 +428,36 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                     </div>
                   ) : null}
                 </div>
-                {FIELD_GROUPS.map((group) => (
-                  <fieldset key={group.title} className="review-fieldset">
-                    <legend>{group.title}</legend>
-                    {group.fields.map((field) => (
-                      <label key={field.key} className="field-wrap">
-                        <span className="field-label">{field.label}</span>
-                        <textarea
-                          className="field review-field"
-                          rows={field.rows || 1}
-                          value={draft[field.key] ?? ""}
-                          onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
-                        />
-                      </label>
-                    ))}
-                  </fieldset>
-                ))}
+                <div className="review-group-tabs" aria-label="复审内容分组">
+                  {FIELD_GROUPS.map((group, index) => {
+                    const modifiedCount = group.fields.filter((field) => changedFields.includes(field.key)).length;
+                    return (
+                      <button
+                        className={activeGroupIndex === index ? "is-active" : ""}
+                        key={group.title}
+                        onClick={() => setActiveGroupIndex(index)}
+                        type="button"
+                      >
+                        <span>{group.title}</span>
+                        {modifiedCount ? <strong>{modifiedCount}</strong> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                <fieldset className="review-fieldset review-fieldset-active">
+                  <legend>{activeGroup.title}</legend>
+                  {activeGroup.fields.map((field) => (
+                    <label key={field.key} className="field-wrap">
+                      <span className="field-label">{field.label}</span>
+                      <textarea
+                        className="field review-field"
+                        rows={field.rows || 1}
+                        value={draft[field.key] ?? ""}
+                        onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
+                      />
+                    </label>
+                  ))}
+                </fieldset>
               </div>
 
               <div className="review-editor-actions">

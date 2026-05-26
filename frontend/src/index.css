@@ -1788,6 +1788,66 @@ a {
   color: var(--warning);
 }
 
+.review-group-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.9);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.review-group-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.review-group-tabs button:hover,
+.review-group-tabs button:focus-visible,
+.review-group-tabs button.is-active {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  outline: none;
+}
+
+.review-group-tabs span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-group-tabs strong {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(180, 83, 9, 0.12);
+  color: var(--warning);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
 .review-fieldset {
   display: grid;
   gap: 12px;
@@ -1799,6 +1859,10 @@ a {
 
 .review-fieldset:first-child {
   border-top: 0;
+}
+
+.review-fieldset-active {
+  min-height: 0;
 }
 
 .review-fieldset legend {
