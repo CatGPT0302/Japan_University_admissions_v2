@@ -30,7 +30,7 @@ interface Props {
 type SourceQueueFilter = "open" | "needs_reextract" | "reviewed" | "all";
 
 const CONTENT_LABELS: Record<string, string> = {
-  application_period: "出愿时间",
+  application_period: "申请时间",
   deadline_rule: "截止规则",
   eju_session: "EJU 可用考试",
   eju_japanese: "EJU 日语",
@@ -39,6 +39,7 @@ const CONTENT_LABELS: Record<string, string> = {
   eju_physics: "EJU 物理",
   eju_chemistry: "EJU 化学",
   eju_biology: "EJU 生物",
+  jlpt_requirement: "JLPT",
   english_requirement: "英语要求",
   screening_method: "选考方式",
   screening_schedule: "考试时间",
@@ -51,6 +52,13 @@ const LANGUAGE_LABELS: Record<string, string> = {
   jlpt_requirement: "JLPT",
   english_requirement: "英语要求",
 };
+
+const SOURCE_QUEUE_FILTERS: Array<{ key: SourceQueueFilter; label: string }> = [
+  { key: "open", label: "待查看" },
+  { key: "needs_reextract", label: "需重新整理" },
+  { key: "reviewed", label: "已查看" },
+  { key: "all", label: "全部" },
+];
 
 function percent(value?: number) {
   return `${Math.round(Number(value || 0) * 100)}%`;
@@ -100,13 +108,6 @@ function reviewStatusClass(value?: string) {
   return "badge badge-blue";
 }
 
-const SOURCE_QUEUE_FILTERS: Array<{ key: SourceQueueFilter; label: string }> = [
-  { key: "open", label: "待查看" },
-  { key: "needs_reextract", label: "需重新整理" },
-  { key: "reviewed", label: "已查看" },
-  { key: "all", label: "全部" },
-];
-
 function filterSourceItems(items: SourceReviewItem[], filter: SourceQueueFilter) {
   if (filter === "all") return items;
   return items.filter((item) => (item.review_status || "open") === filter);
@@ -141,11 +142,11 @@ function sourceTypeText(value?: string) {
 
 function watchlistGapText(value: string) {
   if (value === "missing_source_url") return "缺官网链接";
-  if (value === "missing_source_type") return "缺来源类型";
-  if (value === "missing_hash") return "缺保存凭证";
+  if (value === "missing_source_type") return "缺来源形式";
+  if (value === "missing_hash") return "缺来源凭证";
   if (value === "missing_last_checked_at") return "缺最近检查";
   if (value === "missing_source_note") return "缺来源说明";
-  if (value === "stale_last_checked_at") return "超过30天未检查";
+  if (value === "stale_last_checked_at") return "超过 30 天未检查";
   return value;
 }
 
@@ -332,8 +333,8 @@ export default function QualityPage({ onOpenReview }: Props) {
   const recentWatchItems = (sourceWatchlist?.items || [])
     .filter((item) => item.source_url || item.cached_path)
     .sort((a, b) => {
-      const priority = (item: typeof a) => (item.check_status === "never_checked" ? 0 : item.check_status === "stale" ? 1 : 2);
-      return priority(a) - priority(b);
+      const priorityValue = (item: typeof a) => (item.check_status === "never_checked" ? 0 : item.check_status === "stale" ? 1 : 2);
+      return priorityValue(a) - priorityValue(b);
     })
     .slice(0, 4);
   const topCoverage = [...(metrics?.field_coverage || [])].sort((a, b) => a.fill_rate - b.fill_rate).slice(0, 8);
@@ -350,12 +351,12 @@ export default function QualityPage({ onOpenReview }: Props) {
             <div className="section-kicker">质量与来源</div>
             <h2 className="section-title">先发现变化，再决定要不要更新正式资料</h2>
             <p className="section-copy">
-              这里只给 owner 使用：看抽取结果是否稳定、官方资料是否变化，以及人工主要应该先看哪里。正式资料不会因为来源检查自动覆盖。
+              这里只给 owner 使用：看抽取结果是否稳定、官方资料是否变化，以及人工主要应该先看哪里。正式资料不会因为来源检查被自动覆盖。
             </p>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">
-              <span className="metric-label">待复审词条</span>
+              <span className="metric-label">待复审内容</span>
               <strong className="metric-value">{metrics?.total_staging_records ?? "-"}</strong>
             </div>
             <div className="metric-card">
@@ -446,7 +447,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     {watchedTypes.length ? (
                       watchedTypes.map(([type, count]) => (
                         <span className="badge badge-gray" key={type}>
-                          {sourceTypeText(type)} · {count}
+                          {sourceTypeText(type)} / {count}
                         </span>
                       ))
                     ) : (
@@ -460,7 +461,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     {watchGaps.length ? (
                       watchGaps.slice(0, 4).map(([gap, count]) => (
                         <span className="badge badge-amber" key={gap}>
-                          {watchlistGapText(gap)} · {count}
+                          {watchlistGapText(gap)} / {count}
                         </span>
                       ))
                     ) : (
@@ -488,7 +489,9 @@ export default function QualityPage({ onOpenReview }: Props) {
                   <article className="source-watch-row" key={item.id || item.stem}>
                     <div>
                       <strong>{item.university || item.stem}</strong>
-                      <span>{item.admission_year || "未标年度"} · {sourceTypeText(item.source_type)}</span>
+                      <span>
+                        {item.admission_year || "未标年度"} / {sourceTypeText(item.source_type)}
+                      </span>
                     </div>
                     <span className={checkStatusClass(item.check_status)}>{checkStatusText(item.check_status, item.days_since_checked)}</span>
                   </article>
@@ -680,7 +683,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     <div>
                       <strong>{contentLabel(item.field)}</strong>
                       <span>
-                        已填 {item.filled} 条 · 人工修正 {item.modified} 条
+                        已填 {item.filled} 条 / 人工修正 {item.modified} 条
                       </span>
                     </div>
                     <div className="quality-bar" aria-label={`${contentLabel(item.field)} ${percent(item.fill_rate)}`}>
@@ -707,7 +710,9 @@ export default function QualityPage({ onOpenReview }: Props) {
                     <article className="language-coverage-card" key={field}>
                       <span>{languageLabel(field)}</span>
                       <strong>{stats.checked}</strong>
-                      <p>{coverageTone(Number(stats.checked || 0))} · 通过 {stats.passed}</p>
+                      <p>
+                        {coverageTone(Number(stats.checked || 0))} / 通过 {stats.passed}
+                      </p>
                     </article>
                   ))}
                   {!languageCoverage.length ? <div className="empty-state empty-state-quiet">暂无语言要求覆盖报告。</div> : null}
@@ -717,7 +722,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     <strong>下一批适合补看的地方</strong>
                     {thinCoverageRows.slice(0, 5).map((row) => (
                       <span key={`${row.seed}-${row.field}`}>
-                        {row.seed} · {contentLabel(row.field)} 已核 {row.checked}/{row.minimum}
+                        {row.seed} / {contentLabel(row.field)} 已核 {row.checked}/{row.minimum}
                       </span>
                     ))}
                   </div>
@@ -741,7 +746,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     </div>
                     <p>
                       <span>{item.old_value || "空"}</span>
-                      <strong>→</strong>
+                      <strong>-&gt;</strong>
                       <span>{item.new_value || "空"}</span>
                     </p>
                     <small>{item.created_at}</small>

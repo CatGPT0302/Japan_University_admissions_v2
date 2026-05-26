@@ -27,11 +27,11 @@ def load_review_queue(*, root: Path = ROOT, path: Path | None = None) -> dict[st
 
 def _action_for_status(status: str) -> str:
     if status == "changed":
-        return "打开官方资料，对照已确认资料，判断是否需要重新整理。"
+        return "打开官方资料，对照当前已确认内容，判断是否需要重新整理。"
     if status == "marker_mismatch":
         return "先确认链接是否仍然指向这所学校的留学生招生资料。"
     if status == "not_pdf":
-        return "学校可能换了链接形式，先手动打开官网确认。"
+        return "学校可能换了资料形式，先手动打开官网确认。"
     if status == "failed":
         return "这次没有检查成功，稍后重试或手动打开官网。"
     return "查看来源状态。"
@@ -54,16 +54,17 @@ def _likely_changed_areas(item: dict[str, Any]) -> list[str]:
     markers = [str(marker) for marker in item.get("missing_markers") or [] if str(marker).strip()]
     areas: list[str] = []
     marker_text = " ".join(markers)
-    if any(token in marker_text.lower() for token in ["eju", "日本留学試験", "日本留学"]):
+    marker_lower = marker_text.lower()
+    if any(token in marker_lower for token in ["eju", "日本留学試験", "日本留学"]):
         areas.append("EJU 要求")
-    if any(token in marker_text.lower() for token in ["english", "toefl", "toeic", "ielts", "英語"]):
+    if any(token in marker_lower for token in ["english", "toefl", "toeic", "ielts", "英語", "英语"]):
         areas.append("英语要求")
-    if any(token in marker_text for token in ["出願", "締切", "期間", "受付"]):
-        areas.append("出愿时间")
-    if any(token in marker_text for token in ["試験", "選考", "面接"]):
+    if any(token in marker_text for token in ["出願", "締切", "期間", "受付", "申请", "报名"]):
+        areas.append("申请时间")
+    if any(token in marker_text for token in ["試験", "選考", "面接", "考试", "面试"]):
         areas.append("考试安排")
     if status == "changed" and not areas:
-        areas.extend(["出愿时间", "考试要求", "提交材料"])
+        areas.extend(["申请时间", "考试要求", "提交材料"])
     if status == "marker_mismatch" and not areas:
         areas.append("来源链接")
     if status in {"not_pdf", "failed"} and not areas:
@@ -77,7 +78,7 @@ def _owner_summary(item: dict[str, Any]) -> str:
     status = str(item.get("status") or "")
     label = _status_label(status)
     if status == "changed":
-        return f"{university}（{year}）的官方资料内容已变化，需要人工看一眼后再决定是否重新整理。"
+        return f"{university}（{year}）的官方资料内容已经变化，需要人工看一眼后再决定是否重新整理。"
     if status == "marker_mismatch":
         return f"{university}（{year}）的来源能打开，但没有找到预期的招生内容，可能是链接或页面位置变了。"
     if status == "not_pdf":
@@ -92,7 +93,7 @@ def _next_steps(item: dict[str, Any]) -> list[str]:
     if status == "changed":
         return ["打开官网资料", "对照当前已确认内容", "需要更新时点击重新整理并复审"]
     if status == "marker_mismatch":
-        return ["打开官网资料", "确认是否还是留学生招生页面", "必要时更新来源登记"]
+        return ["打开官网资料", "确认是否仍是留学生招生页面", "必要时更新来源登记"]
     if status == "not_pdf":
         return ["打开官网资料", "确认新的资料形式", "补齐新的 PDF 或页面来源"]
     if status == "failed":
@@ -199,7 +200,7 @@ def format_markdown_report(report: dict[str, Any]) -> str:
         )
         next_steps = item.get("next_steps") if isinstance(item.get("next_steps"), list) else []
         if next_steps:
-            lines.append(f"- 下一步：{' → '.join(str(step) for step in next_steps)}")
+            lines.append(f"- 下一步：{' -> '.join(str(step) for step in next_steps)}")
         if item.get("missing_markers"):
             lines.append(f"- 没找到的线索：{json.dumps(item.get('missing_markers'), ensure_ascii=False)}")
         if item.get("error"):
