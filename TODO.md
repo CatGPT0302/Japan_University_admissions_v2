@@ -6,7 +6,6 @@
 - Keep owner/admin, partner service center, and student frontend visually and semantically separate.
 - Keep `/public/*` and `/v1/*` reading confirmed admissions data only.
 - Keep partner submissions owner-controlled: submitted material enters a queue, extraction can be started by owner/admin, and final confirmation stays in the admin review flow.
-- Remove user-facing engineering wording from the frontend.
 
 ## Next
 

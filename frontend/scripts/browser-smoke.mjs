@@ -93,6 +93,16 @@ const ignoredConsoleErrorSnippets = [
   "status of 404",
 ];
 
+const nonOwnerBlockedTerms = ["字段", "staging", "record", "risk", "confidence", "scope", "curl", "项目列表", "风险核对", "人工确认"];
+
+function assertNoBlockedTerms(text, terms, label) {
+  for (const term of terms) {
+    if (text.includes(term)) {
+      throw new Error(`${label} exposed internal wording: ${term}`);
+    }
+  }
+}
+
 function command(name, args, env = {}) {
   return new Promise((resolve, reject) => {
     const commandName = process.platform === "win32" ? "cmd.exe" : name;
@@ -508,6 +518,9 @@ async function checkSurface(browser, surface, port) {
     for (const blocked of surface.reject) {
       if (bodyText.includes(blocked)) throw new Error(`${surface.name} leaked text from another surface: ${blocked}`);
     }
+    if (surface.name === "student" || surface.name === "partner") {
+      assertNoBlockedTerms(bodyText, nonOwnerBlockedTerms, surface.name);
+    }
 
     if (surface.login) {
       await page.locator("input").nth(0).fill(surface.login.email);
@@ -530,6 +543,9 @@ async function checkSurface(browser, surface, port) {
         if (afterLoginText.includes(blocked)) {
           throw new Error(`${surface.name} leaked logged-in text from another surface: ${blocked}`);
         }
+      }
+      if (surface.name === "partner") {
+        assertNoBlockedTerms(afterLoginText, nonOwnerBlockedTerms, `${surface.name} logged-in`);
       }
       await runSurfaceAction(page, surface);
     }
