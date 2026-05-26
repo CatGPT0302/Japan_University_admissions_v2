@@ -180,6 +180,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("pending");
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [focusedEvidencePage, setFocusedEvidencePage] = useState<number | null>(null);
+  const [pageInput, setPageInput] = useState("1");
 
   const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
   const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
@@ -203,6 +204,10 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   useEffect(() => {
     void refreshDocuments();
   }, []);
+
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
 
   useEffect(() => {
     if (defaultDocId) void openDocument(defaultDocId);
@@ -287,6 +292,16 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     if (rowId === selectedRowId) return;
     if (hasUnsavedChanges && !window.confirm("当前修改还没有保存。要先切换到其他词条吗？")) return;
     setSelectedRowId(rowId);
+  }
+
+  function setPdfPage(page: number) {
+    const nextPage = Math.max(1, Math.floor(Number.isFinite(page) ? page : 1));
+    setFocusedEvidencePage(nextPage);
+    setPageInput(String(nextPage));
+  }
+
+  function commitPdfPage() {
+    setPdfPage(Number(pageInput));
   }
 
   return (
@@ -416,9 +431,40 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                   <span>第 {currentPage} 页</span>
                 </div>
                 {selectedDocId ? (
-                  <a className="btn btn-ghost btn-small" href={documentPdfUrl(selectedDocId, currentPage)} target="_blank" rel="noreferrer">
-                    打开原文
-                  </a>
+                  <div className="review-pdf-tools" aria-label="PDF 页面操作">
+                    <button className="btn btn-ghost btn-small" disabled={currentPage <= 1} onClick={() => setPdfPage(currentPage - 1)} type="button">
+                      上一页
+                    </button>
+                    <form
+                      className="review-page-jump"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        commitPdfPage();
+                      }}
+                    >
+                      <label>
+                        <span>跳到</span>
+                        <input
+                          aria-label="跳到 PDF 页码"
+                          inputMode="numeric"
+                          min="1"
+                          onBlur={commitPdfPage}
+                          onChange={(event) => setPageInput(event.target.value)}
+                          type="number"
+                          value={pageInput}
+                        />
+                      </label>
+                      <button className="btn btn-ghost btn-small" type="submit">
+                        前往
+                      </button>
+                    </form>
+                    <button className="btn btn-ghost btn-small" onClick={() => setPdfPage(currentPage + 1)} type="button">
+                      下一页
+                    </button>
+                    <a className="btn btn-ghost btn-small" href={documentPdfUrl(selectedDocId, currentPage)} target="_blank" rel="noreferrer">
+                      打开原文
+                    </a>
+                  </div>
                 ) : null}
               </div>
               <div className="review-pdf-scroll">

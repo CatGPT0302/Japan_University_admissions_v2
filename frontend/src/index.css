@@ -1873,6 +1873,44 @@ a {
   height: calc(100vh - 150px);
 }
 
+.review-pdf-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.review-page-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-page-jump label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.review-page-jump input {
+  width: 54px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  text-align: center;
+}
+
 .review-pdf-scroll {
   min-height: 0;
   margin: 14px;
@@ -2533,6 +2571,10 @@ a {
 
   .review-topbar-actions,
   .review-editor-actions {
+    justify-content: flex-start;
+  }
+
+  .review-pdf-tools {
     justify-content: flex-start;
   }
 

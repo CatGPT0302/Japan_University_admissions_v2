@@ -325,6 +325,10 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "ブラウザテスト学部", `${surface.name} review row`);
     await assertBodyIncludes(page, "留学生入試", `${surface.name} review row`);
     await assertBodyIncludes(page, "源 PDF", `${surface.name} pdf panel`);
+    await assertBodyIncludes(page, "跳到", `${surface.name} pdf page controls`);
+    await page.getByLabel("跳到 PDF 页码").fill("2");
+    await page.getByRole("button", { name: "前往" }).click();
+    await assertBodyIncludes(page, "第 2 页", `${surface.name} pdf page jump`);
     await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部");
     await assertBodyIncludes(page, "1 处修改未保存", `${surface.name} dirty review summary`);
     await assertBodyIncludes(page, "保存后再确认入库", `${surface.name} dirty review summary`);
