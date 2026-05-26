@@ -269,11 +269,14 @@ async function runSurfaceAction(page, surface) {
   if (surface.action === "owner-service-queue") {
     await page.getByRole("button", { name: /资料进度/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} queue`);
+    await assertBodyIncludes(page, "资料详情", `${surface.name} submission detail`);
+    await assertBodyIncludes(page, "下一步", `${surface.name} submission detail`);
     await assertBodyIncludes(page, "开始整理", `${surface.name} queue`);
+    const submissionDetail = page.getByLabel("资料详情");
     const startResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/submissions/") && response.url().endsWith("/start"), {
       timeout: 15_000,
     });
-    await page.getByRole("button", { name: "开始整理" }).click();
+    await submissionDetail.getByRole("button", { name: "开始整理" }).click();
     const startResponse = await startResponsePromise;
     if (!startResponse.ok()) {
       throw new Error(`${surface.name} start processing failed with ${startResponse.status()}`);

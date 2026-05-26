@@ -108,6 +108,7 @@ export default function SettingsPage({ onOpenReview }: Props) {
   const [newKey, setNewKey] = useState<ApiKeyCreateResponse | null>(null);
   const [message, setMessage] = useState("");
   const [section, setSection] = useState<SettingsSection>("overview");
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
@@ -137,6 +138,10 @@ export default function SettingsPage({ onOpenReview }: Props) {
   const canCopyGuide = Boolean(newKey?.secret);
   const recentUsage = center?.recent_usage || [];
   const waitingSubmissions = submissions.filter((item) => item.processing_status !== "confirmed");
+  const selectedSubmission = useMemo(
+    () => submissions.find((item) => item.id === selectedSubmissionId) || submissions[0] || null,
+    [selectedSubmissionId, submissions],
+  );
   const progressItems = [
     {
       done: canConnect,
@@ -191,6 +196,7 @@ export default function SettingsPage({ onOpenReview }: Props) {
 
   function replaceSubmission(next: AdminSubmission) {
     setSubmissions((current) => current.map((item) => (item.id === next.id ? next : item)));
+    setSelectedSubmissionId(next.id);
   }
 
   async function handleStartSubmission(submissionId: number) {
@@ -423,50 +429,89 @@ export default function SettingsPage({ onOpenReview }: Props) {
               <h3>对方交来的资料会在这里排队</h3>
               <p className="settings-note">你只需要看学校、资料来源和下一步。真正保存到正式资料前，仍然由你来确认。</p>
 
-              <div className="settings-submission-list">
-                {submissions.map((item) => {
-                  const canStart = ["submitted", "needs_more_info", "failed"].includes(item.processing_status);
-                  const busy = workingSubmissionId === item.id;
-                  return (
-                    <article className="settings-submission-card" key={item.id}>
-                      <div className="settings-submission-main">
-                        <span className={`settings-submission-status is-${item.processing_status}`}>
-                          {submissionStatusText(item.processing_status)}
-                        </span>
-                        <strong>{item.university || "未写学校名"}</strong>
-                        <p>
-                          {item.organization_name} · {item.admission_year || "年度未写"} · {submissionSource(item)}
-                        </p>
-                        {item.notes ? <small>{item.notes}</small> : null}
-                        <em>{submissionHint(item)}</em>
-                      </div>
-                      <div className="settings-submission-actions">
-                        {canStart ? (
-                          <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void handleStartSubmission(item.id)}>
-                            {busy ? "整理中" : "开始整理"}
-                          </button>
-                        ) : null}
-                        {item.processing_status === "needs_owner_review" ? (
-                          <>
-                            <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(item)}>
-                              去确认资料
+              <div className="settings-submission-workspace">
+                <div className="settings-submission-list">
+                  {submissions.map((item) => {
+                    const canStart = ["submitted", "needs_more_info", "failed"].includes(item.processing_status);
+                    const busy = workingSubmissionId === item.id;
+                    return (
+                      <article className={`settings-submission-card${selectedSubmission?.id === item.id ? " is-active" : ""}`} key={item.id}>
+                        <button className="settings-submission-main" type="button" onClick={() => setSelectedSubmissionId(item.id)}>
+                          <span className={`settings-submission-status is-${item.processing_status}`}>
+                            {submissionStatusText(item.processing_status)}
+                          </span>
+                          <strong>{item.university || "未写学校名"}</strong>
+                          <p>
+                            {item.organization_name} · {item.admission_year || "年度未写"} · {submissionSource(item)}
+                          </p>
+                          {item.notes ? <small>{item.notes}</small> : null}
+                          <em>{submissionHint(item)}</em>
+                        </button>
+                        <div className="settings-submission-actions">
+                          {canStart ? (
+                            <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void handleStartSubmission(item.id)}>
+                              {busy ? "整理中" : "开始整理"}
                             </button>
-                            <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void handleSetSubmissionStatus(item.id, "confirmed")}>
-                              标记已完成
+                          ) : null}
+                          {item.processing_status === "needs_owner_review" ? (
+                            <>
+                              <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(item)}>
+                                去确认资料
+                              </button>
+                              <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void handleSetSubmissionStatus(item.id, "confirmed")}>
+                                标记已完成
+                              </button>
+                            </>
+                          ) : null}
+                          {item.processing_status === "processing" ? (
+                            <button className="btn btn-ghost" type="button" onClick={() => void load()}>
+                              刷新进度
                             </button>
-                          </>
-                        ) : null}
-                        {item.processing_status === "processing" ? (
-                          <button className="btn btn-ghost" type="button" onClick={() => void load()}>
-                            刷新进度
-                          </button>
-                        ) : null}
-                      </div>
-                    </article>
-                  );
-                })}
-                {!submissions.length ? (
-                  <p className="settings-empty">还没有收到资料。开通合作方后，对方提交的 PDF 或官网链接会出现在这里。</p>
+                          ) : null}
+                        </div>
+                      </article>
+                    );
+                  })}
+                  {!submissions.length ? (
+                    <p className="settings-empty">还没有收到资料。开通合作方后，对方提交的 PDF 或官网链接会出现在这里。</p>
+                  ) : null}
+                </div>
+
+                {selectedSubmission ? (
+                  <aside className="settings-submission-detail" aria-label="资料详情">
+                    <div>
+                      <p className="section-kicker">资料详情</p>
+                      <h4>{selectedSubmission.university || "未写学校名"}</h4>
+                      <span className={`settings-submission-status is-${selectedSubmission.processing_status}`}>
+                        {submissionStatusText(selectedSubmission.processing_status)}
+                      </span>
+                    </div>
+                    <dl>
+                      <div><dt>合作方</dt><dd>{selectedSubmission.organization_name || "-"}</dd></div>
+                      <div><dt>年度</dt><dd>{selectedSubmission.admission_year || "-"}</dd></div>
+                      <div><dt>来源</dt><dd>{submissionSource(selectedSubmission)}</dd></div>
+                      <div><dt>提交时间</dt><dd>{selectedSubmission.created_at || "-"}</dd></div>
+                      <div><dt>PDF 链接</dt><dd>{selectedSubmission.pdf_url || "-"}</dd></div>
+                      <div><dt>官网页面</dt><dd>{selectedSubmission.page_url || "-"}</dd></div>
+                      <div><dt>备注</dt><dd>{selectedSubmission.notes || "-"}</dd></div>
+                      <div><dt>下一步</dt><dd>{submissionHint(selectedSubmission)}</dd></div>
+                    </dl>
+                    <div className="settings-submission-detail-actions">
+                      {["submitted", "needs_more_info", "failed"].includes(selectedSubmission.processing_status) ? (
+                        <button className="btn btn-primary" type="button" disabled={workingSubmissionId === selectedSubmission.id} onClick={() => void handleStartSubmission(selectedSubmission.id)}>
+                          开始整理
+                        </button>
+                      ) : null}
+                      {selectedSubmission.processing_status === "needs_owner_review" ? (
+                        <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(selectedSubmission)}>
+                          去确认资料
+                        </button>
+                      ) : null}
+                      <button className="btn btn-ghost" type="button" onClick={() => void load()}>
+                        刷新
+                      </button>
+                    </div>
+                  </aside>
                 ) : null}
               </div>
 

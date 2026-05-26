@@ -10,10 +10,9 @@
 
 ## Next
 
-- Add an owner-facing submission detail view with clearer links into the review page.
 - Add lightweight access protection before any external deployment of the owner/admin workspace.
 - Improve student result ranking with more real confirmed records.
-- Add an owner-facing submission detail view with clearer links into the review page.
+- Add owner-side source watchlist checks to the regular admin workflow.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

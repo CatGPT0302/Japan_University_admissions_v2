@@ -3333,6 +3333,13 @@ a {
   gap: 12px;
 }
 
+.settings-submission-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 14px;
+  align-items: start;
+}
+
 .settings-submission-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3344,10 +3351,21 @@ a {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.settings-submission-card.is-active {
+  border-color: rgba(0, 122, 255, 0.24);
+  background: rgba(244, 250, 255, 0.9);
+}
+
 .settings-submission-main {
   display: grid;
   min-width: 0;
   gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .settings-submission-main strong {
@@ -3415,6 +3433,57 @@ a {
   text-decoration: none;
 }
 
+.settings-submission-detail {
+  position: sticky;
+  top: 88px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.settings-submission-detail h4 {
+  margin: 4px 0 10px;
+  color: #1d1d1f;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.settings-submission-detail dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.settings-submission-detail dl div {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(60, 60, 67, 0.08);
+}
+
+.settings-submission-detail dt {
+  color: #7c7c82;
+  font-size: 12px;
+}
+
+.settings-submission-detail dd {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.settings-submission-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 760px) {
   .settings-topbar {
     align-items: flex-start;
@@ -3440,6 +3509,14 @@ a {
 
   .settings-submission-card {
     grid-template-columns: 1fr;
+  }
+
+  .settings-submission-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-submission-detail {
+    position: static;
   }
 
   .settings-submission-actions {
