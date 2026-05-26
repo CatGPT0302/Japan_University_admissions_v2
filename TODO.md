@@ -13,7 +13,7 @@
 - Add an owner-facing submission detail view with clearer links into the review page.
 - Add lightweight access protection before any external deployment of the owner/admin workspace.
 - Improve student result ranking with more real confirmed records.
-- Add browser smoke checks for owner review/edit/confirm using a seeded source document.
+- Add browser smoke checks for owner editing and confirming the seeded review record.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

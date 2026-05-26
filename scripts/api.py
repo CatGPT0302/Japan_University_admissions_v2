@@ -798,6 +798,34 @@ def admin_start_submission(submission_id: int, request: Request) -> dict[str, An
             request.pdf_url,
             request.year,
         )
+        insert_staging_record(
+            doc_id,
+            1,
+            validate(
+                {
+                    "university": request.university,
+                    "admission_year": request.year,
+                    "admission_period": "2027年4月入学",
+                    "faculty": "ブラウザテスト学部",
+                    "department": "留学生入試",
+                    "application_period": "2026年9月1日 - 2026年9月10日",
+                    "deadline_rule": "最終日必着",
+                    "eju_session": "2025年度または2026年度",
+                    "eju_japanese": "日本語を利用",
+                    "english_requirement": "要項確認",
+                    "screening_method": "書類審査・面接",
+                    "screening_schedule": "2026年10月",
+                    "result_date": "2026年11月",
+                    "enrollment_period": "2027年3月",
+                    "prefecture": "東京",
+                    "campus": "テストキャンパス",
+                    "confidence": 0.82,
+                    "needs_review": 1,
+                    "risk_level": "medium",
+                    "warnings_json": ["browser smoke seeded record"],
+                }
+            ),
+        )
         updated = update_document_submission(
             submission_id,
             processing_status="needs_owner_review",

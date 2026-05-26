@@ -460,7 +460,7 @@ class PublicUserApiTest(unittest.TestCase):
     def test_browser_smoke_fake_workflow_is_explicitly_gated(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             os.environ["ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW"] = "1"
-            api, _db = self._load_api(Path(tmp))
+            api, db = self._load_api(Path(tmp))
             os.environ["ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW"] = "1"
             client = TestClient(api.app)
             self._login_partner(client)
@@ -477,12 +477,15 @@ class PublicUserApiTest(unittest.TestCase):
             client.post("/auth/logout")
             self._login_owner(client)
             started = client.post(f"/admin/submissions/{submission_id}/start")
+            staging_rows = db.get_staging_records(started.json()["document_id"])
 
         os.environ.pop("ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW", None)
         self.assertEqual(started.status_code, 200)
         self.assertEqual(started.json()["processing_status"], "needs_owner_review")
         self.assertEqual(started.json()["workflow_status"], "browser_smoke_completed")
         self.assertGreater(started.json()["document_id"], 0)
+        self.assertEqual(len(staging_rows), 1)
+        self.assertEqual(staging_rows[0]["faculty"], "ブラウザテスト学部")
 
     def test_admin_api_center_shows_masked_key_metadata_not_secret(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

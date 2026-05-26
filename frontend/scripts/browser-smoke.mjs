@@ -45,6 +45,17 @@ const surfaces = [
     afterLoginReject: ["学生・家长入口", "招生资料中心"],
   },
   {
+    name: "owner-review",
+    buildSurface: "owner",
+    path: "/",
+    expect: ["登录资料中心", "邮箱", "密码"],
+    login: ownerCredentials,
+    afterLoginExpect: ["招生资料中心", "资料生产", "资料库"],
+    action: "owner-review-seeded",
+    reject: ["学生・家长入口", "登录服务中心"],
+    afterLoginReject: ["学生・家长入口", "登录服务中心"],
+  },
+  {
     name: "student",
     path: "/",
     expect: ["学生・家长入口", "先说情况，再看学校。"],
@@ -252,13 +263,23 @@ async function runSurfaceAction(page, surface) {
     await page.waitForLoadState("networkidle");
     await assertBodyIncludes(page, "等你确认", `${surface.name} started queue`);
     await assertBodyIncludes(page, "去确认资料", `${surface.name} started queue`);
+    return;
+  }
+
+  if (surface.action === "owner-review-seeded") {
+    await page.getByRole("button", { name: /人工核对/ }).click();
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} document queue`);
+    await page.getByRole("button", { name: /东京测试大学/ }).click();
+    await assertBodyIncludes(page, "ブラウザテスト学部", `${surface.name} review row`);
+    await assertBodyIncludes(page, "留学生入試", `${surface.name} review row`);
+    await assertBodyIncludes(page, "源 PDF", `${surface.name} pdf panel`);
   }
 }
 
 async function checkSurface(browser, surface, port) {
   console.log(`\n[browser-smoke] building ${surface.name}`);
   await command("npm", ["run", "build"], {
-    VITE_APP_SURFACE: surface.name,
+    VITE_APP_SURFACE: surface.buildSurface || surface.name,
     VITE_API_BASE_URL: apiBaseUrl,
     VITE_OWNER_WORKSPACE_URL: process.env.VITE_OWNER_WORKSPACE_URL || "http://127.0.0.1:5173",
   });
