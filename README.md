@@ -121,6 +121,16 @@ Do not commit private datasets, real student information, private operational da
 
 Owner data assets remain in the owner-hosted database. Partner users receive limited use rights through issued access, not ownership of the master database or extraction logic.
 
+## Seed Data Package
+
+Human-checked seed extractors are quality assets, not automatically confirmed production data. To inspect them as a portable starter dataset without mutating the database:
+
+```powershell
+python scripts/seed_data_package.py --output-dir data/exports/seed_data_package
+```
+
+This writes `package_summary.json`, `documents.json`, `records.jsonl`, `records_table.csv`, and `review_queue.json`. Every row is marked `database_status: not_imported` so it can be reviewed before any future import into the owner database.
+
 ## Verification
 
 ```powershell
