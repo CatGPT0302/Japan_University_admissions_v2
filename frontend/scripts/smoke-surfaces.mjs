@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const surfaces = [
-  { name: "owner", mustContain: ["招生资料中心", "上传整理"] },
+  { name: "owner", mustContain: ["招生资料中心", "资料生产", "资料库", "维护"] },
   { name: "owner-service", mustContain: ["合作方服务中心", "资料进度"] },
   { name: "partner", mustContain: ["合作方入口", "提交资料"] },
   { name: "student", mustContain: ["学生・家长入口", "先说情况，再看学校。"] },
