@@ -237,6 +237,7 @@ class PublicUserApiTest(unittest.TestCase):
                 },
             )
             filtered = client.get("/admin/bookings", params={"status": "contacted"})
+            exported = client.get("/admin/bookings/export.csv", params={"status": "contacted"})
 
         self.assertEqual(created.status_code, 200)
         self.assertEqual(unauth.status_code, 401)
@@ -252,6 +253,11 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(filtered.status_code, 200)
         self.assertEqual(filtered.json()[0]["status"], "contacted")
         self.assertEqual(filtered.json()[0]["owner_note"], "先确认EJU成绩，再约家长面谈。")
+        self.assertEqual(exported.status_code, 200)
+        self.assertIn("text/csv", exported.headers["content-type"])
+        self.assertIn("王小明", exported.text)
+        self.assertIn("明治大学", exported.text)
+        self.assertIn("先确认EJU成绩", exported.text)
 
     def test_admin_staging_confirm_records_flow_still_works(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

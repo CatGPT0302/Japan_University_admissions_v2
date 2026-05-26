@@ -743,6 +743,56 @@ def admin_bookings(
     return list_consultation_bookings(status=status, limit=limit, offset=offset)
 
 
+@app.get("/admin/bookings/export.csv")
+def admin_bookings_export_csv(
+    request: Request,
+    status: str | None = None,
+) -> StreamingResponse:
+    _require_owner(request)
+    rows = list_consultation_bookings(status=status, limit=10000, offset=0)
+    buffer = io.StringIO()
+    fieldnames = [
+        "状态",
+        "学生姓名",
+        "联系方式",
+        "身份",
+        "目标年度",
+        "目标学校",
+        "学部",
+        "学科",
+        "方便时间",
+        "想咨询的问题",
+        "跟进备注",
+        "下次跟进",
+        "提交时间",
+    ]
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(
+            {
+                "状态": row.get("status") or "",
+                "学生姓名": row.get("student_name") or "",
+                "联系方式": row.get("contact_email") or row.get("contact_phone") or "",
+                "身份": row.get("role") or "",
+                "目标年度": row.get("target_year") or row.get("admission_year") or "",
+                "目标学校": row.get("school_name") or "",
+                "学部": row.get("faculty") or "",
+                "学科": row.get("department") or "",
+                "方便时间": row.get("preferred_times") or "",
+                "想咨询的问题": row.get("question") or "",
+                "跟进备注": row.get("owner_note") or "",
+                "下次跟进": row.get("next_action_at") or "",
+                "提交时间": row.get("created_at") or "",
+            }
+        )
+    return StreamingResponse(
+        iter(["\ufeff" + buffer.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="consultation_bookings.csv"'},
+    )
+
+
 @app.patch("/admin/bookings/{booking_id}")
 def admin_update_booking(booking_id: int, payload: AdminBookingUpdateRequest, request: Request) -> dict[str, Any]:
     _require_owner(request)

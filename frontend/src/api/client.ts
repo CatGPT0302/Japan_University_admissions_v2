@@ -245,6 +245,13 @@ export async function updateAdminBooking(
   return data;
 }
 
+export function downloadAdminBookingsCsv(status?: ConsultationBookingStatus | ""): void {
+  const search = new URLSearchParams();
+  if (status) search.set("status", status);
+  const qs = search.toString();
+  window.open(`${BASE_URL}/admin/bookings/export.csv${qs ? `?${qs}` : ""}`, "_blank");
+}
+
 export async function getApiCenter(): Promise<ApiCenterResponse> {
   const { data } = await client.get<ApiCenterResponse>("/settings/api-center");
   return data;

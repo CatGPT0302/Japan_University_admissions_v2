@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAdminBookings, toErrorMessage, updateAdminBooking } from "../api/client";
+import { downloadAdminBookingsCsv, getAdminBookings, toErrorMessage, updateAdminBooking } from "../api/client";
 import type { AdminConsultationBooking, ConsultationBookingStatus } from "../types";
 
 const STATUS_OPTIONS: Array<{ key: ConsultationBookingStatus | ""; label: string }> = [
@@ -210,6 +210,9 @@ export default function BookingsPage() {
             </div>
             <button className="btn btn-ghost" type="button" onClick={() => void load()}>
               {loading ? "刷新中" : "刷新"}
+            </button>
+            <button className="btn btn-primary" type="button" onClick={() => downloadAdminBookingsCsv(status)}>
+              导出当前咨询
             </button>
           </div>
         </aside>

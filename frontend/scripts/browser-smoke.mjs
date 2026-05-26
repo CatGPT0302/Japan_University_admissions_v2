@@ -399,6 +399,7 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "浏览器测试学生", `${surface.name} inbox`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} inbox`);
     await assertBodyIncludes(page, "student-smoke@example.com", `${surface.name} inbox`);
+    await assertBodyIncludes(page, "导出当前咨询", `${surface.name} export action`);
 
     await page.getByRole("button", { name: /浏览器测试学生/ }).click();
     await page.getByPlaceholder("例如：先确认 EJU 分数，再约一次家长沟通").fill("先确认 EJU 日本语，再约家长沟通。");
@@ -414,6 +415,17 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "跟进安排已保存。", `${surface.name} booking follow-up saved`);
     await assertBodyIncludes(page, "逾期跟进", `${surface.name} overdue follow-up group`);
     await assertBodyIncludes(page, "下次跟进：2000-01-01 14:00", `${surface.name} overdue follow-up date`);
+
+    const bookingCsvResponse = await page.request.get(`${apiBaseUrl}/admin/bookings/export.csv?status=new`);
+    if (!bookingCsvResponse.ok()) {
+      throw new Error(`${surface.name} booking CSV export failed with ${bookingCsvResponse.status()}`);
+    }
+    const bookingCsvText = await bookingCsvResponse.text();
+    for (const expected of ["浏览器测试学生", "东京测试大学", "先确认 EJU 日本语", "2000-01-01 14:00"]) {
+      if (!bookingCsvText.includes(expected)) {
+        throw new Error(`${surface.name} booking CSV export missing ${expected}`);
+      }
+    }
 
     const updateResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/bookings/") && response.request().method() === "PATCH", {
       timeout: 10_000,
