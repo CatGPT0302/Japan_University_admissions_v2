@@ -59,6 +59,7 @@ const surfaces = [
     name: "student",
     path: "/",
     expect: ["学生・家长入口", "先说情况，再看学校。"],
+    action: "student-search-confirmed",
     reject: ["登录资料中心", "登录服务中心"],
   },
 ];
@@ -346,6 +347,20 @@ async function runSurfaceAction(page, surface) {
     if (excelBody.length < 1000) {
       throw new Error(`${surface.name} Excel export returned an unexpectedly small workbook`);
     }
+    return;
+  }
+
+  if (surface.action === "student-search-confirmed") {
+    await page.getByPlaceholder("例：早稻田 / 商学 / 东京 / TOEFL").fill("东京测试大学");
+    await assertBodyIncludes(page, "先按学校和条件查找", `${surface.name} search results`);
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} search results`);
+    await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} search results`);
+
+    await page.getByRole("button", { name: /东京测试大学/ }).click();
+    await assertBodyIncludes(page, "这所学校要看什么", `${surface.name} program detail`);
+    await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} program detail`);
+    await assertBodyIncludes(page, "EJU 日本语", `${surface.name} program detail`);
+    await assertBodyIncludes(page, "预约咨询", `${surface.name} booking form`);
   }
 }
 
@@ -404,6 +419,9 @@ async function checkSurface(browser, surface, port) {
           throw new Error(`${surface.name} leaked logged-in text from another surface: ${blocked}`);
         }
       }
+      await runSurfaceAction(page, surface);
+    }
+    if (!surface.login) {
       await runSurfaceAction(page, surface);
     }
 
