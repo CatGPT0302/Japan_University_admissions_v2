@@ -336,6 +336,59 @@ class SourceReviewApiTest(unittest.TestCase):
         self.assertEqual(receipt["last_accepted_old_sha256"], "aaa")
         self.assertEqual(payload["review_state"]["review_status"], "reviewed")
 
+    def test_first_check_source_receipt_can_be_accepted_by_owner(self) -> None:
+        queue = {
+            "generated_at": "2026-05-26T00:00:00+00:00",
+            "summary": {"needs_review": 1, "first_check": 1},
+            "items": [
+                {
+                    "stem": "sample",
+                    "university": "Sample University",
+                    "admission_year": "2027",
+                    "admission_type": "undergraduate",
+                    "source_type": "pdf",
+                    "source_url": "https://example.test/admissions.pdf",
+                    "status": "first_check",
+                    "old_sha256": "",
+                    "new_sha256": "bbb",
+                    "checked_at": "2026-05-26T00:00:00+00:00",
+                    "needs_review": True,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+            receipt_path = Path(tmp) / "quality_sources" / "sample.source.json"
+            receipt_path.parent.mkdir(parents=True)
+            receipt_path.write_text(json.dumps({"source_url": "https://example.test/admissions.pdf"}), encoding="utf-8")
+            state_path = Path(tmp) / "states.json"
+            report = api.build_change_report(queue, states={})
+            item_id = report["items"][0]["item_id"]
+
+            with patch.object(api, "load_review_queue", return_value=queue), patch.object(
+                api,
+                "accept_source_review_receipt",
+                wraps=lambda item: __import__("scripts.source_review_state", fromlist=["accept_source_review_receipt"]).accept_source_review_receipt(
+                    item,
+                    root=Path(tmp),
+                    now="2026-05-26T01:00:00+00:00",
+                ),
+            ), patch.object(api, "update_source_review_state", wraps=lambda item_id, status, note="": __import__(
+                "scripts.source_review_state", fromlist=["update_source_review_state"]
+            ).update_source_review_state(item_id, status, note=note, path=state_path, now="2026-05-26T01:00:00+00:00")):
+                response = client.post(f"/admin/source-review-queue/{item_id}/accept-source")
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["status"], "accepted")
+        self.assertEqual(payload["receipt"]["old_sha256"], "")
+        self.assertEqual(payload["receipt"]["sha256"], "bbb")
+        self.assertEqual(receipt["sha256"], "bbb")
+        self.assertEqual(payload["review_state"]["review_status"], "reviewed")
+
     def test_source_review_item_can_be_reextracted_without_confirming_records(self) -> None:
         queue = {
             "generated_at": "2026-05-26T00:00:00+00:00",

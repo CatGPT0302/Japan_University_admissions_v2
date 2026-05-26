@@ -749,14 +749,14 @@ export default function QualityPage({ onOpenReview }: Props) {
                           >
                             {reextractingSourceId === item.item_id ? "正在整理" : "重新整理并复审"}
                           </button>
-                          {item.status === "changed" && item.new_sha256 ? (
+                          {["changed", "first_check"].includes(item.status) && item.new_sha256 ? (
                             <button
                               className="btn btn-ghost btn-small"
                               disabled={acceptingSourceId === item.item_id}
                               type="button"
                               onClick={() => void acceptSourceItem(item.item_id)}
                             >
-                              {acceptingSourceId === item.item_id ? "正在接受" : "接受新凭证"}
+                              {acceptingSourceId === item.item_id ? "正在接受" : item.status === "first_check" ? "接受来源凭据" : "接受新凭证"}
                             </button>
                           ) : null}
                           {item.source_url ? (
