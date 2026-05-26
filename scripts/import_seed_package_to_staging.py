@@ -71,6 +71,18 @@ def _staging_record(record: dict[str, Any]) -> dict[str, Any]:
     return shaped
 
 
+def _existing_seed_document(db: Any, *, file_name: str, university: str, admission_year: str) -> dict[str, Any] | None:
+    rows = db.get_documents(query=file_name, year=admission_year or None, limit=50, offset=0)
+    for row in rows:
+        if (
+            str(row.get("filename") or "") == file_name
+            and str(row.get("university_name") or "") == university
+            and str(row.get("admission_year") or "") == admission_year
+        ):
+            return row
+    return None
+
+
 def import_seed_package_to_staging(*, package_dir: Path, apply: bool = False) -> dict[str, Any]:
     records = _read_jsonl(package_dir / "records.jsonl")
     documents = _package_documents(package_dir)
@@ -82,6 +94,7 @@ def import_seed_package_to_staging(*, package_dir: Path, apply: bool = False) ->
         "records": len(records),
         "created_documents": 0,
         "created_staging_records": 0,
+        "skipped_existing_documents": 0,
         "database_status": "staging_imported" if apply else "not_imported",
     }
     details: list[dict[str, Any]] = []
@@ -109,9 +122,24 @@ def import_seed_package_to_staging(*, package_dir: Path, apply: bool = False) ->
         admission_year = str(doc.get("admission_year") or first.get("admission_year") or "")
         source_document = str(doc.get("source_document") or first.get("source_document") or f"{seed_id}.pdf")
         source_url = str(doc.get("source_url") or first.get("source_url") or first.get("pdf_url") or "")
+        file_name = f"seed-package-{source_document}"
+        existing = _existing_seed_document(db, file_name=file_name, university=university, admission_year=admission_year)
+        if existing and (int(existing.get("staging_count") or 0) > 0 or int(existing.get("confirmed_count") or 0) > 0):
+            summary["skipped_existing_documents"] += 1
+            details.append(
+                {
+                    "seed_id": seed_id,
+                    "doc_id": existing.get("doc_id"),
+                    "university": university,
+                    "admission_year": admission_year,
+                    "records": len(seed_records),
+                    "status": "skipped_existing",
+                }
+            )
+            continue
         doc_id = db.create_source_document(
             university,
-            f"seed-package-{source_document}",
+            file_name,
             str(package_dir / "records.jsonl"),
             source_url,
             admission_year,

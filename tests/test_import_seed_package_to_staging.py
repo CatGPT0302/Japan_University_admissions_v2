@@ -101,6 +101,30 @@ class ImportSeedPackageToStagingTest(unittest.TestCase):
         self.assertEqual(staging_row["needs_review"], 1)
         self.assertEqual(confirmed, 0)
 
+    def test_apply_is_idempotent_for_existing_seed_package_documents(self) -> None:
+        from scripts.import_seed_package_to_staging import import_seed_package_to_staging
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            root = Path(tmp)
+            package_dir = root / "package"
+            self._write_package(package_dir)
+            db = self._reset_db(root / "test.db")
+
+            first = import_seed_package_to_staging(package_dir=package_dir, apply=True)
+            second = import_seed_package_to_staging(package_dir=package_dir, apply=True)
+            conn = db.get_conn()
+            documents = conn.execute("SELECT COUNT(*) FROM source_documents").fetchone()[0]
+            staging = conn.execute("SELECT COUNT(*) FROM admission_records_staging").fetchone()[0]
+            conn.close()
+
+        self.assertEqual(first["summary"]["created_documents"], 1)
+        self.assertEqual(second["summary"]["created_documents"], 0)
+        self.assertEqual(second["summary"]["created_staging_records"], 0)
+        self.assertEqual(second["summary"]["skipped_existing_documents"], 1)
+        self.assertEqual(second["items"][0]["status"], "skipped_existing")
+        self.assertEqual(documents, 1)
+        self.assertEqual(staging, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

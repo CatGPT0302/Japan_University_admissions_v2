@@ -407,7 +407,8 @@ export default function QualityPage({ onOpenReview }: Props) {
       const result = await importSeedPackageToStaging(true);
       setSeedImportPreview(result);
       await load(selectedDocId);
-      setMessage(`已导入待复审：${result.summary.created_documents || 0} 份资料，${result.summary.created_staging_records || 0} 条内容。正式资料库没有被自动改动。`);
+      const skipped = result.summary.skipped_existing_documents ? ` 已跳过 ${result.summary.skipped_existing_documents} 份已存在资料。` : "";
+      setMessage(`已导入待复审：${result.summary.created_documents || 0} 份资料，${result.summary.created_staging_records || 0} 条内容。${skipped}正式资料库没有被自动改动。`);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {

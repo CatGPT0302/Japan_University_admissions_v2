@@ -247,6 +247,7 @@ export interface SeedPackageSummary {
   review_items?: number;
   created_documents?: number;
   created_staging_records?: number;
+  skipped_existing_documents?: number;
   database_status: "not_imported" | "staging_imported" | string;
 }
 
