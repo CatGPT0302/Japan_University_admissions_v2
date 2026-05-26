@@ -368,6 +368,37 @@ def _export_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _export_review_targets(rows: list[dict[str, Any]], *, limit: int = 50) -> list[dict[str, Any]]:
+    targets: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        university = str(row.get("university") or "").strip()
+        year = str(row.get("admission_year") or "").strip()
+        key = (university, year)
+        if not university or key in seen:
+            continue
+        seen.add(key)
+        docs = db_get_documents(query=university, year=year or None, limit=10, offset=0)
+        doc = next((item for item in docs if int(item.get("confirmed_count") or 0) > 0 or int(item.get("staging_count") or 0) > 0), None)
+        if not doc and docs:
+            doc = docs[0]
+        if doc:
+            targets.append(
+                {
+                    "university": university,
+                    "admission_year": year,
+                    "doc_id": doc.get("doc_id"),
+                    "filename": doc.get("filename") or "",
+                    "source_url": doc.get("source_url") or "",
+                    "staging_count": int(doc.get("staging_count") or 0),
+                    "confirmed_count": int(doc.get("confirmed_count") or 0),
+                }
+            )
+        if len(targets) >= limit:
+            break
+    return targets
+
+
 def _run_extract_direct(file_name: str, university: str, year: str, url: str = "") -> dict[str, Any]:
     pdf_path = INPUT_DIR / file_name
     if not pdf_path.exists():
@@ -1422,7 +1453,7 @@ def export_preview(
         limit=max(1, min(int(limit), 1000)),
         offset=max(0, int(offset)),
     )
-    return {"summary": _export_summary(rows), "rows": rows}
+    return {"summary": _export_summary(rows), "review_targets": _export_review_targets(rows), "rows": rows}
 
 
 @app.get("/exports/options")

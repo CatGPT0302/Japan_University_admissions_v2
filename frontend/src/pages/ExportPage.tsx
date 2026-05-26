@@ -59,6 +59,12 @@ function yearText(value?: string | number | null): string | undefined {
   return match?.[0];
 }
 
+function sameYear(left?: string | number | null, right?: string | number | null) {
+  const leftYear = yearText(left);
+  const rightYear = yearText(right);
+  return !leftYear || !rightYear || leftYear === rightYear;
+}
+
 function RowPreview({
   row,
   selected,
@@ -198,6 +204,13 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
 
   async function openReviewForSchool(university: string, year?: string) {
     if (!university.trim() || !onOpenReview) return;
+    const target = (preview?.review_targets || []).find(
+      (item) => item.university === university.trim() && sameYear(item.admission_year, year),
+    );
+    if (target?.doc_id) {
+      onOpenReview(target.doc_id);
+      return;
+    }
     setOpeningSource(true);
     setSourceLookupError("");
     try {

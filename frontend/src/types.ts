@@ -409,6 +409,15 @@ export interface ExportPreviewResponse {
     missing_required?: Record<string, number>;
     ready_for_export?: boolean;
   };
+  review_targets?: Array<{
+    university: string;
+    admission_year: string;
+    doc_id: number;
+    filename?: string;
+    source_url?: string;
+    staging_count?: number;
+    confirmed_count?: number;
+  }>;
   rows: ConfirmedRecord[];
 }
 
