@@ -406,6 +406,8 @@ export interface ExportPreviewResponse {
     universities: number;
     years: string[];
     faculties: number;
+    missing_required?: Record<string, number>;
+    ready_for_export?: boolean;
   };
   rows: ConfirmedRecord[];
 }

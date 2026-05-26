@@ -78,6 +78,55 @@ class ExportCenterApiTest(unittest.TestCase):
         conn.commit()
         conn.close()
 
+    def _insert_confirmed_with_gaps(self, db, university: str, year: str, faculty: str) -> None:
+        doc_id = db.create_source_document(
+            university,
+            f"{university}.pdf",
+            f"/tmp/{university}.pdf",
+            f"https://example.test/{university}.pdf",
+            year,
+        )
+        conn = db.get_conn()
+        conn.execute(
+            """
+            INSERT INTO admission_records (
+                source_staging_id, document_id, university, pdf_url, admission_year,
+                admission_period, faculty, department, application_period, deadline_rule,
+                eju_session, eju_japanese, eju_general, eju_math, eju_physics,
+                eju_chemistry, eju_biology, english_requirement, screening_method,
+                screening_schedule, result_date, enrollment_period, prefecture, campus
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                None,
+                doc_id,
+                university,
+                f"https://example.test/{university}.pdf",
+                year,
+                "April",
+                faculty,
+                "Department",
+                "",
+                "Must arrive by deadline",
+                "2025 June or November",
+                "",
+                "General subject",
+                "Math course 2",
+                "Physics",
+                "Chemistry",
+                "",
+                "",
+                "Documents and interview",
+                "",
+                "",
+                "2026-03-18",
+                "Tokyo",
+                "Main",
+            ),
+        )
+        conn.commit()
+        conn.close()
+
     def test_export_preview_filters_confirmed_rows_and_hides_quality_fields(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))
@@ -93,9 +142,33 @@ class ExportCenterApiTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["summary"]["records"], 2)
         self.assertEqual(payload["summary"]["universities"], 2)
+        self.assertTrue(payload["summary"]["ready_for_export"])
+        self.assertEqual(payload["summary"]["missing_required"]["application_period"], 0)
         self.assertEqual({row["university"] for row in payload["rows"]}, {"Meiji University", "Waseda University"})
         for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
             self.assertNotIn(hidden_key, payload["rows"][0])
+
+    def test_export_preview_reports_missing_required_content_without_internal_quality_fields(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Ready University", "2027", "Science")
+            self._insert_confirmed_with_gaps(db, "Gap University", "2027", "Letters")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/exports/preview", params={"years": "2027"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["summary"]["records"], 2)
+        self.assertFalse(payload["summary"]["ready_for_export"])
+        self.assertEqual(payload["summary"]["missing_required"]["application_period"], 1)
+        self.assertEqual(payload["summary"]["missing_required"]["eju_japanese"], 1)
+        self.assertEqual(payload["summary"]["missing_required"]["english_requirement"], 1)
+        self.assertEqual(payload["summary"]["missing_required"]["screening_schedule"], 1)
+        self.assertEqual(payload["summary"]["missing_required"]["result_date"], 1)
+        for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
+            self.assertNotIn(hidden_key, str(payload))
 
     def test_export_csv_uses_same_filters(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

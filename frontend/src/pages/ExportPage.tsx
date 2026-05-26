@@ -312,17 +312,18 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
       { key: "screening_schedule" as const, label: "考试日程" },
       { key: "result_date" as const, label: "结果公布" },
     ];
+    const serverMissing = preview?.summary.missing_required || {};
     const gaps = requiredChecks
-      .map((item) => ({ ...item, missing: missingCount(rows, item.key) }))
+      .map((item) => ({ ...item, missing: Number(serverMissing[item.key] ?? missingCount(rows, item.key)) }))
       .filter((item) => item.missing > 0);
     return {
       schools,
       years: exportYears,
       faculties: exportFaculties,
       gaps,
-      ready: Boolean(rows.length) && gaps.length === 0,
+      ready: preview?.summary.ready_for_export ?? (Boolean(rows.length) && gaps.length === 0),
     };
-  }, [rows]);
+  }, [preview?.summary.missing_required, preview?.summary.ready_for_export, rows]);
 
   return (
     <div className="page-shell export-page">

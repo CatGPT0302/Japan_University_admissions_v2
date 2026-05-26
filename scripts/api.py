@@ -347,11 +347,24 @@ def _export_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     universities = {str(row.get("university") or "").strip() for row in rows if str(row.get("university") or "").strip()}
     years = {str(row.get("admission_year") or "").strip() for row in rows if str(row.get("admission_year") or "").strip()}
     faculties = {str(row.get("faculty") or "").strip() for row in rows if str(row.get("faculty") or "").strip()}
+    required_columns = {
+        "application_period": "application_period",
+        "eju_japanese": "eju_japanese",
+        "english_requirement": "english_requirement",
+        "screening_schedule": "screening_schedule",
+        "result_date": "result_date",
+    }
+    missing_required = {
+        key: sum(1 for row in rows if not str(row.get(column) or "").strip())
+        for key, column in required_columns.items()
+    }
     return {
         "records": len(rows),
         "universities": len(universities),
         "years": sorted(years, reverse=True),
         "faculties": len(faculties),
+        "missing_required": missing_required,
+        "ready_for_export": bool(rows) and all(count == 0 for count in missing_required.values()),
     }
 
 
