@@ -319,6 +319,10 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(excel.status_code, 200)
         self.assertIn("admissions_selected_2rows.xlsx", excel.headers["content-disposition"])
         wb = load_workbook(BytesIO(excel.content))
+        self.assertEqual(wb.sheetnames[:2], ["导出说明", "招生资料"])
+        summary = wb["导出说明"]
+        self.assertEqual(summary["A4"].value, "资料条数")
+        self.assertEqual(summary["B4"].value, 2)
         ws = wb["招生资料"]
         exported_universities = {ws.cell(row=row_number, column=1).value for row_number in range(4, ws.max_row + 1)}
         self.assertEqual(exported_universities, {"Meiji University", "Kyushu University"})
@@ -399,7 +403,13 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("admissions_Meiji_University_2027_Science.xlsx", response.headers["content-disposition"])
         wb = load_workbook(BytesIO(response.content))
-        self.assertEqual(wb.sheetnames, ["招生资料"])
+        self.assertEqual(wb.sheetnames, ["导出说明", "招生资料"])
+        summary = wb["导出说明"]
+        self.assertEqual(summary["B4"].value, 1)
+        self.assertEqual(summary["B5"].value, 1)
+        self.assertIn("2027", summary["B6"].value)
+        self.assertIn("Science", summary["B7"].value)
+        self.assertNotIn("risk", str(summary.values))
         ws = wb["招生资料"]
         headers = [ws.cell(row=3, column=index + 1).value for index in range(ws.max_column)]
         self.assertIn("学校", headers)

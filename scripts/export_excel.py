@@ -253,6 +253,31 @@ def export_confirmed_excel_bytes_from_records(records: list[dict[str, Any]]) -> 
 
     ws.freeze_panes = "E4"
     ws.auto_filter.ref = f"A3:{ws.cell(row=ws.max_row, column=len(CONFIRMED_EXPORT_COLUMNS)).coordinate}"
+
+    summary = wb.create_sheet("导出说明", 0)
+    summary["A1"] = "导出说明"
+    summary["A1"].font = title_font
+    summary["A3"] = "生成时间"
+    summary["B3"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    summary["A4"] = "资料条数"
+    summary["B4"] = len(records)
+    summary["A5"] = "学校数量"
+    summary["B5"] = len({str(record.get("university") or "").strip() for record in records if str(record.get("university") or "").strip()})
+    summary["A6"] = "年度"
+    summary["B6"] = "、".join(sorted({str(record.get("admission_year") or "").strip() for record in records if str(record.get("admission_year") or "").strip()}))
+    summary["A7"] = "学部"
+    summary["B7"] = "、".join(sorted({str(record.get("faculty") or "").strip() for record in records if str(record.get("faculty") or "").strip()}))
+    summary["A9"] = "说明"
+    summary["B9"] = "本文件只包含已经确认的招生资料；内部复审、置信度、风险标记不会导出。"
+    for row in summary.iter_rows(min_row=3, max_row=9, max_col=2):
+        for cell in row:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.border = border
+    for cell in summary["A"]:
+        cell.font = Font(name="Microsoft YaHei UI", bold=True, color="374151")
+    summary.column_dimensions["A"].width = 16
+    summary.column_dimensions["B"].width = 80
+
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue(), len(records)
