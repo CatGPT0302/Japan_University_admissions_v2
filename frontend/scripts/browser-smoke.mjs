@@ -366,8 +366,12 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} confirm export handoff`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} confirm export handoff`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirm export preview`);
+    await assertBodyIncludes(page, "回到复审补齐", `${surface.name} export gap review handoff`);
+    await page.getByRole("button", { name: "回到复审补齐" }).click();
+    await assertBodyIncludes(page, "从导出缺口进入", `${surface.name} export gap focus notice`);
+    await assertBodyIncludes(page, "先补齐：", `${surface.name} export gap focus target`);
 
-    await page.getByRole("button", { name: /正式资料/ }).click();
+    await page.locator(".product-nav").getByRole("button", { name: /正式资料/ }).click();
     await assertBodyIncludes(page, "已确认的招生资料", `${surface.name} confirmed records`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirmed records`);
     await page.getByRole("button", { name: /东京测试大学/ }).click();
