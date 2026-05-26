@@ -155,6 +155,7 @@ export default function App() {
   }, []);
 
   const activeItem = useMemo(() => NAV.find((item) => item.key === page) ?? NAV[0], [page]);
+  const canOpenOwnerReviewInsideApp = surface === "combined";
 
   if (isStudentApp) return <StudentApp />;
   if (!authChecked) {
@@ -177,11 +178,15 @@ export default function App() {
     if (user.role !== "owner_admin") return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
     return (
       <OwnerPartnersPage
-        onOpenReview={(docId) => {
-          setActiveDocId(docId);
-          setPage("review");
-          window.location.hash = "#/review";
-        }}
+        onOpenReview={
+          canOpenOwnerReviewInsideApp
+            ? (docId) => {
+                setActiveDocId(docId);
+                setPage("review");
+                window.location.hash = "#/review";
+              }
+            : undefined
+        }
       />
     );
   }

@@ -202,6 +202,12 @@ export default function SettingsPage({ onOpenReview }: Props) {
     setSelectedSubmissionId(next.id);
   }
 
+  const reviewActionLabel = onOpenReview
+    ? "去确认资料"
+    : OWNER_WORKSPACE_URL
+      ? "打开 Owner 工作台"
+      : "查看确认方式";
+
   async function handleStartSubmission(submissionId: number) {
     setWorkingSubmissionId(submissionId);
     setMessage("");
@@ -477,7 +483,7 @@ export default function SettingsPage({ onOpenReview }: Props) {
                           {item.processing_status === "needs_owner_review" ? (
                             <>
                               <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(item)}>
-                                去确认资料
+                                {reviewActionLabel}
                               </button>
                               <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void handleSetSubmissionStatus(item.id, "confirmed")}>
                                 标记已完成
@@ -525,7 +531,7 @@ export default function SettingsPage({ onOpenReview }: Props) {
                       ) : null}
                       {selectedSubmission.processing_status === "needs_owner_review" ? (
                         <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(selectedSubmission)}>
-                          去确认资料
+                          {reviewActionLabel}
                         </button>
                       ) : null}
                       <button className="btn btn-ghost" type="button" onClick={() => void load()}>

@@ -322,7 +322,7 @@ async function runSurfaceAction(page, surface) {
     }
     await page.waitForLoadState("networkidle");
     await assertBodyIncludes(page, "等你确认", `${surface.name} started queue`);
-    await assertBodyIncludes(page, "去确认资料", `${surface.name} started queue`);
+    await assertBodyIncludes(page, "打开 Owner 工作台", `${surface.name} started queue`);
     return;
   }
 
