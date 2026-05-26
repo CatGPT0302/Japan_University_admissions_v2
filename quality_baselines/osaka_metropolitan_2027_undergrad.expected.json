@@ -15,6 +15,7 @@
       "eju_japanese": {"contains": ["270点以上"]},
       "eju_math": {"contains": ["数学コース2"]},
       "eju_physics": {"contains": ["物理"]},
+      "english_requirement": {"contains": ["要件なし", "英語外部試験"]},
       "screening_method": {"contains": ["日本留学試験"]},
       "evidence": {"contains": ["p.1"]}
     },
@@ -36,6 +37,7 @@
       "eju_session": {"contains": ["2026年度第1回"]},
       "eju_japanese": {"contains": ["日本語"]},
       "eju_general": {"contains": ["600点以上"]},
+      "english_requirement": {"contains": ["要件なし", "英語外部試験", "個別学力検査"]},
       "screening_method": {"contains": ["外国語"]},
       "evidence": {"contains": ["p.1"]}
     },

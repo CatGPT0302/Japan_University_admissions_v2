@@ -60,6 +60,17 @@ class OsakaMetropolitan2027UndergradExtractorTest(unittest.TestCase):
 
         self.assertEqual(extract_osaka_metropolitan_2027_undergrad_records("大阪公立大学 一般選抜 入試要項"), [])
 
+    def test_distinguishes_external_english_requirement_from_individual_exam_english(self) -> None:
+        from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_metropolitan_2027_undergrad_records
+
+        records = extract_osaka_metropolitan_2027_undergrad_records(OSAKA_METROPOLITAN_UNDERGRAD_TEXT)
+        by_id = {record["id"]: record for record in records}
+
+        self.assertIn("要件なし", by_id["osaka-metropolitan-2027-knowledge-information"]["english_requirement"])
+        self.assertIn("要件なし", by_id["osaka-metropolitan-2027-law"]["english_requirement"])
+        self.assertIn("個別学力検査", by_id["osaka-metropolitan-2027-law"]["screening_method"])
+        self.assertIn("TOEFL iBT", by_id["osaka-metropolitan-2027-agriculture-applied-biological-sciences"]["english_requirement"])
+
     def test_cli_reads_text_file_and_writes_records_json(self) -> None:
         with TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

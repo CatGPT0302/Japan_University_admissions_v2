@@ -32,6 +32,10 @@ def _is_osaka_metropolitan_foreign_student_guide(compact: str) -> bool:
     return clean_match or _has_all(compact, ["2027", "ฟ㢪", "ྜ᱁"])
 
 
+def _no_external_english_requirement_note() -> str:
+    return "英語外部試験は出願要件に含まれない。本seedでは要件なしとして明示。個別学力検査の外国語・英語は選抜方法に記載。"
+
+
 def _common() -> dict[str, Any]:
     return {
         "source_pdf": "osaka_metropolitan_2027_undergrad.pdf",
@@ -68,6 +72,7 @@ def extract_osaka_metropolitan_2027_undergrad_records(text: str) -> list[dict[st
             "eju_math": "EJU数学コース2。知識情報システム学類は120点以上。",
             "eju_physics": "EJU理科は物理・化学・生物から2科目。理科は120点以上。",
             "eju_chemistry": "EJU理科は物理・化学・生物から2科目。理科は120点以上。",
+            "english_requirement": _no_external_english_requirement_note(),
             "screening_method": "日本留学試験、個別学力検査等、口述・面接、出願書類を総合して判定。",
             "screening_schedule": "選抜期日: 2026年11月21日(土)。",
             "result_date": "合格者発表日: 2026年12月4日(金)。",
@@ -85,6 +90,7 @@ def extract_osaka_metropolitan_2027_undergrad_records(text: str) -> list[dict[st
             "eju_japanese": "EJU日本語を利用。",
             "eju_general": "法学部はEJU日本語、総合科目、数学コース1を利用し、合計600点以上が必要。",
             "eju_math": "EJU数学コース1。",
+            "english_requirement": _no_external_english_requirement_note(),
             "screening_method": "日本留学試験、個別学力検査(外国語・作文)、口述試験、出願書類を総合して判定。",
             "screening_schedule": "選抜期日: 2027年2月25日(木)。",
             "result_date": "合格者発表日: 2027年3月9日(火)。",
