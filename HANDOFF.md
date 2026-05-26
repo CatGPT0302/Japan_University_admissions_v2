@@ -2,22 +2,22 @@
 
 ## Current Product Shape
 
-This project now has three separate surfaces:
+This project now has three separate surfaces. In production, use separate deployments/sites for these surfaces rather than exposing them as different hash routes on one public URL.
 
-1. Owner/admin workspace at `#/`
+1. Owner/admin workspace
    - Upload or fetch admissions materials.
    - Run the existing extraction flow.
    - Review extracted content.
    - Confirm records into the main database.
    - Search confirmed records and export Excel.
 
-2. Private-school service center at `#/settings`
-   - Open access for a partner school.
+2. Partner service center
+   - Open limited access for a partner.
    - Copy the limited-access handoff text.
    - View submitted materials and processing progress.
    - Start owner-controlled processing for submitted PDFs or links.
 
-3. Student/parent frontend at `#/student`
+3. Student/parent frontend
    - Collect profile information first.
    - Show schools worth checking.
    - Explain application requirements in user-facing language.
@@ -43,8 +43,8 @@ Do not merge these into one dashboard. The admin tool is the data production too
 
 ## Important Frontend Areas
 
-- `frontend/src/App.tsx` keeps the three app shells separate by hash route.
-- `frontend/src/pages/SettingsPage.tsx` is the private-school service center.
+- `frontend/src/App.tsx` keeps the app shells separate by `VITE_APP_SURFACE`; combined hash routing is only for local debugging.
+- `frontend/src/pages/SettingsPage.tsx` is the partner service center.
 - `frontend/src/pages/StudentApp.tsx` is the student/parent frontend.
 - `frontend/src/pages/ReviewPage.tsx` is the owner review workbench: source PDF preview, grouped editor, field evidence, priority hints, and confirm flow.
 - `frontend/src/pages/ExportPage.tsx` is the owner export center: single-school export, batch export, saved combinations, row-level export actions, and source-review handoff.
