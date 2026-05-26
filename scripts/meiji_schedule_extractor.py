@@ -161,6 +161,26 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if _has_all(compact, ["農学部", "農学科", "農芸化学科", "生命科学科", "食料環境政策学科", "理科(生物)", "理科(化学)", "生物・化学", "食料環境政策学科", "総合科目", "12月18日"]):
+        record = _base_record(
+            faculty="農学部",
+            department="農学科 / 農芸化学科 / 生命科学科 / 食料環境政策学科",
+        )
+        record.update(
+            {
+                "eju_subjects": "農学科: 日本語 / 理科（生物） / 数学（コース2）; 農芸化学科: 日本語 / 理科（化学）; 生命科学科: 日本語 / 理科（生物・化学）; 食料環境政策学科: 日本語 / 総合科目",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目（食料環境政策学科）",
+                "eju_math": "数学（コース2）（農学科）",
+                "eju_chemistry": "化学（農芸化学科・生命科学科）",
+                "english_requirement": "TOEFL iBT / TOEIC L&R / IELTS / 出願基準点なし",
+                "screening_method": "書類選考 / 小論文 / 面接",
+                "screening_schedule": "2026年11月28日（土） 9:30～10:30 小論文 / 12:00～ 面接",
+                "result_date": "2026年12月18日（金）",
+            }
+        )
+        records.append(record)
+
     if _has_all(compact, ["国際日本学部", "国際日本学科", "TOEIC L&R 600以上", "IELTS 4.0以上", "12月24日"]):
         record = _base_record(faculty="国際日本学部", department="国際日本学科", selection_type="Ⅱ")
         record.update(
