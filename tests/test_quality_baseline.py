@@ -148,6 +148,23 @@ class QualityBaselineTest(unittest.TestCase):
         self.assertEqual(report["summary"]["unexpected_records"], 1)
         self.assertEqual(report["unexpected_records"][0]["faculty"], "Commerce")
 
+    def test_fails_when_expected_baseline_has_duplicate_ids_or_matches(self) -> None:
+        from scripts.quality_baseline import evaluate_against_expected
+
+        expected = [
+            {"id": "law", "match": {"faculty": "Law"}, "expect": {"english_requirement": "TOEFL"}},
+            {"id": "law", "match": {"faculty": "Law"}, "expect": {"english_requirement": "TOEFL"}},
+        ]
+        extracted = [{"faculty": "Law", "english_requirement": "TOEFL"}]
+
+        report = evaluate_against_expected(expected, extracted)
+
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["summary"]["duplicate_expected_ids"], 1)
+        self.assertEqual(report["summary"]["duplicate_expected_matches"], 1)
+        self.assertEqual(report["baseline_integrity_failures"][0]["failure"], "duplicate_expected_id")
+        self.assertEqual(report["baseline_integrity_failures"][1]["failure"], "duplicate_expected_match")
+
     def test_can_allow_extra_records_for_partial_baseline_checks(self) -> None:
         from scripts.quality_baseline import evaluate_against_expected
 

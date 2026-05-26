@@ -29,6 +29,30 @@ def _find_record(expected_match: dict[str, Any], extracted_records: list[dict[st
     return None
 
 
+def _match_key(match_rule: dict[str, Any]) -> str:
+    return json.dumps({str(key): _normalize(value) for key, value in sorted(match_rule.items())}, ensure_ascii=False, sort_keys=True)
+
+
+def _baseline_integrity_failures(expected_records: list[dict[str, Any]]) -> list[dict[str, str]]:
+    failures: list[dict[str, str]] = []
+    seen_ids: dict[str, str] = {}
+    seen_matches: dict[str, str] = {}
+    for index, expected in enumerate(expected_records, start=1):
+        expected_id = _text(expected.get("id")) or f"expected-{index}"
+        if expected_id in seen_ids:
+            failures.append({"id": expected_id, "failure": "duplicate_expected_id", "first_id": seen_ids[expected_id]})
+        else:
+            seen_ids[expected_id] = expected_id
+
+        match_rule = expected.get("match") if isinstance(expected.get("match"), dict) else {}
+        key = _match_key(match_rule)
+        if key in seen_matches:
+            failures.append({"id": expected_id, "failure": "duplicate_expected_match", "first_id": seen_matches[key]})
+        else:
+            seen_matches[key] = expected_id
+    return failures
+
+
 def _evaluate_value(field: str, expected_rule: Any, actual_value: Any) -> dict[str, Any]:
     actual = _text(actual_value)
     check = {
@@ -89,6 +113,7 @@ def evaluate_against_expected(
     optional_empty_items = 0
     unmatched_records = 0
     field_coverage: dict[str, dict[str, int]] = {}
+    baseline_integrity_failures = _baseline_integrity_failures(expected_records)
 
     for expected in expected_records:
         expected_id = _text(expected.get("id")) or f"expected-{len(records) + 1}"
@@ -154,6 +179,7 @@ def evaluate_against_expected(
     unexpected_count = len(unexpected_records)
     passed = (
         unmatched_records == 0
+        and not baseline_integrity_failures
         and missing_items == 0
         and mismatched_items == 0
         and (allow_extra_records or unexpected_count == 0)
@@ -175,8 +201,11 @@ def evaluate_against_expected(
             "optional_empty_items": optional_empty_items,
             "unmatched_records": unmatched_records,
             "unexpected_records": unexpected_count,
+            "duplicate_expected_ids": sum(1 for failure in baseline_integrity_failures if failure["failure"] == "duplicate_expected_id"),
+            "duplicate_expected_matches": sum(1 for failure in baseline_integrity_failures if failure["failure"] == "duplicate_expected_match"),
             "exact_match_rate": exact_match_rate,
         },
+        "baseline_integrity_failures": baseline_integrity_failures,
         "field_coverage": field_coverage,
         "unexpected_records": unexpected_records[:20],
         "records": records,
