@@ -380,6 +380,7 @@ class SourceReviewApiTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["doc_id"], 42)
         self.assertTrue(payload["review_required"])
+        self.assertTrue(payload["confirmed_records_unchanged"])
         workflow.assert_called_once()
         request = workflow.call_args.args[0]
         self.assertEqual(request.pdf_url, "https://example.test/admissions.pdf")

@@ -1655,6 +1655,7 @@ def reextract_source_review_queue_item(item_id: str, request: Request) -> dict[s
         "records": result.get("records", 0),
         "quality_status": result.get("quality_status", "needs_review"),
         "review_required": True,
+        "confirmed_records_unchanged": True,
         "source": result.get("source", {}),
     }
 

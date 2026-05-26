@@ -317,7 +317,8 @@ export default function QualityPage({ onOpenReview }: Props) {
     setMessage("");
     try {
       const result = await reextractSourceReviewItem(itemId);
-      setMessage(`已重新整理出 ${result.records || 0} 条待复审内容。`);
+      const safetyNote = result.confirmed_records_unchanged ? "正式资料没有被自动改动。" : "";
+      setMessage(`已重新整理出 ${result.records || 0} 条待复审内容。${safetyNote}`);
       await load(selectedDocId);
       if (result.doc_id && onOpenReview) onOpenReview(result.doc_id);
     } catch (nextError) {

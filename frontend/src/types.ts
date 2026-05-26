@@ -340,6 +340,7 @@ export interface SourceReviewReextractResponse {
   records: number;
   quality_status?: "ok" | "needs_review" | "failed";
   review_required: boolean;
+  confirmed_records_unchanged: boolean;
   source?: AgentSource;
 }
 
