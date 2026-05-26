@@ -43,6 +43,7 @@ SEED_RECORD_MINIMUMS = {
     "kwansei-2027-undergrad": 3,
     "kindai-2027-undergrad": 3,
     "ritsumeikan-2027-undergrad": 3,
+    "osaka-metropolitan-2027-undergrad": 3,
 }
 
 

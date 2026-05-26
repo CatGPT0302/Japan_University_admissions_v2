@@ -1,0 +1,68 @@
+[
+  {
+    "id": "osaka-metropolitan-2027-knowledge-information",
+    "source_document": "https://www.omu.ac.jp/admissions/assets/2027_international_student_pre_guide.pdf",
+    "source_note": "Official Osaka Metropolitan University 2027 private-financed international student special selection pre-guide. Checked against official page and PDF schedule, EJU thresholds, selection methods, and later-guideline warning.",
+    "expect": {
+      "source_pdf": {"contains": ["osaka_metropolitan_2027_undergrad.pdf"]},
+      "source_document": {"contains": ["2027_international_student_pre_guide.pdf"]},
+      "application_period": {"contains": ["2026年10月5日"]},
+      "screening_schedule": {"contains": ["2026年11月21日"]},
+      "result_date": {"contains": ["2026年12月4日"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年"]},
+      "required_documents": {"contains": ["2027年度学生募集要項"]},
+      "eju_session": {"contains": ["2025年度第2回"]},
+      "eju_japanese": {"contains": ["270点以上"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["物理"]},
+      "screening_method": {"contains": ["日本留学試験"]},
+      "evidence": {"contains": ["p.1"]}
+    },
+    "match": {"university": "大阪公立大学", "admission_year": "2027", "faculty": "現代システム科学域"},
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "osaka-metropolitan-2027-law",
+    "source_document": "https://www.omu.ac.jp/admissions/assets/2027_international_student_pre_guide.pdf",
+    "source_note": "Official Osaka Metropolitan University 2027 private-financed international student special selection pre-guide. Checked against official page and PDF schedule, EJU thresholds, selection methods, and later-guideline warning.",
+    "expect": {
+      "source_pdf": {"contains": ["osaka_metropolitan_2027_undergrad.pdf"]},
+      "source_document": {"contains": ["2027_international_student_pre_guide.pdf"]},
+      "application_period": {"contains": ["2026年12月16日"]},
+      "screening_schedule": {"contains": ["2027年2月25日"]},
+      "result_date": {"contains": ["2027年3月9日"]},
+      "eligibility": {"contains": ["12年"]},
+      "required_documents": {"contains": ["7月以降"]},
+      "eju_session": {"contains": ["2026年度第1回"]},
+      "eju_japanese": {"contains": ["日本語"]},
+      "eju_general": {"contains": ["600点以上"]},
+      "screening_method": {"contains": ["外国語"]},
+      "evidence": {"contains": ["p.1"]}
+    },
+    "match": {"university": "大阪公立大学", "admission_year": "2027", "faculty": "法学部"},
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "osaka-metropolitan-2027-agriculture-applied-biological-sciences",
+    "source_document": "https://www.omu.ac.jp/admissions/assets/2027_international_student_pre_guide.pdf",
+    "source_note": "Official Osaka Metropolitan University 2027 private-financed international student special selection pre-guide. Checked against official page and PDF schedule, EJU thresholds, selection methods, TOEFL requirement, and later-guideline warning.",
+    "expect": {
+      "source_pdf": {"contains": ["osaka_metropolitan_2027_undergrad.pdf"]},
+      "source_document": {"contains": ["2027_international_student_pre_guide.pdf"]},
+      "application_period": {"contains": ["2026年12月16日"]},
+      "screening_schedule": {"contains": ["2027年2月26日"]},
+      "result_date": {"contains": ["2027年3月9日"]},
+      "eligibility": {"contains": ["日本国籍を有しない"]},
+      "required_documents": {"contains": ["出願関係書類"]},
+      "eju_session": {"contains": ["2026年度第2回"]},
+      "eju_japanese": {"contains": ["270点以上"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["理科"]},
+      "english_requirement": {"contains": ["TOEFL iBT"]},
+      "screening_method": {"contains": ["小論文"]},
+      "evidence": {"contains": ["p.3"]}
+    },
+    "match": {"university": "大阪公立大学", "admission_year": "2027", "faculty": "農学部"},
+    "review_status": "human_checked_seed"
+  }
+]

@@ -6,6 +6,7 @@ from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_reco
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
 from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
+from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_metropolitan_2027_undergrad_records
 from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
@@ -91,6 +92,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["立命館大学", "2027", "外国人留学生入学試験"],
         "text_markers": ["立命館大学", "2027", "外国人留学生入学試験"],
         "extractor": extract_ritsumeikan_2027_undergrad_records,
+    },
+    "osaka_metropolitan_2027_undergrad": {
+        "stem": "osaka_metropolitan_2027_undergrad",
+        "id": "osaka-metropolitan-2027-undergrad",
+        "university": "大阪公立大学",
+        "admission_year": "2027",
+        "script": "scripts/osaka_metropolitan_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/osaka_metropolitan_2027_undergrad.expected.json",
+        "source_url": "https://www.omu.ac.jp/admissions/assets/2027_international_student_pre_guide.pdf",
+        "source_candidates": ["data/uploads/osaka_metropolitan_2027_undergrad.pdf"],
+        "source_markers": ["2027", "⚾㈝እᅜே␃Ꮫ"],
+        "text_markers": ["2027", "␃Ꮫ", "ヨ㦂"],
+        "extractor": extract_osaka_metropolitan_2027_undergrad_records,
     },
 }
 
