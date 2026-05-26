@@ -148,6 +148,19 @@ function watchlistGapText(value: string) {
   return value;
 }
 
+function checkStatusText(value?: string, days?: number | null) {
+  if (value === "never_checked") return "还未检查";
+  if (value === "stale") return days === null || days === undefined ? "需要复查" : `${days} 天未检查`;
+  if (value === "recent") return days === null || days === undefined ? "近期已查" : `${days} 天前检查`;
+  return "待确认";
+}
+
+function checkStatusClass(value?: string) {
+  if (value === "never_checked" || value === "stale") return "badge badge-amber";
+  if (value === "recent") return "badge badge-green";
+  return "badge badge-gray";
+}
+
 function normalized(value?: string | null) {
   return String(value || "")
     .trim()
@@ -299,6 +312,10 @@ export default function QualityPage({ onOpenReview }: Props) {
   const watchedTypes = Object.entries(watchSummary.by_type).sort((a, b) => Number(b[1]) - Number(a[1]));
   const recentWatchItems = (sourceWatchlist?.items || [])
     .filter((item) => item.source_url || item.cached_path)
+    .sort((a, b) => {
+      const priority = (item: typeof a) => (item.check_status === "never_checked" ? 0 : item.check_status === "stale" ? 1 : 2);
+      return priority(a) - priority(b);
+    })
     .slice(0, 4);
   const topCoverage = [...(metrics?.field_coverage || [])].sort((a, b) => a.fill_rate - b.fill_rate).slice(0, 8);
   const topModified = metrics?.top_modified_fields || [];
@@ -454,7 +471,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                       <strong>{item.university || item.stem}</strong>
                       <span>{item.admission_year || "未标年度"} · {sourceTypeText(item.source_type)}</span>
                     </div>
-                    {item.last_checked_at ? <span>{item.last_checked_at}</span> : <span>还未检查</span>}
+                    <span className={checkStatusClass(item.check_status)}>{checkStatusText(item.check_status, item.days_since_checked)}</span>
                   </article>
                 ))}
               </div>

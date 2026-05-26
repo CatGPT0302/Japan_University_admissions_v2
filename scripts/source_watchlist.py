@@ -128,6 +128,23 @@ def _parse_checked_at(value: Any) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
+def _maintenance_for_checked_at(
+    value: Any,
+    *,
+    now: datetime | None = None,
+    stale_days: int = STALE_CHECK_DAYS,
+) -> dict[str, Any]:
+    checked_at = _parse_checked_at(value)
+    if not checked_at:
+        return {"check_status": "never_checked", "days_since_checked": None}
+    now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    age_days = max(0, int((now_utc - checked_at).total_seconds() // (24 * 60 * 60)))
+    return {
+        "check_status": "stale" if age_days > max(1, int(stale_days)) else "recent",
+        "days_since_checked": age_days,
+    }
+
+
 def summarize_watchlist(
     items: list[dict[str, Any]],
     *,
@@ -174,9 +191,23 @@ def summarize_watchlist(
     }
 
 
-def build_watchlist_report(*, root: Path = ROOT) -> dict[str, Any]:
-    items = build_source_watchlist(root=root)
-    return {"summary": summarize_watchlist(items), "items": items}
+def build_watchlist_report(
+    *,
+    root: Path = ROOT,
+    seeds: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    items = build_source_watchlist(root=root, seeds=seeds)
+    summary = summarize_watchlist(items)
+    now = datetime.now(timezone.utc)
+    stale_days = int(summary.get("stale_check_days") or STALE_CHECK_DAYS)
+    enriched_items = [
+        {
+            **item,
+            **_maintenance_for_checked_at(item.get("last_checked_at"), now=now, stale_days=stale_days),
+        }
+        for item in items
+    ]
+    return {"summary": summary, "items": enriched_items}
 
 
 def main(argv: list[str] | None = None) -> int:
