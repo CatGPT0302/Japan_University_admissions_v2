@@ -13,7 +13,7 @@
 - Add an owner-facing submission detail view with clearer links into the review page.
 - Add lightweight access protection before any external deployment of the owner/admin workspace.
 - Improve student result ranking with more real confirmed records.
-- Add browser smoke checks for exporting the confirmed seeded record.
+- Add browser smoke checks for student search against confirmed admissions data.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

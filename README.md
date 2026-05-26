@@ -129,7 +129,7 @@ npm run smoke:surfaces
 npm run smoke:browser
 ```
 
-`smoke:browser` uses the local Chrome or Edge installation, starts a temporary SQLite-backed API, signs into the owner and partner surfaces with throwaway accounts, checks owner review/export navigation, submits one partner source, and verifies the owner-service queue can see that submission.
+`smoke:browser` uses the local Chrome or Edge installation, starts a temporary SQLite-backed API, signs into the owner and partner surfaces with throwaway accounts, submits one partner source, runs the owner processing/review/confirmation path, and verifies the confirmed record can be previewed and exported without internal quality-screening details.
 Run the two frontend smoke commands one after another because both rebuild `frontend/dist`.
 
 ## Ownership

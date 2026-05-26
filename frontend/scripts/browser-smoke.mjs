@@ -294,6 +294,58 @@ async function runSurfaceAction(page, surface) {
     }
     await assertBodyIncludes(page, "已确认的招生资料", `${surface.name} confirmed records`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirmed records`);
+
+    const exportParams = new URLSearchParams({
+      universities: "东京测试大学",
+      years: "2027",
+    });
+
+    const previewResponse = await page.request.get(`${apiBaseUrl}/exports/preview?${exportParams.toString()}`);
+    if (!previewResponse.ok()) {
+      throw new Error(`${surface.name} export preview failed with ${previewResponse.status()}`);
+    }
+    const preview = await previewResponse.json();
+    if (preview.summary.records !== 1) {
+      throw new Error(`${surface.name} export preview expected 1 record, got ${preview.summary.records}`);
+    }
+    const previewRow = preview.rows[0] || {};
+    if (previewRow.university !== "东京测试大学" || previewRow.faculty !== "ブラウザテスト修正学部") {
+      throw new Error(`${surface.name} export preview did not include the confirmed edited record`);
+    }
+    for (const blockedKey of ["confidence", "risk_level", "needs_review", "warnings_json", "field_evidence"]) {
+      if (Object.prototype.hasOwnProperty.call(previewRow, blockedKey)) {
+        throw new Error(`${surface.name} export preview leaked internal quality key: ${blockedKey}`);
+      }
+    }
+
+    const csvResponse = await page.request.get(`${apiBaseUrl}/export/csv?${exportParams.toString()}`);
+    if (!csvResponse.ok()) {
+      throw new Error(`${surface.name} CSV export failed with ${csvResponse.status()}`);
+    }
+    const csvText = await csvResponse.text();
+    for (const expected of ["东京测试大学", "ブラウザテスト修正学部", "留学生入試"]) {
+      if (!csvText.includes(expected)) {
+        throw new Error(`${surface.name} CSV export missing ${expected}`);
+      }
+    }
+    for (const blockedText of ["confidence", "risk_level", "needs_review", "warnings_json", "browser smoke seeded record"]) {
+      if (csvText.includes(blockedText)) {
+        throw new Error(`${surface.name} CSV export leaked internal quality text: ${blockedText}`);
+      }
+    }
+
+    const excelResponse = await page.request.get(`${apiBaseUrl}/export/excel?${exportParams.toString()}`);
+    if (!excelResponse.ok()) {
+      throw new Error(`${surface.name} Excel export failed with ${excelResponse.status()}`);
+    }
+    const excelContentType = excelResponse.headers()["content-type"] || "";
+    if (!excelContentType.includes("spreadsheetml.sheet")) {
+      throw new Error(`${surface.name} Excel export returned unexpected content type: ${excelContentType}`);
+    }
+    const excelBody = await excelResponse.body();
+    if (excelBody.length < 1000) {
+      throw new Error(`${surface.name} Excel export returned an unexpectedly small workbook`);
+    }
   }
 }
 
