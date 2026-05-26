@@ -15,6 +15,9 @@
       "deadline_rule": {
         "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
       },
+      "enrollment_period": {
+        "contains": ["10月30日", "11月27日"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験"]
       },
@@ -46,6 +49,9 @@
       "deadline_rule": {
         "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
       },
+      "enrollment_period": {
+        "contains": ["11月13日", "11月27日"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
       },
@@ -76,6 +82,9 @@
       },
       "deadline_rule": {
         "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "enrollment_period": {
+        "contains": ["11月27日"]
       },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
@@ -109,6 +118,9 @@
       "deadline_rule": {
         "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
       },
+      "enrollment_period": {
+        "contains": ["11月13日", "11月27日", "2027年3月上旬"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験"]
       },
@@ -139,6 +151,9 @@
       },
       "deadline_rule": {
         "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "enrollment_period": {
+        "contains": ["9月18日", "11月13日"]
       },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]

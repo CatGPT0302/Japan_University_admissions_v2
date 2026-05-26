@@ -59,6 +59,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "screening_method": "書類選考 / 面接試験",
                 "screening_schedule": "2026年9月18日",
                 "result_date": "2026年10月1日",
+                "enrollment_period": "第1次振込締切日: 2026年10月30日(金) / 出願書類原本提出締切日: 2026年11月27日(金)",
                 "english_requirement": "TOEFL / IELTS",
             }
         )
@@ -71,6 +72,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "screening_method": "書類選考 / 面接試験（オンライン）",
                 "screening_schedule": "2026年10月3日",
                 "result_date": "2026年10月15日",
+                "enrollment_period": "第1次・第2次振込締切日: 2026年11月13日(金) / 出願書類原本提出締切日: 2026年11月27日(金)",
                 "english_requirement": "TOEFL",
             }
         )
@@ -83,6 +85,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "screening_method": "書類選考 / 面接試験（オンライン）",
                 "screening_schedule": "2026年9月18日",
                 "result_date": "2026年10月9日",
+                "enrollment_period": "入学手続締切日: 2026年11月27日(金)",
                 "english_requirement": "TOEFL",
             }
         )
@@ -95,6 +98,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "screening_method": "書類選考 / 面接試験",
                 "screening_schedule": "2026年9月28日",
                 "result_date": "2026年10月26日",
+                "enrollment_period": "第2次振込締切日: 2026年11月13日(金) / 出願書類原本提出締切日: 2026年11月27日(金) / 入学手続情報入力: 2027年3月上旬〜中旬予定",
                 "english_requirement": "TOEFL / IELTS / TOEIC",
             }
         )
@@ -107,6 +111,7 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "screening_method": "書類選考 / 面接試験（オンライン）",
                 "screening_schedule": "2026年9月11日",
                 "result_date": "2026年9月18日",
+                "enrollment_period": "第1次振込締切日: 2026年9月18日(金) / 第2次振込締切日: 2026年11月13日(金)",
                 "english_requirement": "TOEFL",
             }
         )
