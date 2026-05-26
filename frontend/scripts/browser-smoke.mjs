@@ -251,6 +251,8 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} export page`);
     await assertBodyIncludes(page, "批量合并取出", `${surface.name} export page`);
     await assertBodyIncludes(page, "导出前检查", `${surface.name} export check`);
+    await assertBodyIncludes(page, "临时勾选", `${surface.name} selected export basket`);
+    await assertBodyIncludes(page, "导出勾选 Excel", `${surface.name} selected export basket`);
     await assertBodyIncludes(page, "当前可取学校", `${surface.name} export options`);
     await assertBodyIncludes(page, "常用组合", `${surface.name} export presets`);
     await page.getByLabel("学校", { exact: true }).fill("东京测试大学");

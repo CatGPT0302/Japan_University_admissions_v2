@@ -57,11 +57,15 @@ function yearText(value?: string | number | null): string | undefined {
 function RowPreview({
   row,
   selected,
+  checked,
   onSelect,
+  onToggle,
 }: {
   row: ConfirmedRecord;
   selected: boolean;
+  checked: boolean;
   onSelect: () => void;
+  onToggle: () => void;
 }) {
   return (
     <tr
@@ -72,6 +76,15 @@ function RowPreview({
       }}
       tabIndex={0}
     >
+      <td className="export-table-check">
+        <input
+          aria-label={`选择 ${row.university || "未命名学校"} ${row.faculty || ""}`}
+          checked={checked}
+          onChange={onToggle}
+          onClick={(event) => event.stopPropagation()}
+          type="checkbox"
+        />
+      </td>
       {COLUMNS.map((column) => (
         <td key={column.key}>{String(row[column.key] || "-")}</td>
       ))}
@@ -126,6 +139,7 @@ export default function ExportPage({ onOpenReview }: Props) {
   const [sourceLookupError, setSourceLookupError] = useState("");
   const [openingSource, setOpeningSource] = useState(false);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
+  const [selectedExportIds, setSelectedExportIds] = useState<number[]>([]);
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<ExportPreset[]>(() => loadPresets());
   const [options, setOptions] = useState<ExportOptionsResponse | null>(null);
@@ -155,6 +169,7 @@ export default function ExportPage({ onOpenReview }: Props) {
       const nextPreview = await getExportPreview({ ...nextParams, limit: 300 });
       setPreview(nextPreview);
       setSelectedRowId(nextPreview.rows[0]?.id ?? null);
+      setSelectedExportIds([]);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -236,6 +251,16 @@ export default function ExportPage({ onOpenReview }: Props) {
     savePresets(nextPresets);
   }
 
+  function toggleExportRow(rowId: number) {
+    setSelectedExportIds((current) => (current.includes(rowId) ? current.filter((id) => id !== rowId) : [...current, rowId]));
+  }
+
+  function toggleAllVisibleRows() {
+    const visibleIds = rows.map((row) => row.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedExportIds.includes(id));
+    setSelectedExportIds(allVisibleSelected ? selectedExportIds.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...selectedExportIds, ...visibleIds])));
+  }
+
   useEffect(() => {
     void loadPreview();
     void loadOptions();
@@ -244,6 +269,8 @@ export default function ExportPage({ onOpenReview }: Props) {
   const filterCount = splitItems(universities).length + splitItems(years).length + splitItems(faculties).length;
   const rows = preview?.rows ?? [];
   const selectedRow = rows.find((row) => row.id === selectedRowId) ?? rows[0] ?? null;
+  const selectedExportParam = selectedExportIds.join(",");
+  const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedExportIds.includes(row.id));
   const selectedSchoolParams = selectedRow
     ? { universities: selectedRow.university || undefined, years: yearText(selectedRow.admission_year), faculties: undefined }
     : {};
@@ -487,6 +514,28 @@ export default function ExportPage({ onOpenReview }: Props) {
             </div>
           ) : null}
 
+          <section className="export-basket-panel" aria-label="勾选合并导出">
+            <div>
+              <span>临时勾选</span>
+              <strong>{selectedExportIds.length ? `已选择 ${selectedExportIds.length} 条` : "可从下方表格勾选"}</strong>
+              <p>适合临时拼一张表：不同学校、不同学部都可以一起导出。</p>
+            </div>
+            <div className="export-selected-actions">
+              <button className="btn btn-ghost btn-small" type="button" onClick={toggleAllVisibleRows} disabled={!rows.length}>
+                {allVisibleSelected ? "取消本页" : "勾选本页"}
+              </button>
+              <button className="btn btn-green btn-small" type="button" onClick={() => downloadExcel({ record_ids: selectedExportParam })} disabled={!selectedExportIds.length}>
+                导出勾选 Excel
+              </button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => downloadCsv({ record_ids: selectedExportParam })} disabled={!selectedExportIds.length}>
+                导出勾选 CSV
+              </button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => setSelectedExportIds([])} disabled={!selectedExportIds.length}>
+                清空
+              </button>
+            </div>
+          </section>
+
           <section className={`export-check-panel${exportCheck.ready ? " is-ready" : ""}`} aria-label="导出前检查">
             <div className="export-check-head">
               <div>
@@ -531,6 +580,15 @@ export default function ExportPage({ onOpenReview }: Props) {
             <table className="export-table">
               <thead>
                 <tr>
+                  <th className="export-table-check">
+                    <input
+                      aria-label="勾选当前预览全部资料"
+                      checked={allVisibleSelected}
+                      disabled={!rows.length}
+                      onChange={toggleAllVisibleRows}
+                      type="checkbox"
+                    />
+                  </th>
                   {COLUMNS.map((column) => (
                     <th key={column.key}>{column.label}</th>
                   ))}
@@ -542,7 +600,9 @@ export default function ExportPage({ onOpenReview }: Props) {
                     key={row.id}
                     row={row}
                     selected={selectedRow?.id === row.id}
+                    checked={selectedExportIds.includes(row.id)}
                     onSelect={() => setSelectedRowId(row.id)}
+                    onToggle={() => toggleExportRow(row.id)}
                   />
                 ))}
               </tbody>

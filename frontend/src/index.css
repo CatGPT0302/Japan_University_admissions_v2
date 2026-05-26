@@ -272,21 +272,36 @@ body,
   background: rgba(239, 246, 255, 0.62);
 }
 
-.export-selected-row span {
+.export-basket-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 20px 16px;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 18px;
+  background: rgba(240, 253, 250, 0.56);
+}
+
+.export-selected-row span,
+.export-basket-panel span {
   display: block;
   margin-bottom: 4px;
   color: var(--text-3);
   font-size: 12px;
 }
 
-.export-selected-row strong {
+.export-selected-row strong,
+.export-basket-panel strong {
   display: block;
   color: var(--text);
   font-size: 16px;
   line-height: 1.3;
 }
 
-.export-selected-row p {
+.export-selected-row p,
+.export-basket-panel p {
   margin: 4px 0 0;
   color: var(--text-3);
   font-size: 12px;
@@ -398,7 +413,7 @@ body,
 
 .export-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1040px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -424,6 +439,18 @@ body,
 .export-table td {
   color: var(--text-2);
   line-height: 1.55;
+}
+
+.export-table .export-table-check {
+  width: 46px;
+  padding-right: 8px;
+  text-align: center;
+}
+
+.export-table-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
 }
 
 .export-table tbody tr {
@@ -455,7 +482,8 @@ body,
     top: 0;
   }
 
-  .export-selected-row {
+  .export-selected-row,
+  .export-basket-panel {
     align-items: stretch;
     flex-direction: column;
   }

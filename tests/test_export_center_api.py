@@ -113,6 +113,30 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
 
+    def test_export_preview_and_excel_can_use_selected_record_ids(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Meiji University", "2027", "Science")
+            self._insert_confirmed(db, "Waseda University", "2027", "Law")
+            self._insert_confirmed(db, "Kyushu University", "2026", "Engineering")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            all_rows = client.get("/exports/preview").json()["rows"]
+            selected_ids = ",".join(str(row["id"]) for row in all_rows if row["university"] in {"Meiji University", "Kyushu University"})
+            preview = client.get("/exports/preview", params={"record_ids": selected_ids})
+            excel = client.get("/export/excel", params={"record_ids": selected_ids})
+
+        self.assertEqual(preview.status_code, 200)
+        payload = preview.json()
+        self.assertEqual(payload["summary"]["records"], 2)
+        self.assertEqual({row["university"] for row in payload["rows"]}, {"Meiji University", "Kyushu University"})
+        self.assertEqual(excel.status_code, 200)
+        wb = load_workbook(BytesIO(excel.content))
+        ws = wb["招生资料"]
+        exported_universities = {ws.cell(row=row_number, column=1).value for row_number in range(4, ws.max_row + 1)}
+        self.assertEqual(exported_universities, {"Meiji University", "Kyushu University"})
+
     def test_export_options_list_confirmed_values_for_owner(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

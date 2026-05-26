@@ -305,6 +305,18 @@ def _split_filter(value: str | None) -> list[str]:
     return [part.strip() for part in str(value).replace("，", ",").split(",") if part.strip()]
 
 
+def _split_int_filter(value: str | None) -> list[int]:
+    ids: list[int] = []
+    for part in _split_filter(value):
+        try:
+            next_id = int(part)
+        except ValueError:
+            continue
+        if next_id > 0:
+            ids.append(next_id)
+    return ids
+
+
 def _export_rows(
     *,
     university: str | None = None,
@@ -313,16 +325,19 @@ def _export_rows(
     universities: str | None = None,
     years: str | None = None,
     faculties: str | None = None,
+    record_ids: str | None = None,
     limit: int = 10000,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     university_values = _split_filter(universities) or _split_filter(university)
     year_values = _split_filter(years) or ([str(year)] if year not in ("", None) else [])
     faculty_values = _split_filter(faculties) or _split_filter(faculty)
+    id_values = _split_int_filter(record_ids)
     return get_export_records(
         universities=university_values,
         years=year_values,
         faculties=faculty_values,
+        record_ids=id_values,
         limit=limit,
         offset=offset,
     )
@@ -1266,6 +1281,7 @@ def export_excel(
     universities: str | None = None,
     years: str | None = None,
     faculties: str | None = None,
+    record_ids: str | None = None,
 ) -> StreamingResponse:
     """Export confirmed records as the standard admissions master workbook."""
     _require_owner(request)
@@ -1277,6 +1293,7 @@ def export_excel(
         universities=universities,
         years=years,
         faculties=faculties,
+        record_ids=record_ids,
         limit=10000,
         offset=0,
     )
@@ -1304,6 +1321,7 @@ def export_csv(
     universities: str | None = None,
     years: str | None = None,
     faculties: str | None = None,
+    record_ids: str | None = None,
 ) -> StreamingResponse:
     _require_owner(request)
     rows = _export_rows(
@@ -1313,6 +1331,7 @@ def export_csv(
         universities=universities,
         years=years,
         faculties=faculties,
+        record_ids=record_ids,
         limit=10000,
         offset=0,
     )
@@ -1338,6 +1357,7 @@ def export_preview(
     universities: str | None = None,
     years: str | None = None,
     faculties: str | None = None,
+    record_ids: str | None = None,
     limit: int = 200,
     offset: int = 0,
 ) -> dict[str, Any]:
@@ -1349,6 +1369,7 @@ def export_preview(
         universities=universities,
         years=years,
         faculties=faculties,
+        record_ids=record_ids,
         limit=max(1, min(int(limit), 1000)),
         offset=max(0, int(offset)),
     )

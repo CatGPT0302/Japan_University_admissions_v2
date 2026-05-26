@@ -196,6 +196,7 @@ export async function getExportPreview(params?: {
   universities?: string;
   years?: string;
   faculties?: string;
+  record_ids?: string;
   limit?: number;
   offset?: number;
 }): Promise<ExportPreviewResponse> {
@@ -392,6 +393,7 @@ export function downloadExcel(params?: {
   universities?: string;
   years?: string;
   faculties?: string;
+  record_ids?: string;
 }): void {
   const search = new URLSearchParams();
   if (params?.university) search.set("university", params.university);
@@ -400,16 +402,18 @@ export function downloadExcel(params?: {
   if (params?.universities) search.set("universities", params.universities);
   if (params?.years) search.set("years", params.years);
   if (params?.faculties) search.set("faculties", params.faculties);
+  if (params?.record_ids) search.set("record_ids", params.record_ids);
   const qs = search.toString();
   const url = `${BASE_URL}/export/excel${qs ? `?${qs}` : ""}`;
   window.open(url, "_blank");
 }
 
-export function downloadCsv(params?: { universities?: string; years?: string; faculties?: string }): void {
+export function downloadCsv(params?: { universities?: string; years?: string; faculties?: string; record_ids?: string }): void {
   const search = new URLSearchParams();
   if (params?.universities) search.set("universities", params.universities);
   if (params?.years) search.set("years", params.years);
   if (params?.faculties) search.set("faculties", params.faculties);
+  if (params?.record_ids) search.set("record_ids", params.record_ids);
   const qs = search.toString();
   const url = `${BASE_URL}/export/csv${qs ? `?${qs}` : ""}`;
   window.open(url, "_blank");

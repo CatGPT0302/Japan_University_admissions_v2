@@ -1869,6 +1869,7 @@ def get_export_records(
     universities: list[str] | None = None,
     years: list[str] | None = None,
     faculties: list[str] | None = None,
+    record_ids: list[int] | None = None,
     limit: int = 10000,
     offset: int = 0,
 ) -> list[dict]:
@@ -1878,7 +1879,11 @@ def get_export_records(
     university_values = _clean_filter_values(universities)
     year_values = _clean_filter_values(years)
     faculty_values = _clean_filter_values(faculties)
+    id_values = [int(value) for value in record_ids or [] if str(value or "").strip()]
 
+    if id_values:
+        clauses.append(f"id IN ({_phn(len(id_values))})")
+        params.extend(id_values)
     if university_values:
         clauses.append("(" + " OR ".join(f"university {like} {_ph()}" for _ in university_values) + ")")
         params.extend(f"%{value}%" for value in university_values)
