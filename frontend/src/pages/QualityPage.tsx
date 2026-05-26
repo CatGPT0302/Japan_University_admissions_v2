@@ -24,6 +24,8 @@ interface Props {
   onOpenReview?: (docId: number) => void;
 }
 
+type SourceQueueFilter = "open" | "needs_reextract" | "reviewed" | "all";
+
 const CONTENT_LABELS: Record<string, string> = {
   application_period: "出愿时间",
   deadline_rule: "截止规则",
@@ -76,6 +78,18 @@ function reviewStatusClass(value?: string) {
   if (value === "needs_reextract") return "badge badge-amber";
   if (value === "deferred") return "badge badge-gray";
   return "badge badge-blue";
+}
+
+const SOURCE_QUEUE_FILTERS: Array<{ key: SourceQueueFilter; label: string }> = [
+  { key: "open", label: "待查看" },
+  { key: "needs_reextract", label: "需重新整理" },
+  { key: "reviewed", label: "已查看" },
+  { key: "all", label: "全部" },
+];
+
+function filterSourceItems(items: SourceReviewItem[], filter: SourceQueueFilter) {
+  if (filter === "all") return items;
+  return items.filter((item) => (item.review_status || "open") === filter);
 }
 
 function sourceActionText(value: string) {
@@ -137,6 +151,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [checkingSources, setCheckingSources] = useState(false);
   const [updatingSourceId, setUpdatingSourceId] = useState("");
   const [reextractingSourceId, setReextractingSourceId] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<SourceQueueFilter>("open");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -241,6 +256,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const priority = metrics?.risk_distribution || { high: 0, medium: 0, low: 0 };
   const sourceSummary = sourceQueue?.summary || { needs_review: 0, changed: 0, failed: 0 };
   const sourceItems = sourceQueue?.items || [];
+  const filteredSourceItems = filterSourceItems(sourceItems, sourceFilter);
   const watchSummary = sourceWatchlist?.summary || { total: 0, by_type: {}, metadata_gaps: {} };
   const watchGaps = Object.entries(watchSummary.metadata_gaps)
     .filter(([, count]) => Number(count) > 0)
@@ -420,8 +436,32 @@ export default function QualityPage({ onOpenReview }: Props) {
                 </div>
               </div>
 
+              <div className="source-review-filter-tabs" aria-label="来源变化范围">
+                {SOURCE_QUEUE_FILTERS.map((item) => {
+                  const count =
+                    item.key === "open"
+                      ? (sourceSummary.open ?? sourceSummary.needs_review ?? 0)
+                      : item.key === "needs_reextract"
+                        ? (sourceSummary.needs_reextract ?? 0)
+                        : item.key === "reviewed"
+                          ? (sourceSummary.reviewed ?? 0)
+                          : sourceItems.length;
+                  return (
+                    <button
+                      className={sourceFilter === item.key ? "is-active" : ""}
+                      key={item.key}
+                      onClick={() => setSourceFilter(item.key)}
+                      type="button"
+                    >
+                      <span>{item.label}</span>
+                      <strong>{count}</strong>
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="source-review-list">
-                {sourceItems.slice(0, 8).map((item) => {
+                {filteredSourceItems.slice(0, 8).map((item) => {
                   const matchedDoc = findDocumentForSource(item, documents);
                   return (
                     <article className="source-review-card" key={`${item.stem}-${item.checked_at}-${item.status}`}>
@@ -484,7 +524,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     </article>
                   );
                 })}
-                {!sourceItems.length ? <div className="empty-state empty-state-quiet">目前没有需要查看的来源变化。</div> : null}
+                {!filteredSourceItems.length ? <div className="empty-state empty-state-quiet">这个范围里暂时没有需要处理的来源变化。</div> : null}
               </div>
             </section>
 
