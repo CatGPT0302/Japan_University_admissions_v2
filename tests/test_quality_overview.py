@@ -5,6 +5,107 @@ from unittest.mock import patch
 
 
 class QualityOverviewTest(unittest.TestCase):
+    def test_reports_per_seed_thin_critical_coverage_without_owner_todo(self) -> None:
+        from scripts.quality_overview import build_quality_overview, format_owner_summary
+
+        full_coverage = {
+            "application_period": {"checked": 5, "passed": 5},
+            "deadline_rule": {"checked": 5, "passed": 5},
+            "enrollment_period": {"checked": 5, "passed": 5},
+            "required_documents": {"checked": 5, "passed": 5},
+            "eligibility": {"checked": 5, "passed": 5},
+            "evidence": {"checked": 5, "passed": 5},
+            "eju_session": {"checked": 5, "passed": 5},
+            "eju_japanese": {"checked": 5, "passed": 5},
+            "eju_general": {"checked": 5, "passed": 5},
+            "eju_math": {"checked": 2, "passed": 2},
+            "eju_physics": {"checked": 1, "passed": 1},
+            "eju_chemistry": {"checked": 1, "passed": 1},
+            "english_requirement": {"checked": 5, "passed": 5},
+            "result_date": {"checked": 5, "passed": 5},
+            "screening_schedule": {"checked": 5, "passed": 5},
+        }
+        thin_coverage = {
+            **full_coverage,
+            "deadline_rule": {"checked": 1, "passed": 1},
+            "eju_session": {"checked": 1, "passed": 1},
+        }
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 2, "passed": 2, "failed": 0, "skipped": 0},
+                    "items": [
+                        {"id": "wide-seed", "baseline": {"expected_count": 5, "field_coverage": full_coverage}},
+                        {"id": "thin-seed", "baseline": {"expected_count": 5, "field_coverage": thin_coverage}},
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 2,
+                        "registered_seed_extractors": 2,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        self.assertEqual(overview["overall_status"], "quality_gate_ready")
+        self.assertEqual(overview["owner_todo"], [])
+        self.assertEqual(
+            overview["per_seed_thin_coverage"][0],
+            {"seed": "thin-seed", "field": "deadline_rule", "checked": 1, "minimum": 3},
+        )
+        self.assertIn("thin seed coverage: thin-seed deadline_rule checked=1", format_owner_summary(overview))
+
+    def test_does_not_report_single_record_seed_as_thin_coverage(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "single-record-seed",
+                            "baseline": {
+                                "expected_count": 1,
+                                "field_coverage": {
+                                    "application_period": {"checked": 1, "passed": 1},
+                                    "deadline_rule": {"checked": 1, "passed": 1},
+                                },
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        self.assertEqual(overview["per_seed_thin_coverage"], [])
+
     def test_reports_language_requirement_coverage_without_owner_todo(self) -> None:
         from scripts.quality_overview import build_quality_overview, format_owner_summary
 

@@ -43,6 +43,20 @@ LANGUAGE_REQUIREMENT_FIELDS = {
     "english_requirement": "English",
 }
 
+PER_SEED_THIN_FIELD_MINIMUMS = {
+    "application_period": 3,
+    "deadline_rule": 3,
+    "enrollment_period": 3,
+    "required_documents": 3,
+    "eligibility": 3,
+    "evidence": 3,
+    "eju_session": 3,
+    "eju_japanese": 3,
+    "english_requirement": 3,
+    "result_date": 3,
+    "screening_schedule": 3,
+}
+
 SEED_RECORD_MINIMUMS = {
     "meiji-2027-schedule": 12,
     "waseda-2027-official": 12,
@@ -76,6 +90,7 @@ def build_quality_overview(*, include_source_text_health: bool = False) -> dict[
         "seed_suite": seed_suite,
         "gap_report": gap_report,
         "language_requirement_coverage": _language_requirement_coverage(seed_suite),
+        "per_seed_thin_coverage": _per_seed_thin_coverage(seed_suite),
         "quality_todo": quality_todo,
         "owner_todo": owner_todo,
         "next_owner_action": owner_todo[0] if owner_todo else None,
@@ -121,6 +136,27 @@ def _language_requirement_coverage(seed_suite: dict[str, Any]) -> dict[str, dict
         }
         for field in LANGUAGE_REQUIREMENT_FIELDS
     }
+
+
+def _per_seed_thin_coverage(seed_suite: dict[str, Any], *, limit: int = 8) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in seed_suite.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        seed_id = str(item.get("id") or "")
+        baseline = item.get("baseline") if isinstance(item.get("baseline"), dict) else {}
+        expected_count = int(baseline.get("expected_count") or 0)
+        if expected_count and expected_count < min(PER_SEED_THIN_FIELD_MINIMUMS.values()):
+            continue
+        coverage = baseline.get("field_coverage") if isinstance(baseline, dict) else {}
+        if not isinstance(coverage, dict):
+            continue
+        for field, minimum in PER_SEED_THIN_FIELD_MINIMUMS.items():
+            stats = coverage.get(field) if isinstance(coverage.get(field), dict) else {}
+            checked = int(stats.get("checked") or 0)
+            if 0 < checked < minimum:
+                rows.append({"seed": seed_id, "field": field, "checked": checked, "minimum": minimum})
+    return sorted(rows, key=lambda row: (int(row["checked"]), str(row["seed"]), str(row["field"])))[:limit]
 
 
 def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[dict[str, Any]]:
@@ -224,6 +260,14 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
             stats = language_coverage.get(field) if isinstance(language_coverage.get(field), dict) else {}
             parts.append(f"{label} checked={int(stats.get('checked') or 0)}")
         lines.append("language requirements: " + "; ".join(parts))
+    thin_seed_rows = overview.get("per_seed_thin_coverage") if isinstance(overview.get("per_seed_thin_coverage"), list) else []
+    if thin_seed_rows:
+        preview = "; ".join(
+            f"{row.get('seed')} {row.get('field')} checked={row.get('checked')}"
+            for row in thin_seed_rows[:3]
+            if isinstance(row, dict)
+        )
+        lines.append("thin seed coverage: " + preview)
     weak_fields = _weak_field_coverage(overview.get("seed_suite", {}))
     if weak_fields:
         lines.append("weak field coverage: " + "; ".join(weak_fields))
