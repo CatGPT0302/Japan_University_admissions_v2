@@ -211,6 +211,7 @@ export interface OwnerIssue {
   record_id?: number | null;
   doc_id?: number | null;
   document_id?: number | null;
+  review_staging_id?: number | null;
   review_item_id?: string;
   source_document?: string;
   source_url?: string;

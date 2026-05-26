@@ -544,6 +544,7 @@ def _export_gap_owner_issues(rows: list[dict[str, Any]], *, limit: int = 30) -> 
                     "field_label": _owner_issue_field_label(field),
                     "record_id": row.get("id"),
                     "doc_id": target.get("doc_id"),
+                    "review_staging_id": row.get("source_staging_id"),
                     "source_document": target.get("filename") or "",
                     "source_url": target.get("source_url") or row.get("pdf_url") or "",
                     "suggested_action": "进入复审页，对照源 PDF 补齐这项内容后再导出。",
@@ -1582,6 +1583,7 @@ def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingRespons
         "minimum",
         "doc_id",
         "document_id",
+        "review_staging_id",
         "suggested_action",
     ]
     writer = csv.DictWriter(buffer, fieldnames=fieldnames)

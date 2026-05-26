@@ -282,6 +282,7 @@ class ExportCenterApiTest(unittest.TestCase):
             self._login_owner(client)
 
             response = client.get("/exports/preview", params={"universities": "Same Faculty University", "years": "2027"})
+            issue_response = client.get("/metrics/owner-issues")
 
         self.assertEqual(response.status_code, 200)
         rows = response.json()["rows"]
@@ -291,6 +292,13 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(by_department["First Department"]["review_doc_id"], doc_id)
         self.assertNotIn("source_staging_id", by_department["First Department"])
         self.assertNotIn("document_id", by_department["First Department"])
+        self.assertEqual(issue_response.status_code, 200)
+        gap_issue = next(
+            item
+            for item in issue_response.json()["issues"]
+            if item["kind"] == "export_gap" and item["department"] == "First Department"
+        )
+        self.assertEqual(gap_issue["review_staging_id"], first_staging_id)
 
     def test_owner_issues_requires_owner_login(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -320,6 +328,7 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn(issue["field"], {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date", "eligibility", "required_documents"})
         self.assertEqual(issue["source_document"], "Gap University.pdf")
         self.assertTrue(issue["doc_id"])
+        self.assertIn("review_staging_id", issue)
         self.assertIn("复审页", issue["suggested_action"])
 
     def test_owner_issues_summary_counts_full_backlog_before_display_limit(self) -> None:
@@ -358,6 +367,7 @@ class ExportCenterApiTest(unittest.TestCase):
         )
         self.assertEqual(gap_issue["doc_id"], gap_doc_id)
         self.assertNotEqual(gap_issue["doc_id"], ready_doc_id)
+        self.assertIsNone(gap_issue["review_staging_id"])
         self.assertEqual(gap_issue["source_document"], "Same University.pdf")
 
     def test_owner_issues_can_be_downloaded_as_csv(self) -> None:
@@ -465,6 +475,7 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(issue["source_document"], "review.pdf")
         self.assertEqual(csv_response.status_code, 200)
         self.assertIn("doc_id", csv_response.text.splitlines()[0])
+        self.assertIn("review_staging_id", csv_response.text.splitlines()[0])
         self.assertIn(str(doc_id), csv_response.text)
 
     def test_export_csv_uses_same_filters(self) -> None:

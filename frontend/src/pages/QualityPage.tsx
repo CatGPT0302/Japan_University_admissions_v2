@@ -525,6 +525,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                             onOpenReview(Number(item.doc_id || item.document_id), {
                               token: Date.now(),
                               docId: Number(item.doc_id || item.document_id),
+                              stagingId: item.review_staging_id ?? null,
                               field: item.field || undefined,
                               university: item.university,
                               admission_year: item.admission_year,
