@@ -54,6 +54,19 @@ class FukuiEngineering2027UndergradExtractorTest(unittest.TestCase):
 
         self.assertEqual(extract_fukui_engineering_2027_undergrad_records("福井大学 工学部 一般選抜 募集要項"), [])
 
+    def test_every_department_carries_deadline_and_eju_session_rules(self) -> None:
+        from scripts.fukui_engineering_2027_undergrad_extractor import extract_fukui_engineering_2027_undergrad_records
+
+        records = extract_fukui_engineering_2027_undergrad_records(FUKUI_ENGINEERING_TEXT)
+
+        self.assertEqual(len(records), 5)
+        for record in records:
+            self.assertIn("必着", record["deadline_rule"])
+            self.assertIn("簡易書留速達", record["deadline_rule"])
+            self.assertIn("2025 年度", record["eju_session"])
+            self.assertIn("2026 年度", record["eju_session"])
+            self.assertIn("第 1 回", record["eju_session"])
+
     def test_cli_reads_text_file_and_writes_records_json(self) -> None:
         with TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

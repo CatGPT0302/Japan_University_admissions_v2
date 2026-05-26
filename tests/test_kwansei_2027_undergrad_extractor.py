@@ -65,6 +65,16 @@ class Kwansei2027UndergradExtractorTest(unittest.TestCase):
 
         self.assertEqual(extract_kwansei_2027_undergrad_records("関西学院大学 一般選抜 入学試験要項"), [])
 
+    def test_distinguishes_no_english_requirement_from_unknown(self) -> None:
+        from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
+
+        records = extract_kwansei_2027_undergrad_records(KWANSEI_UNDERGRAD_TEXT)
+        by_id = {record["id"]: record for record in records}
+
+        self.assertIn("要件なし", by_id["kwansei-2027-literature"]["english_requirement"])
+        self.assertIn("英語能力試験", by_id["kwansei-2027-law"]["english_requirement"])
+        self.assertIn("TOEFL", by_id["kwansei-2027-science"]["english_requirement"])
+
     def test_cli_reads_text_file_and_writes_records_json(self) -> None:
         with TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

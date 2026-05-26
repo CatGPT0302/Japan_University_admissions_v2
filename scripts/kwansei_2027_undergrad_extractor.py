@@ -79,6 +79,10 @@ def _common_english_requirement() -> str:
     )
 
 
+def _no_english_requirement_note() -> str:
+    return "英語能力試験は学部別要件に含まれない。本seedでは要件なしとして明示。"
+
+
 def extract_kwansei_2027_undergrad_records(text: str) -> list[dict[str, Any]]:
     compact = _compact(text)
     if not _has_all(compact, ["関西学院大学", "2027年度", "外国人留学生入学試験要項"]):
@@ -110,6 +114,7 @@ def extract_kwansei_2027_undergrad_records(text: str) -> list[dict[str, Any]]:
             "required_documents": _common_documents(online_consent=False, english=False),
             "eju_session": _common_eju_session(include_second_phase=False),
             "eju_general": "EJU学部別要件: 日本語 / 総合科目。",
+            "english_requirement": _no_english_requirement_note(),
             "screening_method": "第一次審査はEJU成績を含めた提出書類による書類審査。第二次審査は提出書類に加え面接による審査。",
             "screening_schedule": "第I期試験の第二次審査試験日は2026年10月10日(土)。文学部は西宮上ケ原キャンパスで対面面接。",
             "result_date": "第一次審査合格者発表: 2026年9月25日(金) 9:00。合格発表: 2026年11月13日(金) 9:00。",

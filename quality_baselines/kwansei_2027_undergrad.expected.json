@@ -30,6 +30,9 @@
       "eju_general": {
         "contains": ["日本語", "総合科目"]
       },
+      "english_requirement": {
+        "contains": ["要件なし", "英語能力試験"]
+      },
       "screening_method": {
         "contains": ["第一次審査", "提出書類", "第二次審査", "面接"]
       },

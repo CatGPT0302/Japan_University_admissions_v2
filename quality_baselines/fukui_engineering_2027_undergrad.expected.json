@@ -31,8 +31,10 @@
     "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "電気電子情報工学科"},
     "expect": {
       "application_period": {"contains": ["10 月 13 日", "10 月 20 日"]},
+      "deadline_rule": {"contains": ["必着", "簡易書留速達", "10 月 19 日", "持参"]},
       "eligibility": {"contains": ["日本国籍を有しない", "2027", "日本留学試験", "TOEFL"]},
       "required_documents": {"contains": ["入学志願票", "出願資格証明書", "Test Taker Score Report", "Official Score Report"]},
+      "eju_session": {"contains": ["2025 年度", "2026 年度", "第 1 回"]},
       "eju_japanese": {"contains": ["日本語", "日本語に限ります"]},
       "eju_math": {"contains": ["コース２"]},
       "eju_general": {"contains": ["総合科目", "課さない"]},
@@ -54,8 +56,10 @@
     "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "建築・都市環境工学科"},
     "expect": {
       "application_period": {"contains": ["10 月 13 日", "16 時"]},
+      "deadline_rule": {"contains": ["必着", "簡易書留速達", "10 月 19 日", "持参"]},
       "eligibility": {"contains": ["12 年", "修了見込み", "在留資格"]},
       "required_documents": {"contains": ["受験票", "写真票", "あて名票", "出願用封筒"]},
+      "eju_session": {"contains": ["2025 年度", "2026 年度", "第 1 回"]},
       "eju_japanese": {"contains": ["日本語"]},
       "eju_math": {"contains": ["数学", "コース２"]},
       "eju_general": {"contains": ["×"]},
@@ -77,8 +81,10 @@
     "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "物質・生命化学科"},
     "expect": {
       "application_period": {"contains": ["10 月 20 日"]},
+      "deadline_rule": {"contains": ["必着", "簡易書留速達", "10 月 19 日", "持参"]},
       "eligibility": {"contains": ["2025 年度", "2026 年度", "日本留学試験"]},
       "required_documents": {"contains": ["成績証明書", "日本語訳", "TOEFL のスコア票"]},
+      "eju_session": {"contains": ["2025 年度", "2026 年度", "第 1 回"]},
       "eju_japanese": {"contains": ["日本語"]},
       "eju_math": {"contains": ["コース２"]},
       "eju_general": {"contains": ["課さない"]},
