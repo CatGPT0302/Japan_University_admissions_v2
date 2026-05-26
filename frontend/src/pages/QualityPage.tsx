@@ -192,6 +192,11 @@ function normalized(value?: string | null) {
     .replace(/\/$/, "");
 }
 
+function fileName(value?: string | null) {
+  const text = String(value || "").trim().replace(/\\/g, "/");
+  return text.split("/").filter(Boolean).pop() || text;
+}
+
 function findDocumentForSource(item: SourceReviewItem, documents: DocumentListItem[]) {
   const itemUrl = normalized(item.source_url);
   if (itemUrl) {
@@ -483,7 +488,12 @@ export default function QualityPage({ onOpenReview }: Props) {
                     <div className="owner-issue-meta">
                       <span>{item.university || item.source_document || "整体质量"}</span>
                       {item.faculty ? <span>{item.faculty}</span> : null}
-                      {item.source_document ? <span>{item.source_document}</span> : null}
+                      {item.seed_id ? <span>基准 {item.seed_id}</span> : null}
+                      {item.checked !== undefined || item.minimum !== undefined ? (
+                        <span>已核对 {item.checked ?? 0}/{item.minimum ?? "-"}</span>
+                      ) : null}
+                      {item.source_document ? <span>{fileName(item.source_document)}</span> : null}
+                      {item.script ? <span>脚本 {fileName(item.script)}</span> : null}
                     </div>
                     <div className="inline-actions inline-actions-tight">
                       {item.doc_id && onOpenReview ? (
