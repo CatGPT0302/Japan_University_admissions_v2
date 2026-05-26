@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "kyushu_2026_undergrad",
+  "source_url": "https://www.kyushu-u.ac.jp/f/63057/R8_shihi_inst.pdf",
+  "cached_path": "data/uploads/kyushu_2026_undergrad.pdf",
+  "sha256": "92d35e63cdd9aee7008936e646acf66f93c64d1e420d212036cb81064703a92c",
+  "size_bytes": 1798924,
+  "markers": [
+    "九州大学",
+    "私費外国人留学生入試",
+    "日本留学試験",
+    "TOEFL"
+  ],
+  "checked_at": "2026-05-26T03:29:55+00:00"
+}

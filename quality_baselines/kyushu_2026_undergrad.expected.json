@@ -1,0 +1,99 @@
+[
+  {
+    "id": "kyushu-2026-literature",
+    "source_document": "https://www.kyushu-u.ac.jp/f/63057/R8_shihi_inst.pdf",
+    "source_note": "Official Kyushu University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, English-test rules, application procedure, documents, selection method, result date, and enrollment procedure.",
+    "match": {"university": "九州大学", "admission_year": "2026", "faculty": "文学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月4日", "11月14日", "17時必着", "2025年10月27日", "11月7日"]},
+      "deadline_rule": {"contains": ["Web入力", "入学検定料支払いだけでは完了しない", "速達・書留郵便", "EMS"]},
+      "eligibility": {"contains": ["日本国以外の国籍", "永住許可", "12年の課程", "2026年3月31日", "TOEFL iBT"]},
+      "required_documents": {"contains": ["身上記録書", "卒業証明書", "成績証明書", "TOEFL", "日本留学試験", "パスポート"]},
+      "eju_session": {"contains": ["2024年度第1回", "2025年度第2回", "成績利用", "出題言語"]},
+      "eju_japanese": {"contains": ["文学部", "日本語", "必須"]},
+      "eju_general": {"contains": ["文学部", "総合科目", "必須"]},
+      "eju_math": {"contains": ["数学コース1", "必須"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "IELTS", "IELTS Online", "ケンブリッジ英検", "2024年1月以降", "MyBest"]},
+      "screening_method": {"contains": ["TOEFL等", "日本留学試験", "日本語試験", "出願書類", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月26日", "読解・記述10:00-11:20", "聴解11:50-12:35", "2月27日", "10:00"]},
+      "result_date": {"contains": ["2026年3月3日", "11時頃"]},
+      "enrollment_period": {"contains": ["2026年3月4日", "3月15日", "17時", "入学料納付", "Web入学手続"]},
+      "evidence": {"contains": ["p.2", "p.3-p.4", "p.5-p.12", "p.13", "p.16", "p.17"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kyushu-2026-economics-engineering",
+    "source_document": "https://www.kyushu-u.ac.jp/f/63057/R8_shihi_inst.pdf",
+    "source_note": "Official Kyushu University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, English-test rules, application procedure, documents, selection method, result date, and enrollment procedure.",
+    "match": {"university": "九州大学", "admission_year": "2026", "faculty": "経済学部", "department": "経済工学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月4日", "11月14日", "17時必着"]},
+      "deadline_rule": {"contains": ["Web入力", "速達・書留郵便", "EMS"]},
+      "eligibility": {"contains": ["日本国以外の国籍", "12年の課程", "日本留学試験", "IELTS"]},
+      "required_documents": {"contains": ["身上記録書", "卒業証明書", "TOEFL等", "日本留学試験", "在留カード"]},
+      "eju_session": {"contains": ["2024年度", "2025年度", "一つ選び"]},
+      "eju_japanese": {"contains": ["経済学部経済工学科", "日本語", "必須"]},
+      "eju_math": {"contains": ["数学コース2", "必須"]},
+      "eju_physics": {"contains": ["理科2科目選択", "物理"]},
+      "eju_chemistry": {"contains": ["理科2科目選択", "化学"]},
+      "eju_biology": {"contains": ["理科2科目選択", "生物"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "IELTS", "ケンブリッジ英検", "Test Date"]},
+      "screening_method": {"contains": ["日本語試験", "出願書類", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月26日", "2月27日", "10:00"]},
+      "result_date": {"contains": ["2026年3月3日"]},
+      "enrollment_period": {"contains": ["2026年3月4日", "3月15日", "Web入学手続"]},
+      "evidence": {"contains": ["p.3-p.4", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kyushu-2026-medicine",
+    "source_document": "https://www.kyushu-u.ac.jp/f/63057/R8_shihi_inst.pdf",
+    "source_note": "Official Kyushu University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, English-test rules, application procedure, documents, selection method, result date, and enrollment procedure.",
+    "match": {"university": "九州大学", "admission_year": "2026", "faculty": "医学部", "department": "医学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月4日", "11月14日", "17時必着"]},
+      "deadline_rule": {"contains": ["入学検定料支払いだけでは完了しない", "速達・書留郵便"]},
+      "eligibility": {"contains": ["日本国以外の国籍", "永住許可", "2026年3月31日", "TOEFL iBT"]},
+      "required_documents": {"contains": ["身上記録書", "卒業証明書", "成績証明書", "日本留学試験", "パスポート"]},
+      "eju_session": {"contains": ["2024年度第1回", "2025年度第2回"]},
+      "eju_japanese": {"contains": ["医学部医学科", "日本語", "350点以上"]},
+      "eju_math": {"contains": ["数学コース2", "必須"]},
+      "eju_physics": {"contains": ["物理", "360点以上"]},
+      "eju_chemistry": {"contains": ["化学", "360点以上"]},
+      "eju_biology": {"contains": ["生物", "360点以上"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "Home Edition", "IELTS", "MyBest"]},
+      "screening_method": {"contains": ["日本語試験", "面接", "基礎的な学力"]},
+      "screening_schedule": {"contains": ["2026年2月26日", "2月27日", "9:00"]},
+      "result_date": {"contains": ["2026年3月3日"]},
+      "enrollment_period": {"contains": ["2026年3月4日", "3月15日", "入学料納付"]},
+      "evidence": {"contains": ["p.3-p.4", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kyushu-2026-engineering",
+    "source_document": "https://www.kyushu-u.ac.jp/f/63057/R8_shihi_inst.pdf",
+    "source_note": "Official Kyushu University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, English-test rules, application procedure, documents, selection method, result date, and enrollment procedure.",
+    "match": {"university": "九州大学", "admission_year": "2026", "faculty": "工学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月4日", "11月14日", "17時必着"]},
+      "deadline_rule": {"contains": ["Web入力", "入学検定料支払いだけでは", "EMS"]},
+      "eligibility": {"contains": ["日本国以外の国籍", "永住許可", "12年の課程", "日本留学試験"]},
+      "required_documents": {"contains": ["身上記録書", "TOEFL等", "日本留学試験", "旅券"]},
+      "eju_session": {"contains": ["2024年度", "2025年度", "出題言語"]},
+      "eju_japanese": {"contains": ["工学部", "日本語", "300点以上"]},
+      "eju_math": {"contains": ["数学コース2", "出願基準点はなし"]},
+      "eju_physics": {"contains": ["物理", "必須", "出願基準点はなし"]},
+      "eju_chemistry": {"contains": ["化学", "必須", "出願基準点はなし"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "IELTS", "ケンブリッジ英検", "2024年1月以降"]},
+      "screening_method": {"contains": ["理学部・工学部・芸術工学部", "日本語試験を課さない", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月27日", "9:00", "11:00"]},
+      "result_date": {"contains": ["2026年3月3日"]},
+      "enrollment_period": {"contains": ["2026年3月4日", "3月15日", "Web入学手続"]},
+      "evidence": {"contains": ["p.3-p.4", "p.13", "p.17"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

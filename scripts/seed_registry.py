@@ -7,6 +7,7 @@ from scripts.fukui_engineering_2027_undergrad_extractor import extract_fukui_eng
 from scripts.hokkaido_2027_undergrad_extractor import extract_hokkaido_2027_undergrad_records
 from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
+from scripts.kyushu_2026_undergrad_extractor import extract_kyushu_2026_undergrad_records
 from scripts.kyoto_institute_tech_2027_undergrad_extractor import extract_kit_2027_undergrad_records
 from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
@@ -217,6 +218,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["東京海洋大学", "私費外国人留学生特別入試", "日本留学試験", "出願期間"],
         "text_markers": ["東京海洋大学", "私費外国人留学生特別入試", "日本留学試験", "海洋工学部"],
         "extractor": extract_tokyo_marine_2026_undergrad_records,
+    },
+    "kyushu_2026_undergrad": {
+        "stem": "kyushu_2026_undergrad",
+        "id": "kyushu-2026-undergrad",
+        "university": "九州大学",
+        "admission_year": "2026",
+        "script": "scripts/kyushu_2026_undergrad_extractor.py",
+        "expected_path": "quality_baselines/kyushu_2026_undergrad.expected.json",
+        "source_url": "https://www.kyushu-u.ac.jp/f/63057/R8_shihi_inst.pdf",
+        "source_candidates": ["data/uploads/kyushu_2026_undergrad.pdf"],
+        "source_markers": ["九州大学", "私費外国人留学生入試", "日本留学試験", "TOEFL"],
+        "text_markers": ["九州大学", "私費外国人留学生入試", "日本留学試験", "入学者選抜方法"],
+        "extractor": extract_kyushu_2026_undergrad_records,
     },
 }
 
