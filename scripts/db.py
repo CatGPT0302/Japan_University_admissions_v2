@@ -819,7 +819,6 @@ def init_db() -> None:
 DEFAULT_API_SCOPES = [
     "programs:read",
     "recommendations:create",
-    "bookings:create",
     "documents:submit",
     "documents:read_status",
 ]
@@ -2244,7 +2243,7 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
         elif risk_level == "high":
             score -= 18
         if risk_level == "high":
-            check_items.append("这所学校的要求还有不完整或复杂的地方，咨询前需要再看原文")
+            check_items.append("这所学校的要求还有不完整或复杂的地方，申请前需要再看原文")
         elif risk_level == "medium":
             check_items.append("有选择条件或需要进一步确认的地方")
         if application_period:

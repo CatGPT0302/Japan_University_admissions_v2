@@ -618,6 +618,8 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(created.status_code, 200)
         self.assertIn("secret", created.json())
         self.assertIn("programs:read", created.json()["scopes"])
+        self.assertNotIn("bookings:create", created.json()["scopes"])
+        self.assertNotIn("bookings:create", center.json()["allowed_scopes"])
         self.assertGreaterEqual(len(refreshed.json()["api_keys"]), 1)
         self.assertTrue(refreshed.json()["api_keys"][0]["masked_key"].startswith("ak_"))
         self.assertGreaterEqual(center.json()["usage_summary"]["total"], 2)
