@@ -37,6 +37,7 @@ def _base_record(*, faculty: str, department: str = "") -> dict[str, Any]:
         "deadline_rule": "TAOで必要情報入力、書類アップロード、入学検定料支払いを2026年6月18日(木)17:00までに完了",
         "required_documents": "卒業証明書または卒業見込証明書 / 成績証明書 / 日本語による外部試験の結果 / 外国語外部試験の結果 / 志望理由書 / 顔写真 / パスポートのコピー",
         "eligibility": "日本の教育制度以外の課程にて教育を実施する中等教育機関を修了、または2027年3月31日までに修了見込み / 日本留学試験または日本語能力試験を受験 / 学部指定の提出書類を出願期間内に提出",
+        "evidence": "出願資格: p.3 / 入試日程・選考方法: p.5 / 出願書類: p.7-p.9 / 日本語・外国語外部試験: p.10-p.14 / 入学手続: p.24-p.27",
         "confidence": 0.99,
         "needs_review": True,
         "warnings": ["Deterministic seed extraction from the official Waseda 2027 admissions guideline; extend by human review."],
