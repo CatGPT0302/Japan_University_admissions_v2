@@ -21,7 +21,7 @@ This project now has three separate surfaces:
    - Collect profile information first.
    - Show schools worth checking.
    - Explain application requirements in user-facing language.
-   - Accept consultation bookings.
+   - Does not collect consultation bookings.
 
 Do not merge these into one dashboard. The admin tool is the data production tool; the student frontend is the real user-facing product.
 
@@ -38,7 +38,8 @@ Do not merge these into one dashboard. The admin tool is the data production too
 - `scripts/db.py` owns SQLite/PostgreSQL-compatible persistence and the public projection helpers.
 - `/admin/submissions` is the owner queue for private-school submitted materials.
 - `/v1/documents/submissions` is the licensed submission endpoint for private schools.
-- `/public/*` is for student-facing reads and bookings.
+- `/public/*` is for student-facing reads and recommendations.
+- Booking endpoints may still exist for legacy compatibility, but they are not part of the active student or partner product flow.
 
 ## Important Frontend Areas
 

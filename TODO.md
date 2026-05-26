@@ -16,7 +16,7 @@
 
 - Add organization-level reporting and usage summaries.
 - Add more universities only after the core review and confirmation loop is stable.
-- Add email/calendar/payment integrations only after booking v1 is proven.
+- Do not add email/calendar/payment/booking flows unless the product direction explicitly changes.
 - Consider larger data model migrations only after the projection layer becomes a bottleneck.
 
 ## Out Of Scope For v1
