@@ -19,6 +19,11 @@ import type {
 type SettingsSection = "overview" | "access" | "documents" | "activity" | "handoff";
 
 const OWNER_PARTNER_ROUTE = `#/${String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "")}`;
+const OWNER_WORKSPACE_URL = String(import.meta.env.VITE_OWNER_WORKSPACE_URL || "").trim().replace(/\/$/, "");
+
+interface Props {
+  onOpenReview?: (docId: number) => void;
+}
 
 const SECTIONS: Array<{ key: SettingsSection; label: string; hint: string }> = [
   { key: "overview", label: "今日待办", hint: "按顺序走" },
@@ -93,7 +98,7 @@ function submissionSource(item: AdminSubmission): string {
   return "资料";
 }
 
-export default function SettingsPage() {
+export default function SettingsPage({ onOpenReview }: Props) {
   const [center, setCenter] = useState<ApiCenterResponse | null>(null);
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,6 +218,18 @@ export default function SettingsPage() {
     } finally {
       setWorkingSubmissionId(null);
     }
+  }
+
+  function openReviewForSubmission(item: AdminSubmission) {
+    if (item.document_id && onOpenReview) {
+      onOpenReview(item.document_id);
+      return;
+    }
+    if (OWNER_WORKSPACE_URL) {
+      window.location.href = `${OWNER_WORKSPACE_URL}/#/review`;
+      return;
+    }
+    setMessage("请打开 Owner 资料中心，在人工复审中确认这份资料。");
   }
 
   if (loading && !center) {
@@ -431,9 +448,9 @@ export default function SettingsPage() {
                         ) : null}
                         {item.processing_status === "needs_owner_review" ? (
                           <>
-                            <a className="btn btn-primary" href="#/review">
+                            <button className="btn btn-primary" type="button" onClick={() => openReviewForSubmission(item)}>
                               去确认资料
-                            </a>
+                            </button>
                             <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void handleSetSubmissionStatus(item.id, "confirmed")}>
                               标记已完成
                             </button>

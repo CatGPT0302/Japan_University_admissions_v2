@@ -144,7 +144,15 @@ export default function App() {
   if (isPartnerAdminApp) {
     if (!user) return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
     if (user.role !== "owner_admin") return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
-    return <OwnerPartnersPage />;
+    return (
+      <OwnerPartnersPage
+        onOpenReview={(docId) => {
+          setActiveDocId(docId);
+          setPage("review");
+          window.location.hash = "#/review";
+        }}
+      />
+    );
   }
   if (!user) return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;
   if (user.role !== "owner_admin") return <LoginScreen expectedRole="owner_admin" onSignedIn={setUser} />;

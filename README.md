@@ -89,6 +89,8 @@ $env:VITE_APP_SURFACE="partner"; npm run dev -- --host 127.0.0.1 --port 5175
 $env:VITE_APP_SURFACE="student"; npm run dev -- --host 127.0.0.1 --port 5176
 ```
 
+For the owner partner-management site, set `VITE_OWNER_WORKSPACE_URL` to the separate owner data workspace URL. This lets the partner-management site send the owner back to the review workspace after a submitted source has been processed.
+
 ## Environment Variables
 
 Use `.env.example` in the project root and `frontend/.env.example` for local configuration templates.
