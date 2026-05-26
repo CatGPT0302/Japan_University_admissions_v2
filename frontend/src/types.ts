@@ -557,44 +557,6 @@ export interface RecommendationResponse {
   results: RecommendationResult[];
 }
 
-export interface ConsultationBookingRequest {
-  student_name: string;
-  contact_email?: string;
-  contact_phone?: string;
-  role?: string;
-  target_year?: string;
-  program_id?: number | null;
-  preferred_times?: string;
-  question?: string;
-}
-
-export interface ConsultationBookingResponse {
-  status: "received";
-  id: number;
-}
-
-export type ConsultationBookingStatus = "new" | "contacted" | "done" | "closed";
-
-export interface AdminConsultationBooking {
-  id: number;
-  student_name: string;
-  contact_email?: string;
-  contact_phone?: string;
-  role?: string;
-  target_year?: string;
-  program_id?: number | null;
-  preferred_times?: string;
-  question?: string;
-  status: ConsultationBookingStatus;
-  owner_note?: string;
-  next_action_at?: string;
-  created_at: string;
-  school_name?: string;
-  faculty?: string;
-  department?: string;
-  admission_year?: string;
-}
-
 export interface ApiCenterKey {
   id: number;
   client_name: string;

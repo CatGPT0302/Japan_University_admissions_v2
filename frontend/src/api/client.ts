@@ -1,16 +1,12 @@
 import axios from "axios";
 import type {
   AgentRunResponse,
-  AdminConsultationBooking,
   AdminSubmission,
   AppUser,
   ApiCenterResponse,
   ApiKeyCreateResponse,
   ConfirmResponse,
   ConfirmedRecord,
-  ConsultationBookingRequest,
-  ConsultationBookingResponse,
-  ConsultationBookingStatus,
   CorrectionEvent,
   DocumentListItem,
   DocumentSummary,
@@ -230,39 +226,6 @@ export async function getPublicProgram(programId: number): Promise<PublicProgram
 export async function getPublicRecommendations(profile: StudentProfile): Promise<RecommendationResponse> {
   const { data } = await client.post<RecommendationResponse>("/public/recommendations", profile);
   return data;
-}
-
-export async function createConsultationBooking(
-  payload: ConsultationBookingRequest,
-): Promise<ConsultationBookingResponse> {
-  const { data } = await client.post<ConsultationBookingResponse>("/public/bookings", payload);
-  return data;
-}
-
-export async function getAdminBookings(params?: {
-  status?: ConsultationBookingStatus | "";
-  q?: string;
-  limit?: number;
-  offset?: number;
-}): Promise<AdminConsultationBooking[]> {
-  const { data } = await client.get<AdminConsultationBooking[]>("/admin/bookings", { params });
-  return data;
-}
-
-export async function updateAdminBooking(
-  bookingId: number,
-  payload: { status?: ConsultationBookingStatus; owner_note?: string; next_action_at?: string },
-): Promise<AdminConsultationBooking> {
-  const { data } = await client.patch<AdminConsultationBooking>(`/admin/bookings/${bookingId}`, payload);
-  return data;
-}
-
-export function downloadAdminBookingsCsv(status?: ConsultationBookingStatus | "", q?: string): void {
-  const search = new URLSearchParams();
-  if (status) search.set("status", status);
-  if (q?.trim()) search.set("q", q.trim());
-  const qs = search.toString();
-  window.open(`${BASE_URL}/admin/bookings/export.csv${qs ? `?${qs}` : ""}`, "_blank");
 }
 
 export async function getApiCenter(): Promise<ApiCenterResponse> {
