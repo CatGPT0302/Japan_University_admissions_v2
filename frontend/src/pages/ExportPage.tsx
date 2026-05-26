@@ -141,6 +141,7 @@ function reviewFocusForRow(docId: number, row?: ConfirmedRecord | null, field?: 
   return {
     token: Date.now(),
     docId,
+    stagingId: row.review_staging_id ?? null,
     field,
     university: row.university,
     admission_year: yearText(row.admission_year),

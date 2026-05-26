@@ -196,6 +196,102 @@ class ExportCenterApiTest(unittest.TestCase):
         for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
             self.assertNotIn(hidden_key, str(payload))
 
+    def test_export_preview_keeps_precise_review_target_without_leaking_staging_column(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            doc_id = db.create_source_document(
+                "Same Faculty University",
+                "same.pdf",
+                "/tmp/same.pdf",
+                "https://example.test/same.pdf",
+                "2027",
+            )
+            first_staging_id = db.insert_staging_record(
+                doc_id,
+                1,
+                {
+                    "university": "Same Faculty University",
+                    "admission_year": "2027",
+                    "faculty": "Letters",
+                    "department": "First Department",
+                    "application_period": "",
+                    "needs_review": 1,
+                },
+            )
+            second_staging_id = db.insert_staging_record(
+                doc_id,
+                2,
+                {
+                    "university": "Same Faculty University",
+                    "admission_year": "2027",
+                    "faculty": "Letters",
+                    "department": "Second Department",
+                    "application_period": "2026-09-01 - 2026-09-10",
+                    "needs_review": 0,
+                },
+            )
+            conn = db.get_conn()
+            for staging_id, department, application_period in (
+                (first_staging_id, "First Department", ""),
+                (second_staging_id, "Second Department", "2026-09-01 - 2026-09-10"),
+            ):
+                conn.execute(
+                    """
+                    INSERT INTO admission_records (
+                        source_staging_id, document_id, university, pdf_url, admission_year,
+                        admission_period, faculty, department, application_period, deadline_rule,
+                        eju_session, eju_japanese, eju_general, eju_math, eju_physics,
+                        eju_chemistry, eju_biology, english_requirement, screening_method,
+                        screening_schedule, result_date, enrollment_period, prefecture, campus,
+                        eligibility, required_documents, evidence
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        staging_id,
+                        doc_id,
+                        "Same Faculty University",
+                        "https://example.test/same.pdf",
+                        "2027",
+                        "April",
+                        "Letters",
+                        department,
+                        application_period,
+                        "Must arrive by deadline",
+                        "2025 June or November",
+                        "Japanese required",
+                        "General subject",
+                        "Math course 1",
+                        "",
+                        "",
+                        "",
+                        "TOEFL iBT",
+                        "Documents",
+                        "2026-02-25",
+                        "2026-03-07",
+                        "2026-03-18",
+                        "Tokyo",
+                        "Main",
+                        "Completed 12 years of school education outside Japan",
+                        "Graduation certificate / Transcript",
+                        "Guideline p.3-p.7",
+                    ),
+                )
+            conn.commit()
+            conn.close()
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/exports/preview", params={"universities": "Same Faculty University", "years": "2027"})
+
+        self.assertEqual(response.status_code, 200)
+        rows = response.json()["rows"]
+        by_department = {row["department"]: row for row in rows}
+        self.assertEqual(by_department["First Department"]["review_staging_id"], first_staging_id)
+        self.assertEqual(by_department["Second Department"]["review_staging_id"], second_staging_id)
+        self.assertEqual(by_department["First Department"]["review_doc_id"], doc_id)
+        self.assertNotIn("source_staging_id", by_department["First Department"])
+        self.assertNotIn("document_id", by_department["First Department"])
+
     def test_owner_issues_requires_owner_login(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, _db = self._load_api(Path(tmp))

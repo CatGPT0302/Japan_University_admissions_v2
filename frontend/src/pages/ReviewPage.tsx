@@ -200,6 +200,10 @@ function normalizedFocusValue(value?: string | null) {
 
 function findFocusedRow(rows: StagingRecord[], focus?: ReviewFocus | null) {
   if (!focus) return null;
+  if (focus.stagingId) {
+    const exact = rows.find((row) => Number(row.id) === Number(focus.stagingId));
+    if (exact) return exact;
+  }
   const faculty = normalizedFocusValue(focus.faculty);
   const department = normalizedFocusValue(focus.department);
   const university = normalizedFocusValue(focus.university);

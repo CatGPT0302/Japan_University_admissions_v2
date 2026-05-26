@@ -1907,7 +1907,7 @@ def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
 
 
 RECORD_SELECT_COLUMNS = (
-    "id,document_id,university,admission_year,faculty,department,"
+    "id,source_staging_id,document_id,university,admission_year,faculty,department,"
     "admission_period,application_period,deadline_rule,eju_session,eju_japanese,eju_general,"
     "eju_math,eju_physics,eju_chemistry,eju_biology,english_requirement,"
     "screening_method,screening_schedule,result_date,enrollment_period,prefecture,campus,"

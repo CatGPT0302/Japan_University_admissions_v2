@@ -423,8 +423,9 @@ def _export_missing_required(row: dict[str, Any]) -> list[str]:
 def _export_preview_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     preview_rows: list[dict[str, Any]] = []
     for row in rows:
-        preview_row = {key: value for key, value in row.items() if key != "document_id"}
+        preview_row = {key: value for key, value in row.items() if key not in {"document_id", "source_staging_id"}}
         preview_row["review_doc_id"] = row.get("document_id")
+        preview_row["review_staging_id"] = row.get("source_staging_id")
         preview_row["export_missing"] = _export_missing_required(row)
         preview_rows.append(preview_row)
     return preview_rows

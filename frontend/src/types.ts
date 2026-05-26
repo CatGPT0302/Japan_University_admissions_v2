@@ -5,6 +5,7 @@ export type AppRole = "owner_admin" | "partner_staff";
 export interface ReviewFocus {
   token: number;
   docId: number;
+  stagingId?: number | null;
   field?: string;
   university?: string;
   admission_year?: string;
@@ -438,6 +439,7 @@ export interface StagingRecord {
 export interface ConfirmedRecord {
   id: number;
   review_doc_id?: number | null;
+  review_staging_id?: number | null;
   university: string;
   admission_year: string;
   faculty: string;
