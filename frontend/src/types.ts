@@ -2,6 +2,16 @@ export type NavPage = "run" | "review" | "records" | "exports" | "bookings" | "q
 export type OwnerPage = NavPage;
 export type AppRole = "owner_admin" | "partner_staff";
 
+export interface ReviewFocus {
+  token: number;
+  docId: number;
+  field?: string;
+  university?: string;
+  admission_year?: string;
+  faculty?: string;
+  department?: string;
+}
+
 export interface AppUser {
   id: number;
   organization_id: number;

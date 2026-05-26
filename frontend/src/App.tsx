@@ -9,7 +9,7 @@ import RecordsPage from "./pages/RecordsPage";
 import ReviewPage from "./pages/ReviewPage";
 import SettingsPage from "./pages/SettingsPage";
 import StudentApp from "./pages/StudentApp";
-import type { AppRole, AppUser, OwnerPage } from "./types";
+import type { AppRole, AppUser, OwnerPage, ReviewFocus } from "./types";
 
 type OwnerNavItem = { key: OwnerPage; label: string; hint: string; short: string };
 
@@ -121,6 +121,7 @@ export default function App() {
   const surface = appSurface();
   const [page, setPage] = useState<OwnerPage>(() => pageFromHash());
   const [activeDocId, setActiveDocId] = useState<number | null>(null);
+  const [reviewFocus, setReviewFocus] = useState<ReviewFocus | null>(null);
   const [exportSeed, setExportSeed] = useState<{ university?: string; year?: string; token: number } | null>(null);
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
@@ -277,6 +278,7 @@ export default function App() {
             <RunPage
               onDone={(docId) => {
                 setActiveDocId(docId);
+                setReviewFocus(null);
                 setPage("review");
                 window.location.hash = "#/review";
               }}
@@ -292,12 +294,15 @@ export default function App() {
           ) : page === "review" ? (
             <ReviewPage
               defaultDocId={activeDocId}
+              defaultFocus={reviewFocus}
               onDone={() => {
                 setActiveDocId(null);
+                setReviewFocus(null);
                 setPage("records");
               }}
               onOpenExports={(filters) => {
                 setActiveDocId(null);
+                setReviewFocus(null);
                 setExportSeed({ ...filters, token: Date.now() });
                 setPage("exports");
                 window.location.hash = "#/exports";
@@ -310,6 +315,7 @@ export default function App() {
               initialFilters={exportSeed}
               onOpenReview={(docId) => {
                 setActiveDocId(docId);
+                setReviewFocus(null);
                 setPage("review");
                 window.location.hash = "#/review";
               }}
@@ -318,8 +324,9 @@ export default function App() {
             <BookingsPage />
           ) : (
             <QualityPage
-              onOpenReview={(docId) => {
+              onOpenReview={(docId, focus) => {
                 setActiveDocId(docId);
+                setReviewFocus(focus ?? null);
                 setPage("review");
                 window.location.hash = "#/review";
               }}

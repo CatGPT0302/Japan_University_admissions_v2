@@ -22,13 +22,14 @@ import type {
   OwnerIssuesResponse,
   QualityMetricsResponse,
   QualityOverviewResponse,
+  ReviewFocus,
   SourceReviewItem,
   SourceReviewResponse,
   SourceWatchlistResponse,
 } from "../types";
 
 interface Props {
-  onOpenReview?: (docId: number) => void;
+  onOpenReview?: (docId: number, focus?: ReviewFocus) => void;
 }
 
 type SourceQueueFilter = "open" | "needs_reextract" | "reviewed" | "all";
@@ -486,7 +487,21 @@ export default function QualityPage({ onOpenReview }: Props) {
                     </div>
                     <div className="inline-actions inline-actions-tight">
                       {item.doc_id && onOpenReview ? (
-                        <button className="btn btn-primary btn-small" type="button" onClick={() => onOpenReview(Number(item.doc_id))}>
+                        <button
+                          className="btn btn-primary btn-small"
+                          type="button"
+                          onClick={() =>
+                            onOpenReview(Number(item.doc_id), {
+                              token: Date.now(),
+                              docId: Number(item.doc_id),
+                              field: item.field || undefined,
+                              university: item.university,
+                              admission_year: item.admission_year,
+                              faculty: item.faculty,
+                              department: item.department,
+                            })
+                          }
+                        >
                           进入复审
                         </button>
                       ) : null}

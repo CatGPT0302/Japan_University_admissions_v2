@@ -9,10 +9,11 @@ import {
   patchStaging,
   toErrorMessage,
 } from "../api/client";
-import type { DocumentListItem, DocumentSummary, StagingRecord } from "../types";
+import type { DocumentListItem, DocumentSummary, ReviewFocus, StagingRecord } from "../types";
 
 interface Props {
   defaultDocId?: number | null;
+  defaultFocus?: ReviewFocus | null;
   onDone: () => void;
   onOpenExports?: (filters: { university?: string; year?: string }) => void;
 }
@@ -185,7 +186,36 @@ function sortRows(rows: StagingRecord[]) {
   });
 }
 
-export default function ReviewPage({ defaultDocId, onDone, onOpenExports }: Props) {
+function normalizedFocusValue(value?: string | null) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function findFocusedRow(rows: StagingRecord[], focus?: ReviewFocus | null) {
+  if (!focus) return null;
+  const faculty = normalizedFocusValue(focus.faculty);
+  const department = normalizedFocusValue(focus.department);
+  const university = normalizedFocusValue(focus.university);
+  const year = normalizedFocusValue(focus.admission_year);
+  return (
+    rows.find((row) => {
+      const sameFaculty = !faculty || normalizedFocusValue(row.faculty).includes(faculty) || faculty.includes(normalizedFocusValue(row.faculty));
+      const sameDepartment =
+        !department || normalizedFocusValue(row.department).includes(department) || department.includes(normalizedFocusValue(row.department));
+      const sameUniversity =
+        !university || normalizedFocusValue(row.university).includes(university) || university.includes(normalizedFocusValue(row.university));
+      const sameYear = !year || normalizedFocusValue(row.admission_year).includes(year);
+      return sameFaculty && sameDepartment && sameUniversity && sameYear;
+    }) ??
+    rows.find((row) => {
+      const sameFaculty = !faculty || normalizedFocusValue(row.faculty).includes(faculty) || faculty.includes(normalizedFocusValue(row.faculty));
+      const sameYear = !year || normalizedFocusValue(row.admission_year).includes(year);
+      return sameFaculty && sameYear;
+    }) ??
+    null
+  );
+}
+
+export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenExports }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
   const [rows, setRows] = useState<StagingRecord[]>([]);
@@ -200,6 +230,7 @@ export default function ReviewPage({ defaultDocId, onDone, onOpenExports }: Prop
   const [focusedEvidencePage, setFocusedEvidencePage] = useState<number | null>(null);
   const [pageInput, setPageInput] = useState("1");
   const editorPanelRef = useRef<HTMLElement | null>(null);
+  const pendingFocusRef = useRef<ReviewFocus | null>(null);
 
   const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
   const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
@@ -229,16 +260,34 @@ export default function ReviewPage({ defaultDocId, onDone, onOpenExports }: Prop
   }, [currentPage]);
 
   useEffect(() => {
-    if (defaultDocId) void openDocument(defaultDocId);
-  }, [defaultDocId]);
+    if (defaultDocId && !defaultFocus?.docId) void openDocument(defaultDocId);
+  }, [defaultDocId, defaultFocus?.docId]);
+
+  useEffect(() => {
+    if (defaultFocus?.docId) void openDocument(defaultFocus.docId, defaultFocus);
+  }, [defaultFocus?.token]);
 
   useEffect(() => {
     if (!selectedRow) return;
     const nextDraft: Record<string, string> = {};
     for (const key of REVIEW_KEYS) nextDraft[key] = textValue(selectedRow, key);
     setDraft(nextDraft);
-    setActiveGroupIndex(0);
-    setFocusedEvidencePage(null);
+    const focus = pendingFocusRef.current;
+    const focusKey = focus?.field as keyof StagingRecord | undefined;
+    if (focusKey && REVIEW_KEYS.includes(focusKey)) {
+      setActiveGroupIndex(groupIndexForField(focusKey));
+      const evidence = evidenceForField(selectedRow, focusKey);
+      setFocusedEvidencePage(evidence?.page ?? selectedRow.page_number ?? null);
+      window.setTimeout(() => {
+        const field = editorPanelRef.current?.querySelector<HTMLTextAreaElement>(`[data-review-key="${String(focusKey)}"]`);
+        field?.focus();
+        field?.scrollIntoView({ block: "center", behavior: "smooth" });
+      }, 0);
+      pendingFocusRef.current = null;
+    } else {
+      setActiveGroupIndex(0);
+      setFocusedEvidencePage(null);
+    }
   }, [selectedRow]);
 
   async function refreshDocuments() {
@@ -249,16 +298,18 @@ export default function ReviewPage({ defaultDocId, onDone, onOpenExports }: Prop
     }
   }
 
-  async function openDocument(docId: number) {
+  async function openDocument(docId: number, focus?: ReviewFocus | null) {
     if (hasUnsavedChanges && !window.confirm("当前修改还没有保存。要先切换到其他资料吗？")) return;
     setError("");
     setMessage("");
     const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
     const nextRows = sortRows(stagingRows);
+    const focusedRow = findFocusedRow(nextRows, focus);
+    pendingFocusRef.current = focus ?? null;
     setSelectedDocId(docId);
     setSummary(docSummary);
     setRows(stagingRows);
-    setSelectedRowId(nextRows[0]?.id ?? null);
+    setSelectedRowId(focusedRow?.id ?? nextRows[0]?.id ?? null);
   }
 
   async function save(markReviewed: boolean, moveNext = false) {

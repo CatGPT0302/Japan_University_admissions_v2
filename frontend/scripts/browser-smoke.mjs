@@ -262,6 +262,8 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "先看", `${surface.name} review filters`);
 
     await page.getByRole("button", { name: /质量与更新/ }).click();
+    await assertBodyIncludes(page, "今天先处理这些", `${surface.name} owner issue queue`);
+    await assertBodyIncludes(page, "导出清单", `${surface.name} owner issue export`);
     await assertBodyIncludes(page, "来源登记", `${surface.name} source watchlist`);
     await assertBodyIncludes(page, "维护节奏", `${surface.name} source watch cadence`);
     await assertBodyIncludes(page, "官方来源变化", `${surface.name} source review`);
