@@ -567,7 +567,7 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(overview["overall_status"], "needs_owner_action")
         self.assertEqual(record_todos[0]["seed"], "waseda-2027-official")
         self.assertEqual(record_todos[0]["checked"], 9)
-        self.assertEqual(record_todos[0]["minimum"], 10)
+        self.assertEqual(record_todos[0]["minimum"], 12)
 
     def test_treats_granular_eju_subjects_as_critical_coverage(self) -> None:
         from scripts.quality_overview import build_quality_overview

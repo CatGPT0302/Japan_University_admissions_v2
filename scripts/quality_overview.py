@@ -38,7 +38,7 @@ CRITICAL_FIELD_MINIMUMS = {
 
 SEED_RECORD_MINIMUMS = {
     "meiji-2027-schedule": 6,
-    "waseda-2027-official": 10,
+    "waseda-2027-official": 12,
 }
 
 

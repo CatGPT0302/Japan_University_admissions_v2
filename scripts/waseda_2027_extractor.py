@@ -155,6 +155,32 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if official_2027_guideline or _has_all(compact, ["創造理工学部", "建築学科", "書類選考", "面接試験", "筆記試験", "空間表現", "9月15日", "9月28日", "10月17日", "10月26日", "TOEFL", "IELTS", "TOEIC"]):
+        record = _base_record(faculty="創造理工学部", department="建築学科")
+        record.update(
+            {
+                "screening_method": "書類選考 / 面接試験および筆記試験（空間表現）（対面）",
+                "screening_schedule": "一次選考合格者発表: 2026年9月15日(火) / 面接試験および筆記試験（空間表現）: 2026年9月28日(月)・2026年10月17日(土)",
+                "result_date": "2026年10月26日(月)",
+                "enrollment_period": "第2次振込締切日: 2026年11月13日(金) / 出願書類原本提出締切日: 2026年11月27日(金) / 入学手続情報入力: 2027年3月上旬〜中旬予定",
+                "english_requirement": "TOEFL / IELTS / TOEIC",
+            }
+        )
+        records.append(record)
+
+    if official_2027_guideline or _has_all(compact, ["先進理工学部", "物理学科", "生命医科学科", "書類選考", "面接試験", "対面", "9月15日", "9月28日", "10月17日", "10月26日", "TOEFL", "IELTS", "TOEIC"]):
+        record = _base_record(faculty="先進理工学部")
+        record.update(
+            {
+                "screening_method": "書類選考 / 面接試験（対面）",
+                "screening_schedule": "一次選考合格者発表: 2026年9月15日(火) / 面接試験: 2026年9月28日(月)・2026年10月17日(土)",
+                "result_date": "2026年10月26日(月)",
+                "enrollment_period": "第2次振込締切日: 2026年11月13日(金) / 出願書類原本提出締切日: 2026年11月27日(金) / 入学手続情報入力: 2027年3月上旬〜中旬予定",
+                "english_requirement": "TOEFL / IELTS / TOEIC",
+            }
+        )
+        records.append(record)
+
     if official_2027_guideline or _has_all(compact, ["人間科学部", "書類選考", "筆記試験", "9月12日", "9月25日", "面接試験", "オンライン", "10月10日", "10月16日", "TOEFL", "IELTS"]):
         record = _base_record(faculty="人間科学部")
         record.update(

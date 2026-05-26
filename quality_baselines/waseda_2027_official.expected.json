@@ -417,5 +417,92 @@
       }
     },
     "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-creative-science-engineering-architecture",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "創造理工学部",
+      "department": "建築学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "enrollment_period": {
+        "contains": ["11月13日", "11月27日"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "筆記試験", "空間表現", "対面"]
+      },
+      "screening_schedule": {
+        "contains": ["9月15日", "9月28日", "10月17日"]
+      },
+      "result_date": {
+        "contains": ["10月26日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS", "TOEIC"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-advanced-science-engineering",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "先進理工学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "enrollment_period": {
+        "contains": ["11月13日", "11月27日"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "対面"]
+      },
+      "screening_schedule": {
+        "contains": ["9月15日", "9月28日", "10月17日"]
+      },
+      "result_date": {
+        "contains": ["10月26日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS", "TOEIC"]
+      }
+    },
+    "review_status": "human_checked_seed"
   }
 ]

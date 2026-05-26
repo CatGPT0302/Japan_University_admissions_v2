@@ -37,7 +37,7 @@ class Waseda2027ExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "waseda_2027_official.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 10)
+        self.assertEqual(len(records), 12)
         self.assertTrue(report["passed"], report)
 
     def test_returns_no_records_for_unrelated_text(self) -> None:
@@ -66,7 +66,7 @@ class Waseda2027ExtractorTest(unittest.TestCase):
             )
 
             payload = json.loads(output_path.read_text(encoding="utf-8"))
-            self.assertEqual(payload["record_count"], 10)
+            self.assertEqual(payload["record_count"], 12)
             self.assertEqual(payload["records"][0]["university"], "早稲田大学")
 
     def test_text_path_uses_waseda_seed_without_llm_call(self) -> None:
@@ -74,14 +74,14 @@ class Waseda2027ExtractorTest(unittest.TestCase):
 
         with (
             patch("scripts.extract_direct._read_pdf_text", return_value=(WASEDA_TEXT, {1: WASEDA_TEXT})),
-            patch("scripts.extract_direct._insert_result", return_value=10) as insert_result,
+            patch("scripts.extract_direct._insert_result", return_value=12) as insert_result,
             patch("scripts.extract_direct._call_openai", side_effect=AssertionError("LLM should not be called")),
         ):
             result = _run_text_path(1, Path("dummy.pdf"), "早稲田大学", "2027")
 
         self.assertEqual(result["mode"], "deterministic_text")
-        self.assertEqual(result["records"], 10)
-        self.assertEqual(result["inserted"], 10)
+        self.assertEqual(result["records"], 12)
+        self.assertEqual(result["inserted"], 12)
         insert_result.assert_called_once()
 
 
