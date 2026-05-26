@@ -22,6 +22,11 @@ class SourceChangeReportTest(unittest.TestCase):
                     "old_sha256": "0" * 64,
                     "new_sha256": "1" * 64,
                     "checked_at": "2026-05-26T10:00:00+00:00",
+                    "diff_preview": {
+                        "old_excerpt": ["Sample University 2027 出願期間 2026年9月1日から9月10日まで"],
+                        "new_excerpt": ["Sample University 2027 出願期間 2026年9月5日から9月20日まで"],
+                        "has_text_comparison": True,
+                    },
                 },
                 {
                     "stem": "broken_2027_undergrad",
@@ -47,6 +52,9 @@ class SourceChangeReportTest(unittest.TestCase):
         self.assertEqual(report["items"][0]["data_update_status"], "confirmed_records_unchanged")
         self.assertIn("正式资料不会自动改动", report["items"][0]["safety_note"])
         self.assertIn("数据边界", markdown)
+        self.assertIn("新旧片段", markdown)
+        self.assertIn("9月20日", markdown)
+        self.assertTrue(report["items"][0]["diff_preview"]["has_text_comparison"])
         self.assertIn("Broken University", markdown)
         self.assertIn("timeout", markdown)
         self.assertEqual(report["items"][0]["attention_level"], "needs_review")

@@ -101,6 +101,17 @@ def _next_steps(item: dict[str, Any]) -> list[str]:
     return ["打开来源", "判断是否需要复审"]
 
 
+def _diff_preview(item: dict[str, Any]) -> dict[str, Any]:
+    preview = item.get("diff_preview") if isinstance(item.get("diff_preview"), dict) else {}
+    old_excerpt = [str(line) for line in preview.get("old_excerpt") or [] if str(line).strip()]
+    new_excerpt = [str(line) for line in preview.get("new_excerpt") or [] if str(line).strip()]
+    return {
+        "old_excerpt": old_excerpt[:4],
+        "new_excerpt": new_excerpt[:4],
+        "has_text_comparison": bool(preview.get("has_text_comparison") or old_excerpt or new_excerpt),
+    }
+
+
 def _attention_level(status: str) -> str:
     if status == "changed":
         return "needs_review"
@@ -138,6 +149,7 @@ def build_change_report(queue: dict[str, Any], states: dict[str, Any] | None = N
                 "owner_summary": _owner_summary(item),
                 "likely_changed_areas": _likely_changed_areas(item),
                 "next_steps": _next_steps(item),
+                "diff_preview": _diff_preview(item),
                 "attention_level": _attention_level(status),
                 "review_status": review_status,
                 "review_note": state.get("note", ""),
@@ -206,6 +218,15 @@ def format_markdown_report(report: dict[str, Any]) -> str:
             lines.append(f"- 下一步：{' -> '.join(str(step) for step in next_steps)}")
         if item.get("missing_markers"):
             lines.append(f"- 没找到的线索：{json.dumps(item.get('missing_markers'), ensure_ascii=False)}")
+        diff_preview = item.get("diff_preview") if isinstance(item.get("diff_preview"), dict) else {}
+        old_excerpt = [str(line) for line in diff_preview.get("old_excerpt") or [] if str(line).strip()]
+        new_excerpt = [str(line) for line in diff_preview.get("new_excerpt") or [] if str(line).strip()]
+        if old_excerpt or new_excerpt:
+            lines.append("- 新旧片段：")
+            for line in old_excerpt[:3]:
+                lines.append(f"  - 以前：{line}")
+            for line in new_excerpt[:3]:
+                lines.append(f"  - 现在：{line}")
         if item.get("error"):
             lines.append(f"- 错误：{item.get('error')}")
         lines.append("")

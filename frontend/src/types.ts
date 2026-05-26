@@ -265,6 +265,11 @@ export interface SourceReviewItem {
   owner_summary?: string;
   likely_changed_areas?: string[];
   next_steps?: string[];
+  diff_preview?: {
+    old_excerpt?: string[];
+    new_excerpt?: string[];
+    has_text_comparison?: boolean;
+  };
   attention_level?: "needs_review" | "source_check" | "watch" | string;
   review_status: "open" | "reviewed" | "needs_reextract" | "deferred" | string;
   review_note?: string;

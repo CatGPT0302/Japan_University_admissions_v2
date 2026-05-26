@@ -703,6 +703,22 @@ export default function QualityPage({ onOpenReview }: Props) {
                           ))}
                         </ol>
                       ) : null}
+                      {item.diff_preview?.has_text_comparison ? (
+                        <div className="source-review-diff" aria-label="新旧片段">
+                          <div>
+                            <span>以前可能相关</span>
+                            {(item.diff_preview.old_excerpt || []).slice(0, 2).map((line) => (
+                              <p key={line}>{line}</p>
+                            ))}
+                          </div>
+                          <div>
+                            <span>现在可能相关</span>
+                            {(item.diff_preview.new_excerpt || []).slice(0, 2).map((line) => (
+                              <p key={line}>{line}</p>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
                       <div className="source-review-actions">
                         <div className="inline-actions inline-actions-tight">
                           {matchedDoc && onOpenReview ? (

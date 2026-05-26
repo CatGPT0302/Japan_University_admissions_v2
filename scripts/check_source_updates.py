@@ -26,6 +26,26 @@ from scripts.source_watchlist import build_source_watchlist  # noqa: E402
 
 FetchResult = dict[str, Any]
 Fetcher = Callable[[str], FetchResult]
+DIFF_FOCUS_TOKENS = [
+    "出願",
+    "締切",
+    "期間",
+    "試験",
+    "選考",
+    "面接",
+    "合格",
+    "発表",
+    "入学手続",
+    "EJU",
+    "日本留学試験",
+    "JLPT",
+    "TOEFL",
+    "TOEIC",
+    "IELTS",
+    "英語",
+    "書類",
+    "資格",
+]
 
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
@@ -80,6 +100,55 @@ def _probe_text(source_type: str, content: bytes) -> str:
     return _html_text(content)
 
 
+def _read_cached_probe_text(item: dict[str, Any], *, root: Path) -> str:
+    source_type = str(item.get("source_type") or "unknown")
+    cached_path = str(item.get("cached_path") or "").strip()
+    if not cached_path:
+        return ""
+    path = Path(cached_path)
+    if not path.is_absolute():
+        path = root / path
+    if not path.exists() or not path.is_file():
+        return ""
+    try:
+        if source_type == "pdf":
+            pages = extract_text_per_page(path)
+            return "\n".join(value for _page, value in sorted(pages.items()))
+        return _html_text(path.read_bytes())
+    except Exception:
+        return ""
+
+
+def _normalized_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw_line in re.split(r"[\r\n。]+", text):
+        line = " ".join(str(raw_line).split())
+        if len(line) >= 8:
+            lines.append(line)
+    return lines
+
+
+def _focused_lines(lines: list[str]) -> list[str]:
+    focused = [line for line in lines if any(token.lower() in line.lower() for token in DIFF_FOCUS_TOKENS)]
+    return focused or lines
+
+
+def _diff_preview(*, old_text: str, new_text: str, limit: int = 4) -> dict[str, Any]:
+    old_lines = _focused_lines(_normalized_lines(old_text))
+    new_lines = _focused_lines(_normalized_lines(new_text))
+    old_set = set(old_lines)
+    new_set = set(new_lines)
+    removed = [line for line in old_lines if line not in new_set][:limit]
+    added = [line for line in new_lines if line not in old_set][:limit]
+    return {
+        "old_excerpt": removed,
+        "new_excerpt": added,
+        "old_excerpt_count": len(removed),
+        "new_excerpt_count": len(added),
+        "has_text_comparison": bool(removed or added),
+    }
+
+
 def _marker_matches(text: str, marker: Any) -> bool:
     if isinstance(marker, list):
         return any(str(item) in text for item in marker if str(item).strip())
@@ -111,7 +180,7 @@ def _status_for_check(item: dict[str, Any], content: bytes, content_type: str) -
     return "first_check", {}
 
 
-def _check_one(item: dict[str, Any], *, fetcher: Fetcher, checked_at: str) -> dict[str, Any]:
+def _check_one(item: dict[str, Any], *, fetcher: Fetcher, checked_at: str, root: Path = ROOT) -> dict[str, Any]:
     base = {
         "stem": item.get("stem", ""),
         "id": item.get("id", ""),
@@ -136,6 +205,11 @@ def _check_one(item: dict[str, Any], *, fetcher: Fetcher, checked_at: str) -> di
         content_type = str(fetched.get("content_type") or "")
         status, extra = _status_for_check(item, bytes(content), content_type)
         new_hash = content_sha256(bytes(content))
+        if status == "changed":
+            new_text = _probe_text(str(item.get("source_type") or "unknown"), bytes(content))
+            old_text = _read_cached_probe_text(item, root=root)
+            if old_text and new_text:
+                extra = {**extra, "diff_preview": _diff_preview(old_text=old_text, new_text=new_text)}
         return {
             **base,
             "status": status,
@@ -226,7 +300,7 @@ def check_watchlist_sources(
     sources = list(watchlist if watchlist is not None else build_source_watchlist(root=root))
     if limit is not None:
         sources = sources[: int(limit)]
-    items = [_check_one(item, fetcher=fetcher, checked_at=checked_at) for item in sources]
+    items = [_check_one(item, fetcher=fetcher, checked_at=checked_at, root=root) for item in sources]
 
     checks_path = output_path or root / "data" / "source_checks.jsonl"
     queue_path = review_queue_path or root / "data" / "source_review_queue.json"

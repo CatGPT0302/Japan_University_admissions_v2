@@ -71,6 +71,38 @@ class CheckSourceUpdatesTest(unittest.TestCase):
         self.assertEqual(stored_receipt["last_check_status"], "changed")
         self.assertNotEqual(stored_receipt["last_check_sha256"], stored_receipt["sha256"])
 
+    def test_changed_html_source_includes_owner_diff_preview(self) -> None:
+        from scripts.check_source_updates import check_watchlist_sources, content_sha256
+
+        old_content = "Sample University 2027 出願期間 2026年9月1日から9月10日まで"
+        new_content = "Sample University 2027 出願期間 2026年9月5日から9月20日まで"
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cached = root / "data" / "uploads" / "sample.html"
+            cached.parent.mkdir(parents=True)
+            cached.write_text(old_content, encoding="utf-8")
+            item = {
+                **self._watch_item(old_hash=content_sha256(old_content.encode("utf-8"))),
+                "source_type": "html",
+                "source_url": "https://example.test/sample.html",
+                "cached_path": "data/uploads/sample.html",
+                "markers": ["Sample University", "2027"],
+            }
+
+            report = check_watchlist_sources(
+                watchlist=[item],
+                root=root,
+                fetcher=lambda _url: {"status_code": 200, "content": new_content.encode("utf-8"), "content_type": "text/html"},
+                now="2026-05-26T10:00:00+00:00",
+            )
+            queue = json.loads((root / "data" / "source_review_queue.json").read_text(encoding="utf-8"))
+
+        diff_preview = report["items"][0]["diff_preview"]
+        self.assertTrue(diff_preview["has_text_comparison"])
+        self.assertIn("9月1日", diff_preview["old_excerpt"][0])
+        self.assertIn("9月20日", diff_preview["new_excerpt"][0])
+        self.assertEqual(queue["items"][0]["diff_preview"], diff_preview)
+
     def test_successful_check_refreshes_watchlist_maintenance_time(self) -> None:
         from scripts.check_source_updates import check_watchlist_sources, content_sha256
         from scripts.source_watchlist import build_watchlist_report
