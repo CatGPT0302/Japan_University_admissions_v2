@@ -18,6 +18,9 @@
       "enrollment_period": {
         "contains": ["10月30日", "11月27日"]
       },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験"]
       },
@@ -52,6 +55,9 @@
       "enrollment_period": {
         "contains": ["11月13日", "11月27日"]
       },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
       },
@@ -85,6 +91,9 @@
       },
       "enrollment_period": {
         "contains": ["11月27日"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
       },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
@@ -121,6 +130,9 @@
       "enrollment_period": {
         "contains": ["11月13日", "11月27日", "2027年3月上旬"]
       },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
       "screening_method": {
         "contains": ["書類選考", "面接試験"]
       },
@@ -154,6 +166,9 @@
       },
       "enrollment_period": {
         "contains": ["9月18日", "11月13日"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
       },
       "screening_method": {
         "contains": ["書類選考", "面接試験", "オンライン"]
