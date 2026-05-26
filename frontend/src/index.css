@@ -405,6 +405,24 @@ body,
   font-size: 12px;
 }
 
+.export-check-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(180, 83, 9, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.export-check-action p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .export-table-scroll {
   overflow: auto;
   max-height: min(66vh, 720px);

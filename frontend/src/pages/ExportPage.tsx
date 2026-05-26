@@ -356,7 +356,7 @@ export default function ExportPage({ onOpenReview }: Props) {
             </button>
             {onOpenReview ? (
               <button className="btn btn-ghost" type="button" onClick={() => void openQuickSchoolReview()} disabled={!quickSchool.trim() || openingSource}>
-                {openingSource ? "正在打开" : "查看来源"}
+                {openingSource ? "正在打开" : "回到复审"}
               </button>
             ) : null}
           </div>
@@ -507,7 +507,7 @@ export default function ExportPage({ onOpenReview }: Props) {
                     onClick={() => void openReviewForSchool(selectedRow.university, yearText(selectedRow.admission_year))}
                     disabled={openingSource}
                   >
-                    {openingSource ? "正在打开" : "查看来源"}
+                    {openingSource ? "正在打开" : "回到复审"}
                   </button>
                 ) : null}
               </div>
@@ -574,6 +574,19 @@ export default function ExportPage({ onOpenReview }: Props) {
                 <span>出愿、EJU、英语、考试日程和结果公布都有内容</span>
               )}
             </div>
+            {rows.length && exportCheck.gaps.length && selectedRow && onOpenReview ? (
+              <div className="export-check-action">
+                <p>导出前可以先回到复审页，把空白内容对照源 PDF 补齐。</p>
+                <button
+                  className="btn btn-ghost btn-small"
+                  type="button"
+                  onClick={() => void openReviewForSchool(selectedRow.university, yearText(selectedRow.admission_year))}
+                  disabled={openingSource}
+                >
+                  {openingSource ? "正在打开" : "回到复审补齐"}
+                </button>
+              </div>
+            ) : null}
           </section>
 
           <div className="export-table-scroll">
