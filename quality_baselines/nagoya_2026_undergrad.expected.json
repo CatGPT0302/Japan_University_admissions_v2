@@ -1,0 +1,100 @@
+[
+  {
+    "id": "nagoya-2026-literature",
+    "source_document": "https://www.nagoya-u.ac.jp/admissions/exam/upload/2026_shihi_yoko.pdf",
+    "source_note": "Official Nagoya University 2026 privately financed international undergraduate admissions guide. Checked against recruitment units, schedule, eligibility, EJU/English requirements, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "名古屋大学", "admission_year": "2026", "faculty": "文学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月24日", "12月4日", "15時", "2025年12月1日", "12月5日", "郵送必着"]},
+      "deadline_rule": {"contains": ["SakSak", "入学検定料", "簡易書留", "速達郵便", "海外"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "多重国籍者", "永住許可", "12年の課程", "2026年3月31日", "出願が認められない"]},
+      "required_documents": {"contains": ["志願票", "履歴書", "卒業", "学業成績証明書", "日本留学試験", "TOEFL", "在留カード"]},
+      "eju_session": {"contains": ["2024年度第2回", "2025年度第1回", "出題言語", "日本語"]},
+      "eju_japanese": {"contains": ["文学部", "日本語", "220点以上"]},
+      "eju_general": {"contains": ["総合科目", "数学コース1", "265点以上"]},
+      "eju_math": {"contains": ["数学コース1", "265点以上"]},
+      "english_requirement": {"contains": ["TOEFL", "IELTS", "2023年12月1日", "2025年11月30日", "TOEFL iBT 61点以上", "IELTS 5.5以上"]},
+      "screening_method": {"contains": ["日本留学試験", "TOEFL", "IELTS", "小論文", "面接", "出願書類"]},
+      "screening_schedule": {"contains": ["2026年1月30日", "小論文10:00-11:00", "面接13:00-17:00", "対面"]},
+      "result_date": {"contains": ["2026年2月11日", "12時"]},
+      "enrollment_period": {"contains": ["2026年2月11日", "2月18日", "15時"]},
+      "evidence": {"contains": ["p.15", "p.16", "p.17-p.18", "p.19", "p.20-p.21", "p.22-p.30", "p.33"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "nagoya-2026-informatics-natural",
+    "source_document": "https://www.nagoya-u.ac.jp/admissions/exam/upload/2026_shihi_yoko.pdf",
+    "source_note": "Official Nagoya University 2026 privately financed international undergraduate admissions guide. Checked against recruitment units, schedule, eligibility, EJU/English requirements, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "名古屋大学", "admission_year": "2026", "faculty": "情報学部", "department": "自然情報学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月24日", "12月5日", "郵送必着"]},
+      "deadline_rule": {"contains": ["SakSak", "必要書類", "郵送", "国際郵便"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程"]},
+      "required_documents": {"contains": ["志願票", "履歴書", "日本留学試験", "TOEFL", "オンライン面接受験誓約書"]},
+      "eju_session": {"contains": ["2024年度第2回", "2025年度第1回", "日本語"]},
+      "eju_japanese": {"contains": ["情報学部自然情報学科", "日本語", "300点以上"]},
+      "eju_math": {"contains": ["数学コース2", "265点以上"]},
+      "eju_physics": {"contains": ["理科", "物理", "2科目選択"]},
+      "eju_chemistry": {"contains": ["理科", "化学", "2科目選択"]},
+      "eju_biology": {"contains": ["理科", "生物", "2科目選択"]},
+      "english_requirement": {"contains": ["情報学部", "TOEFL iBT 61点以上", "TOEFL-ITPは利用不可", "My Best"]},
+      "screening_method": {"contains": ["第1次選考", "出願書類", "第2次選考", "オンライン面接"]},
+      "screening_schedule": {"contains": ["2025年12月23日", "17時", "2026年1月30日", "オンライン面接"]},
+      "result_date": {"contains": ["2026年2月11日"]},
+      "enrollment_period": {"contains": ["2026年2月11日", "2月18日"]},
+      "evidence": {"contains": ["p.15", "p.16", "p.18", "p.19", "p.20-p.21"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "nagoya-2026-medicine",
+    "source_document": "https://www.nagoya-u.ac.jp/admissions/exam/upload/2026_shihi_yoko.pdf",
+    "source_note": "Official Nagoya University 2026 privately financed international undergraduate admissions guide. Checked against recruitment units, schedule, eligibility, EJU/English requirements, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "名古屋大学", "admission_year": "2026", "faculty": "医学部", "department": "医学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月24日", "12月4日", "12月5日", "郵送必着"]},
+      "deadline_rule": {"contains": ["SakSak", "入学検定料", "簡易書留", "速達郵便"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "多重国籍者", "永住許可", "2026年3月31日"]},
+      "required_documents": {"contains": ["志願票", "履歴書", "出願資格証明書", "日本留学試験", "IELTS"]},
+      "eju_session": {"contains": ["2024年度第2回", "2025年度第1回"]},
+      "eju_japanese": {"contains": ["医学部医学科", "420点以上"]},
+      "eju_math": {"contains": ["数学コース2", "380点以上"]},
+      "eju_physics": {"contains": ["物理", "2科目選択"]},
+      "eju_chemistry": {"contains": ["化学", "2科目選択"]},
+      "eju_biology": {"contains": ["生物", "2科目選択"]},
+      "english_requirement": {"contains": ["医学部医学科", "TOEFL iBT 90点以上", "Home Edition"]},
+      "screening_method": {"contains": ["筆記試験", "面接", "生命科学", "日本語"]},
+      "screening_schedule": {"contains": ["2026年1月30日", "筆記13:00-14:00", "面接14:30", "鶴舞"]},
+      "result_date": {"contains": ["2026年2月11日"]},
+      "enrollment_period": {"contains": ["2026年2月11日", "2月18日", "15時"]},
+      "evidence": {"contains": ["p.18", "p.19", "p.20-p.21"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "nagoya-2026-agriculture",
+    "source_document": "https://www.nagoya-u.ac.jp/admissions/exam/upload/2026_shihi_yoko.pdf",
+    "source_note": "Official Nagoya University 2026 privately financed international undergraduate admissions guide. Checked against recruitment units, schedule, eligibility, EJU/English requirements, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "名古屋大学", "admission_year": "2026", "faculty": "農学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月24日", "12月5日", "15時"]},
+      "deadline_rule": {"contains": ["SakSak", "郵送", "国際郵便"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年の課程", "出願が認められない"]},
+      "required_documents": {"contains": ["志願票", "履歴書", "日本留学試験", "TOEFL", "在留カード"]},
+      "eju_session": {"contains": ["2024年度第2回", "2025年度第1回", "日本語"]},
+      "eju_japanese": {"contains": ["農学部", "300点以上"]},
+      "eju_math": {"contains": ["数学コース2", "300点以上"]},
+      "eju_physics": {"contains": ["物理", "2科目選択"]},
+      "eju_chemistry": {"contains": ["化学", "2科目選択"]},
+      "eju_biology": {"contains": ["生物", "2科目選択"]},
+      "english_requirement": {"contains": ["農学部", "TOEFL iBT 61点以上", "My Bestスコアを利用しない"]},
+      "screening_method": {"contains": ["小論文", "口頭試問", "面接", "総合的に評価"]},
+      "screening_schedule": {"contains": ["2026年1月30日", "小論文10:00-10:45", "面接13:00", "東山"]},
+      "result_date": {"contains": ["2026年2月11日"]},
+      "enrollment_period": {"contains": ["2026年2月11日", "2月18日", "15時"]},
+      "evidence": {"contains": ["p.18", "p.19", "p.20-p.21", "p.33"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

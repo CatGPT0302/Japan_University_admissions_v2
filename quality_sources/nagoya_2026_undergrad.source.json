@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "nagoya_2026_undergrad",
+  "source_url": "https://www.nagoya-u.ac.jp/admissions/exam/upload/2026_shihi_yoko.pdf",
+  "cached_path": "data/uploads/nagoya_2026_undergrad.pdf",
+  "sha256": "ace300977bf35d87f26ba1ba31dd3b3e52fb37725465a558505bafd503e11322",
+  "size_bytes": 3195181,
+  "markers": [
+    "名古屋大学",
+    "私費外国人留学生募集要項",
+    "日本留学試験",
+    "TOEFL"
+  ],
+  "checked_at": "2026-05-26T03:35:43+00:00"
+}
