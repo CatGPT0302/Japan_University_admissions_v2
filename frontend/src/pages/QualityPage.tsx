@@ -156,6 +156,10 @@ function watchlistGapText(value: string) {
 }
 
 function checkStatusText(value?: string, days?: number | null) {
+  if (value === "failed") return "上次检查失败";
+  if (value === "changed") return "来源有变化";
+  if (value === "marker_mismatch") return "内容不匹配";
+  if (value === "not_pdf") return "形式已变化";
   if (value === "never_checked") return "还未检查";
   if (value === "stale") return days === null || days === undefined ? "需要复查" : `${days} 天未检查`;
   if (value === "recent") return days === null || days === undefined ? "近期已查" : `${days} 天前检查`;
@@ -163,6 +167,8 @@ function checkStatusText(value?: string, days?: number | null) {
 }
 
 function checkStatusClass(value?: string) {
+  if (value === "failed" || value === "not_pdf") return "badge badge-red";
+  if (value === "changed" || value === "marker_mismatch") return "badge badge-amber";
   if (value === "never_checked" || value === "stale") return "badge badge-amber";
   if (value === "recent") return "badge badge-green";
   return "badge badge-gray";
@@ -363,7 +369,14 @@ export default function QualityPage({ onOpenReview }: Props) {
   const recentWatchItems = (sourceWatchlist?.items || [])
     .filter((item) => item.source_url || item.cached_path)
     .sort((a, b) => {
-      const priorityValue = (item: typeof a) => (item.check_status === "never_checked" ? 0 : item.check_status === "stale" ? 1 : 2);
+      const priorityValue = (item: typeof a) =>
+        ["failed", "changed", "marker_mismatch", "not_pdf"].includes(String(item.check_status || ""))
+          ? 0
+          : item.check_status === "never_checked"
+            ? 1
+            : item.check_status === "stale"
+              ? 2
+              : 3;
       return priorityValue(a) - priorityValue(b);
     })
     .slice(0, 4);

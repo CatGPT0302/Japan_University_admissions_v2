@@ -159,6 +159,42 @@ class SourceWatchlistTest(unittest.TestCase):
         self.assertIn(report["items"][0]["check_status"], {"recent", "stale"})
         self.assertIsInstance(report["items"][0]["days_since_checked"], int)
 
+    def test_watchlist_report_keeps_failed_check_visible_even_if_recent(self) -> None:
+        from scripts.source_watchlist import build_watchlist_report
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "quality_sources").mkdir(parents=True)
+            (root / "quality_sources" / "sample_2027_undergrad.source.json").write_text(
+                json.dumps(
+                    {
+                        "source_url": "https://example.test/sample.pdf",
+                        "sha256": "a" * 64,
+                        "checked_at": "2026-05-26T00:00:00+00:00",
+                        "last_check_status": "failed",
+                        "last_check_error": "network down",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = build_watchlist_report(
+                root=root,
+                seeds={
+                    "sample_2027_undergrad": {
+                        "stem": "sample_2027_undergrad",
+                        "id": "sample-2027-undergrad",
+                        "university": "Sample University",
+                        "admission_year": "2027",
+                        "source_url": "https://example.test/sample.pdf",
+                    }
+                },
+            )
+
+        self.assertEqual(report["items"][0]["check_status"], "failed")
+        self.assertEqual(report["items"][0]["last_check_error"], "network down")
+        self.assertEqual(report["summary"]["metadata_gaps"]["last_check_needs_attention"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -304,6 +304,8 @@ export interface SourceWatchlistItem {
   source_candidates: string[];
   last_known_sha256: string;
   last_checked_at: string;
+  last_check_status?: string;
+  last_check_error?: string;
   check_status?: "never_checked" | "stale" | "recent" | string;
   days_since_checked?: number | null;
   source_note: string;

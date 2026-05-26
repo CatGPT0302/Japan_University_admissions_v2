@@ -105,6 +105,8 @@ def build_source_watchlist(
                 "source_candidates": candidates,
                 "last_known_sha256": str(receipt.get("sha256") or "").strip(),
                 "last_checked_at": str(receipt.get("checked_at") or "").strip(),
+                "last_check_status": str(receipt.get("last_check_status") or "").strip(),
+                "last_check_error": str(receipt.get("last_check_error") or "").strip(),
                 "source_note": _source_note(root, stem, seed),
                 "markers": list(seed.get("source_markers") or []),
                 "receipt_status": str(receipt.get("status") or ""),
@@ -131,9 +133,13 @@ def _parse_checked_at(value: Any) -> datetime | None:
 def _maintenance_for_checked_at(
     value: Any,
     *,
+    last_check_status: Any = "",
     now: datetime | None = None,
     stale_days: int = STALE_CHECK_DAYS,
 ) -> dict[str, Any]:
+    status = str(last_check_status or "").strip()
+    if status in {"failed", "changed", "marker_mismatch", "not_pdf"}:
+        return {"check_status": status, "days_since_checked": None}
     checked_at = _parse_checked_at(value)
     if not checked_at:
         return {"check_status": "never_checked", "days_since_checked": None}
@@ -182,6 +188,8 @@ def summarize_watchlist(
                 oldest_checked_at = checked_at.isoformat()
         if not str(item.get("source_note") or "").strip():
             gaps["missing_source_note"] += 1
+        if str(item.get("last_check_status") or "").strip() in {"failed", "changed", "marker_mismatch", "not_pdf"}:
+            gaps["last_check_needs_attention"] = gaps.get("last_check_needs_attention", 0) + 1
     return {
         "total": len(items),
         "by_type": by_type,
@@ -203,7 +211,12 @@ def build_watchlist_report(
     enriched_items = [
         {
             **item,
-            **_maintenance_for_checked_at(item.get("last_checked_at"), now=now, stale_days=stale_days),
+            **_maintenance_for_checked_at(
+                item.get("last_checked_at"),
+                last_check_status=item.get("last_check_status"),
+                now=now,
+                stale_days=stale_days,
+            ),
         }
         for item in items
     ]
