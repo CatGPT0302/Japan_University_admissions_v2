@@ -195,6 +195,11 @@ export interface SourceReviewItem {
   error?: string;
   missing_markers?: string[];
   recommended_action: string;
+  status_label?: string;
+  owner_summary?: string;
+  likely_changed_areas?: string[];
+  next_steps?: string[];
+  attention_level?: "needs_review" | "source_check" | "watch" | string;
   review_status: "open" | "reviewed" | "needs_reextract" | "deferred" | string;
   review_note?: string;
   review_updated_at?: string;

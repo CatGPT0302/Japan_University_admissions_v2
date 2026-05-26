@@ -39,12 +39,16 @@ class SourceChangeReportTest(unittest.TestCase):
         markdown = format_markdown_report(report)
 
         self.assertEqual(report["summary"]["needs_review"], 2)
-        self.assertIn("Source Change Review", markdown)
+        self.assertIn("官方来源变化复审报告", markdown)
         self.assertIn("Sample University", markdown)
-        self.assertIn("source changed", markdown)
-        self.assertIn("confirmed records were not changed", markdown)
+        self.assertIn("官方资料内容已变化", report["items"][0]["owner_summary"])
+        self.assertIn("出愿时间", report["items"][0]["likely_changed_areas"])
+        self.assertIn("正式资料不会被自动改动", markdown)
         self.assertIn("Broken University", markdown)
         self.assertIn("timeout", markdown)
+        self.assertEqual(report["items"][0]["attention_level"], "needs_review")
+        self.assertEqual(report["items"][1]["attention_level"], "source_check")
+        self.assertIn("打开官网资料", report["items"][0]["next_steps"])
 
     def test_reads_default_queue_path(self) -> None:
         from scripts.source_change_report import load_review_queue

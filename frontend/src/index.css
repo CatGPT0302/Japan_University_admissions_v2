@@ -4789,6 +4789,66 @@ a {
   background: rgba(255, 255, 255, 0.68);
 }
 
+.source-review-focus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.source-review-focus span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.source-review-focus strong {
+  padding: 5px 9px;
+  border: 1px solid rgba(37, 99, 235, 0.13);
+  border-radius: 999px;
+  background: rgba(239, 246, 255, 0.72);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.source-review-next-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  counter-reset: review-step;
+  list-style: none;
+}
+
+.source-review-next-steps li {
+  position: relative;
+  min-width: 0;
+  padding: 9px 10px 9px 30px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.76);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.source-review-next-steps li::before {
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--text-3);
+  content: counter(review-step);
+  counter-increment: review-step;
+  font-size: 10px;
+}
+
 .source-review-actions,
 .source-review-decisions {
   display: flex;
@@ -4926,6 +4986,7 @@ a {
   .quality-grid,
   .quality-row,
   .quality-correction p,
+  .source-review-next-steps,
   .source-review-summary,
   .source-watch-grid,
   .source-watch-row,

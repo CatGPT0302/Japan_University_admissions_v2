@@ -100,6 +100,18 @@ function sourceActionText(value: string) {
   return "查看来源后决定是否需要复审。";
 }
 
+function attentionText(value?: string) {
+  if (value === "needs_review") return "建议今天处理";
+  if (value === "source_check") return "先确认来源";
+  return "观察";
+}
+
+function attentionClass(value?: string) {
+  if (value === "needs_review") return "badge badge-amber";
+  if (value === "source_check") return "badge badge-blue";
+  return "badge badge-gray";
+}
+
 function sourceTypeText(value?: string) {
   if (value === "pdf") return "PDF";
   if (value === "html") return "官网页面";
@@ -466,12 +478,28 @@ export default function QualityPage({ onOpenReview }: Props) {
                   return (
                     <article className="source-review-card" key={`${item.stem}-${item.checked_at}-${item.status}`}>
                       <div className="item-card-topline">
-                        <span className={sourceStatusClass(item.status)}>{sourceStatusText(item.status)}</span>
+                        <span className={sourceStatusClass(item.status)}>{item.status_label || sourceStatusText(item.status)}</span>
+                        <span className={attentionClass(item.attention_level)}>{attentionText(item.attention_level)}</span>
                         <span className={reviewStatusClass(item.review_status)}>{reviewStatusText(item.review_status)}</span>
                         <span className="badge badge-gray">{item.admission_year || "未标年度"}</span>
                       </div>
                       <h4 className="item-title">{item.university || item.stem || "未命名来源"}</h4>
-                      <p className="item-subtitle">{item.error || sourceActionText(item.status)}</p>
+                      <p className="item-subtitle">{item.owner_summary || item.error || sourceActionText(item.status)}</p>
+                      {item.likely_changed_areas?.length ? (
+                        <div className="source-review-focus" aria-label="建议先看的内容">
+                          <span>先看</span>
+                          {item.likely_changed_areas.map((area) => (
+                            <strong key={area}>{area}</strong>
+                          ))}
+                        </div>
+                      ) : null}
+                      {item.next_steps?.length ? (
+                        <ol className="source-review-next-steps" aria-label="建议处理顺序">
+                          {item.next_steps.slice(0, 3).map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </ol>
+                      ) : null}
                       <div className="source-review-actions">
                         <div className="inline-actions inline-actions-tight">
                           {matchedDoc && onOpenReview ? (
