@@ -16,7 +16,9 @@ except Exception:
 
 from scripts.quality_baseline_suite import run_seed_baseline_suite  # noqa: E402
 from scripts.quality_gap_report import build_quality_gap_report  # noqa: E402
+from scripts.source_change_report import load_review_queue  # noqa: E402
 from scripts.source_text_health import audit_seed_source_text_layers  # noqa: E402
+from scripts.source_watchlist import build_source_watchlist, summarize_watchlist  # noqa: E402
 
 
 CRITICAL_FIELD_MINIMUMS = {
@@ -82,6 +84,8 @@ def _overall_status(seed_suite: dict[str, Any], gap_report: dict[str, Any]) -> s
 def build_quality_overview(*, include_source_text_health: bool = False) -> dict[str, Any]:
     seed_suite = run_seed_baseline_suite()
     gap_report = build_quality_gap_report()
+    source_watchlist = build_source_watchlist()
+    source_review_queue = load_review_queue()
     gap_todo = gap_report.get("owner_todo") if isinstance(gap_report.get("owner_todo"), list) else []
     quality_todo = _seed_record_todos(seed_suite) + _critical_field_todos(seed_suite) + _weak_field_todos(seed_suite)
     owner_todo = gap_todo + quality_todo
@@ -91,6 +95,8 @@ def build_quality_overview(*, include_source_text_health: bool = False) -> dict[
         "gap_report": gap_report,
         "language_requirement_coverage": _language_requirement_coverage(seed_suite),
         "per_seed_thin_coverage": _per_seed_thin_coverage(seed_suite),
+        "source_watchlist": {"summary": summarize_watchlist(source_watchlist), "items": source_watchlist},
+        "source_review_queue": source_review_queue,
         "quality_todo": quality_todo,
         "owner_todo": owner_todo,
         "next_owner_action": owner_todo[0] if owner_todo else None,
@@ -241,6 +247,8 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
     seed_line = f"seed suite: {seed_summary.get('passed', 0)}/{seed_summary.get('total', 0)} passed"
     if int(seed_summary.get("skipped") or 0):
         seed_line += f", {seed_summary.get('skipped')} skipped"
+    watch_summary = overview.get("source_watchlist", {}).get("summary", {})
+    review_summary = overview.get("source_review_queue", {}).get("summary", {})
     lines = [
         f"status: {overview.get('overall_status')}",
         seed_line,
@@ -248,6 +256,8 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
         f"registered extractors: {gap_summary.get('registered_seed_extractors', 0)}",
         f"missing local sources: {gap_summary.get('missing_local_sources', 0)}",
         f"missing seed extractors: {gap_summary.get('missing_seed_extractors', 0)}",
+        f"watched sources: {watch_summary.get('total', 0)}",
+        f"source review queue: {review_summary.get('needs_review', 0)} need review",
     ]
     source_health = overview.get("source_text_health") if isinstance(overview.get("source_text_health"), dict) else {}
     source_summary = source_health.get("summary") if isinstance(source_health.get("summary"), dict) else {}

@@ -235,6 +235,56 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(overview["source_text_health"]["summary"]["manual_text_check_needed"], 1)
         self.assertIn("source text checks: 1 need manual/vision review", format_owner_summary(overview))
 
+    def test_summary_includes_source_watchlist_and_review_queue(self) -> None:
+        from scripts.quality_overview import build_quality_overview, format_owner_summary
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [{"id": "seed", "baseline": {"field_coverage": {}}}],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_source_watchlist",
+                return_value=[
+                    {
+                        "stem": "sample",
+                        "source_url": "https://example.test/sample.pdf",
+                        "source_type": "pdf",
+                        "last_known_sha256": "a" * 64,
+                        "last_checked_at": "2026-05-26T00:00:00+00:00",
+                        "source_note": "Official source.",
+                    }
+                ],
+            ),
+            patch(
+                "scripts.quality_overview.load_review_queue",
+                return_value={"summary": {"needs_review": 2}, "items": [{"stem": "sample"}]},
+            ),
+        ):
+            overview = build_quality_overview()
+
+        self.assertEqual(overview["source_watchlist"]["summary"]["total"], 1)
+        self.assertEqual(overview["source_review_queue"]["summary"]["needs_review"], 2)
+        summary = format_owner_summary(overview)
+        self.assertIn("watched sources: 1", summary)
+        self.assertIn("source review queue: 2 need review", summary)
+
     def test_combines_seed_suite_gap_report_and_owner_next_action(self) -> None:
         from scripts.quality_overview import build_quality_overview
 
