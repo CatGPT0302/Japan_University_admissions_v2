@@ -13,7 +13,7 @@
 - Add an owner-facing submission detail view with clearer links into the review page.
 - Add lightweight access protection before any external deployment of the owner/admin workspace.
 - Improve student result ranking with more real confirmed records.
-- Add a student-side booking smoke check against a confirmed admissions record.
+- Add an owner-facing consultation inbox for student booking requests.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

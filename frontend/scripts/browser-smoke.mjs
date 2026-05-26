@@ -361,6 +361,24 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} program detail`);
     await assertBodyIncludes(page, "EJU 日本语", `${surface.name} program detail`);
     await assertBodyIncludes(page, "预约咨询", `${surface.name} booking form`);
+
+    await page.getByPlaceholder("例如 王同学").fill("浏览器测试学生");
+    await page.getByPlaceholder("邮箱或手机号").fill("student-smoke@example.com");
+    await page.getByPlaceholder("例如 周六下午、平日晚上").fill("周六下午");
+    await page.getByPlaceholder("例如 想看 EJU 科目、英语成绩、出愿时间是否合适").fill("想确认 EJU 日本语和出愿时间。");
+    const bookingResponsePromise = page.waitForResponse((response) => response.url().endsWith("/public/bookings"), {
+      timeout: 10_000,
+    });
+    await page.getByRole("button", { name: "提交预约" }).click();
+    const bookingResponse = await bookingResponsePromise;
+    if (!bookingResponse.ok()) {
+      throw new Error(`${surface.name} booking failed with ${bookingResponse.status()}`);
+    }
+    const booking = await bookingResponse.json();
+    if (!booking.id || booking.status !== "received") {
+      throw new Error(`${surface.name} booking returned an unexpected response`);
+    }
+    await assertBodyIncludes(page, "已经收到。我们会按你留下的联系方式继续沟通。", `${surface.name} booking success`);
   }
 }
 
