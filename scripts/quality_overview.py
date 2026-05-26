@@ -41,6 +41,7 @@ SEED_RECORD_MINIMUMS = {
     "waseda-2027-official": 12,
     "keio-2027-medicine": 1,
     "kwansei-2027-undergrad": 3,
+    "kindai-2027-undergrad": 3,
 }
 
 

@@ -1,0 +1,81 @@
+[
+  {
+    "id": "kindai-2027-law",
+    "source_document": "https://www.kindai.ac.jp/files/campus-life/international-exchange/exam/department/entrance-exam-a.pdf",
+    "source_note": "Official Kindai University 2027 undergraduate admissions guide for international students. Checked against schedules, eligibility, EJU requirements, documents, exams, and enrollment pages.",
+    "match": {
+      "university": "近畿大学",
+      "admission_year": "2027",
+      "faculty": "法学部"
+    },
+    "expect": {
+      "application_period": {"contains": ["前期入試", "2026年8月24日", "8月27日", "後期入試", "2027年1月8日", "1月14日"]},
+      "deadline_rule": {"contains": ["国内居住者", "消印有効", "国外居住者", "8月31日", "必着"]},
+      "eligibility": {"contains": ["外国籍", "12年目の課程", "2027年3月31日", "在留資格", "留学"]},
+      "required_documents": {"contains": ["出願確認票", "入学願書", "住民票", "パスポート", "日本留学試験", "卒業", "CSSD"]},
+      "eju_session": {"contains": ["前期入試", "2025年第2回", "2026年度第1回", "後期入試", "2026年第1回", "第2回"]},
+      "eju_japanese": {"contains": ["日本語", "記述を含む", "320点以上"]},
+      "eju_general": {"contains": ["総合科目", "140点以上"]},
+      "screening_method": {"contains": ["出願書類", "日本留学試験", "口頭試問", "総合して合否"]},
+      "screening_schedule": {"contains": ["口頭試問", "10:30", "2026年10月10日", "2027年2月20日"]},
+      "result_date": {"contains": ["2026年11月9日", "2027年3月9日"]},
+      "enrollment_period": {"contains": ["2026年11月9日", "11月27日", "2027年1月13日", "2027年3月9日", "3月15日"]},
+      "evidence": {"contains": ["p.1", "p.2-p.4", "p.5", "p.9-p.13", "p.14"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kindai-2027-architecture",
+    "source_document": "https://www.kindai.ac.jp/files/campus-life/international-exchange/exam/department/entrance-exam-a.pdf",
+    "source_note": "Official Kindai University 2027 undergraduate admissions guide for international students. Checked against schedules, eligibility, EJU requirements, documents, exams, and enrollment pages.",
+    "match": {
+      "university": "近畿大学",
+      "admission_year": "2027",
+      "faculty": "建築学部"
+    },
+    "expect": {
+      "application_period": {"contains": ["前期入試", "2026年8月24日", "8月27日", "後期入試", "2027年1月8日", "1月14日"]},
+      "deadline_rule": {"contains": ["国内居住者", "消印有効", "国外居住者", "8月31日", "必着"]},
+      "eligibility": {"contains": ["外国籍", "12年目の課程", "2027年3月31日", "在留資格", "留学"]},
+      "required_documents": {"contains": ["出願確認票", "入学願書", "住民票", "パスポート", "日本留学試験", "卒業"]},
+      "eju_session": {"contains": ["2025年第2回", "2026年度第1回", "2026年第1回", "第2回"]},
+      "eju_japanese": {"contains": ["日本語", "記述を含む"]},
+      "eju_math": {"contains": ["数学コース2", "日本語", "英語"]},
+      "eju_physics": {"contains": ["理科"]},
+      "eju_chemistry": {"contains": ["理科"]},
+      "screening_method": {"contains": ["学部独自試験", "実技試験", "デッサン", "口頭試問"]},
+      "screening_schedule": {"contains": ["実技試験", "10:00", "11:00", "口頭試問", "11:20"]},
+      "result_date": {"contains": ["2026年11月9日", "2027年3月9日"]},
+      "enrollment_period": {"contains": ["2026年11月9日", "11月27日", "2027年1月13日", "2027年3月9日", "3月15日"]},
+      "evidence": {"contains": ["p.1", "p.2-p.4", "p.5", "p.10", "p.14"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kindai-2027-agriculture",
+    "source_document": "https://www.kindai.ac.jp/files/campus-life/international-exchange/exam/department/entrance-exam-a.pdf",
+    "source_note": "Official Kindai University 2027 undergraduate admissions guide for international students. Checked against schedules, eligibility, EJU requirements, documents, exams, and enrollment pages.",
+    "match": {
+      "university": "近畿大学",
+      "admission_year": "2027",
+      "faculty": "農学部"
+    },
+    "expect": {
+      "application_period": {"contains": ["前期入試", "2026年8月24日", "8月27日", "後期入試", "2027年1月8日", "1月14日"]},
+      "deadline_rule": {"contains": ["国内居住者", "消印有効", "国外居住者", "8月31日", "必着"]},
+      "eligibility": {"contains": ["外国籍", "12年目の課程", "2027年3月31日", "在留資格", "留学"]},
+      "required_documents": {"contains": ["出願確認票", "入学願書", "日本留学試験", "卒業", "英語能力証明書"]},
+      "eju_session": {"contains": ["2025年第2回", "2026年度第1回", "2026年第1回", "第2回"]},
+      "eju_japanese": {"contains": ["日本語", "記述を含む"]},
+      "eju_physics": {"contains": ["理科"]},
+      "eju_chemistry": {"contains": ["理科"]},
+      "english_requirement": {"contains": ["英語能力証明書", "TOEFL", "TOEIC", "IELTS", "英検", "国連英検", "TOEFL ITP", "TOEIC IP", "不可"]},
+      "screening_method": {"contains": ["出願書類", "日本留学試験", "口頭試問", "総合して合否"]},
+      "screening_schedule": {"contains": ["口頭試問", "11:00"]},
+      "result_date": {"contains": ["2026年11月9日", "2027年3月9日"]},
+      "enrollment_period": {"contains": ["2026年11月9日", "11月27日", "2027年1月13日", "2027年3月9日", "3月15日"]},
+      "evidence": {"contains": ["p.1", "p.2-p.5", "p.12", "p.14"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]
