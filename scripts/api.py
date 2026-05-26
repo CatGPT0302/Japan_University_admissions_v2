@@ -1272,6 +1272,9 @@ def admin_start_submission(submission_id: int, request: Request) -> dict[str, An
                     "prefecture": "東京",
                     "campus": "テストキャンパス",
                     "confidence": 0.82,
+                    "field_evidence": {
+                        "english_requirement": {"page": 1, "text": "英語資格は要項確認"},
+                    },
                     "needs_review": 1,
                     "risk_level": "medium",
                     "warnings_json": ["browser smoke seeded record"],

@@ -328,11 +328,16 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "留学生入試", `${surface.name} review row`);
     await assertBodyIncludes(page, "源 PDF", `${surface.name} pdf panel`);
     await assertBodyIncludes(page, "跳到", `${surface.name} pdf page controls`);
+    await page.getByRole("button", { name: /考试要求/ }).click();
+    await assertBodyIncludes(page, "填入提示", `${surface.name} evidence quick fill`);
+    await page.locator(".review-field-block").filter({ hasText: "英语要求" }).getByRole("button", { name: "填入提示" }).click();
+    await assertBodyIncludes(page, "1 处修改未保存", `${surface.name} evidence quick fill dirty state`);
     await page.getByLabel("跳到 PDF 页码").fill("2");
     await page.getByRole("button", { name: "前往" }).click();
     await assertBodyIncludes(page, "第 2 页", `${surface.name} pdf page jump`);
+    await page.getByRole("button", { name: /基本信息/ }).click();
     await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部2");
-    await assertBodyIncludes(page, "1 处修改未保存", `${surface.name} dirty review summary`);
+    await assertBodyIncludes(page, "2 处修改未保存", `${surface.name} dirty review summary`);
     await assertBodyIncludes(page, "保存后再确认入库", `${surface.name} dirty review summary`);
     const keyboardSaveResponsePromise = page.waitForResponse((response) => response.url().includes("/staging/") && response.request().method() === "PATCH", {
       timeout: 15_000,

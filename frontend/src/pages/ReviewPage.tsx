@@ -405,6 +405,11 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
     }, 0);
   }
 
+  function applyEvidenceToField(key: keyof StagingRecord, text: string, page?: number | null) {
+    setDraft((current) => ({ ...current, [key]: text }));
+    if (page) setFocusedEvidencePage(page);
+  }
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (!selectedRow) return;
@@ -719,6 +724,11 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
                             {evidence.page ? (
                               <button className="btn btn-ghost btn-small" type="button" onClick={() => setFocusedEvidencePage(evidence.page)}>
                                 看这一页
+                              </button>
+                            ) : null}
+                            {evidence.text ? (
+                              <button className="btn btn-ghost btn-small" type="button" onClick={() => applyEvidenceToField(field.key, evidence.text, evidence.page)}>
+                                填入提示
                               </button>
                             ) : null}
                           </div>
