@@ -194,6 +194,7 @@ def format_markdown_report(report: dict[str, Any]) -> str:
         f"- 生成时间：{report.get('generated_at') or '-'}",
         f"- 待查看：{summary.get('needs_review', 0)}",
         f"- 官方资料有变化：{summary.get('changed', 0)}",
+        f"- 新来源待确认：{summary.get('first_check', 0)}",
         f"- 检查失败：{summary.get('failed', 0)}",
         f"- 内容不匹配：{summary.get('marker_mismatch', 0)}",
         "",

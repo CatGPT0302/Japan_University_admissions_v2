@@ -288,6 +288,7 @@ export interface SourceReviewResponse {
     failed?: number;
     marker_mismatch?: number;
     not_pdf?: number;
+    first_check?: number;
     open?: number;
     reviewed?: number;
     needs_reextract?: number;

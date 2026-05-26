@@ -99,6 +99,7 @@ class SourceChangeReportTest(unittest.TestCase):
         self.assertIn("接受为新的来源凭据", report["items"][0]["recommended_action"])
         self.assertIn("官网来源", report["items"][0]["likely_changed_areas"])
         self.assertIn("Sample University", markdown)
+        self.assertIn("新来源待确认：1", markdown)
 
 
 if __name__ == "__main__":
