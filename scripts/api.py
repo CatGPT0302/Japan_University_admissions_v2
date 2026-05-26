@@ -1550,7 +1550,7 @@ def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingRespons
     for issue in payload.get("issues") or []:
         writer.writerow({key: issue.get(key, "") for key in fieldnames})
     return StreamingResponse(
-        iter([buffer.getvalue()]),
+        iter(["\ufeff" + buffer.getvalue()]),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="owner-quality-issues.csv"'},
     )
@@ -1775,7 +1775,7 @@ def export_csv(
     for row in rows:
         writer.writerow({label: row.get(key, "") for key, label in CONFIRMED_EXPORT_COLUMNS})
     return StreamingResponse(
-        iter([buffer.getvalue()]),
+        iter(["\ufeff" + buffer.getvalue()]),
         media_type="text/csv; charset=utf-8",
         headers=_download_headers(_export_download_name(rows, "csv", record_ids=record_ids)),
     )

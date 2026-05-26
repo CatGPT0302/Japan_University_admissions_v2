@@ -258,6 +258,7 @@ class ExportCenterApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/csv", response.headers["content-type"])
+        self.assertTrue(response.content.startswith(b"\xef\xbb\xbf"))
         self.assertIn("owner-quality-issues.csv", response.headers.get("content-disposition", ""))
         self.assertIn("Gap University", response.text)
         self.assertIn("suggested_action", response.text)
@@ -365,6 +366,7 @@ class ExportCenterApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/csv", response.headers["content-type"])
+        self.assertTrue(response.content.startswith(b"\xef\xbb\xbf"))
         self.assertIn("admissions_Kyushu_University_2026_Engineering.csv", response.headers["content-disposition"])
         body = response.text
         header = body.splitlines()[0]
