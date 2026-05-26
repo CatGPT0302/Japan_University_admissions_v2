@@ -79,6 +79,38 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if _has_all(compact, ["政治経済学部", "政治学科", "経済学科", "政策学科", "TOEFL iBT", "TOEIC L&R", "IELTS", "出願基準点なし", "11月6日", "12月5日", "12月11日"]):
+        record = _base_record(faculty="政治経済学部", department="政治学科 / 経済学科 / 政策学科")
+        record.update(
+            {
+                "eju_subjects": "日本語 / 総合科目または数学(コース1) のうち1科目",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目",
+                "eju_math": "数学(コース1)",
+                "english_requirement": "TOEFL iBT / TOEIC L&R / IELTS / 出願基準点なし",
+                "screening_method": "書類選考 / 小論文 / 口頭試問",
+                "screening_schedule": "2026年12月5日（土）",
+                "result_date": "2026年12月11日（金）",
+            }
+        )
+        records.append(record)
+
+    if _has_all(compact, ["文学部", "文学科", "史学地理学科", "心理社会学科", "数学(コース1)", "書類選考", "口頭試問", "10月21日", "11月28日", "12月2日"]):
+        record = _base_record(faculty="文学部", department="文学科 / 史学地理学科 / 心理社会学科")
+        record.update(
+            {
+                "eju_subjects": "日本語 / 総合科目 / 数学(コース1)",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目",
+                "eju_math": "数学(コース1)",
+                "english_requirement": "",
+                "screening_method": "書類選考 / 口頭試問",
+                "screening_schedule": "2026年11月28日（土）",
+                "result_date": "2026年12月2日（水）",
+            }
+        )
+        records.append(record)
+
     if _has_all(compact, ["情報", "コミュニケーション学部", "情報", "コミュニケーション学科", "小論文", "面接"]):
         record = _base_record(faculty="情報コミュニケーション学部", department="情報コミュニケーション学科")
         record.update(
