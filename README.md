@@ -8,7 +8,7 @@ It has three product surfaces:
 
 - Owner/admin workspace: upload admissions PDFs or source URLs, run extraction, review uncertain content, confirm records, and export the master Excel workbook.
 - Partner service center: issue limited access, receive submitted PDFs or links, track processing progress, and keep final data confirmation under the owner.
-- Student/parent frontend: collect a student's profile, show schools worth checking, explain requirements in plain language, and accept consultation bookings.
+- Student/parent frontend: collect a student's profile, show schools worth checking, and explain requirements in plain language. It does not collect consultation bookings.
 
 The project is not a pure OCR tool and is no longer only a local extraction MVP. The core data and extraction workflow stay owner-controlled.
 
@@ -37,9 +37,11 @@ Use separate deployments/sites for the three systems. They can share this reposi
 ## Backend Interfaces
 
 - Admin workflow: `/upload`, `/agent/run`, `/staging/*`, `/confirm/*`, `/records`, `/export/excel`
-- Public student API: `/public/programs`, `/public/recommendations`, `/public/bookings`
-- Licensed API: `/v1/programs`, `/v1/recommendations`, `/v1/bookings`, `/v1/documents/submissions`
+- Public student API: `/public/programs`, `/public/recommendations`
+- Licensed API: `/v1/programs`, `/v1/recommendations`, `/v1/documents/submissions`
 - Owner queue: `/admin/submissions`
+
+Booking endpoints may still exist for legacy compatibility, but they are not part of the active student or partner product flow.
 
 Licensed API keys are stored as hashes. The full secret is only shown once when created.
 
@@ -129,7 +131,7 @@ npm run smoke:surfaces
 npm run smoke:browser
 ```
 
-`smoke:browser` uses the local Chrome or Edge installation, starts a temporary SQLite-backed API, signs into the owner and partner surfaces with throwaway accounts, checks export presets, submits one partner source, verifies the owner-side submission detail panel, runs the owner processing/review/confirmation path, checks the review page's unsaved-change summary, verifies the confirmed record detail can expose quick school/faculty export actions, verifies export preview/CSV output without internal quality-screening details, checks that the student surface can search/open/book a consultation for the confirmed school, and verifies the owner workspace can see the booking, show the daily follow-up summary, search consultations, show a printable handoff summary, save follow-up notes, group overdue follow-ups, export consultation CSV, and mark it contacted.
+`smoke:browser` uses the local Chrome or Edge installation, starts a temporary SQLite-backed API, signs into the owner and partner surfaces with throwaway accounts, checks export presets, submits one partner source, verifies the owner-side submission detail panel, runs the owner processing/review/confirmation path, checks the review page's unsaved-change summary, verifies the confirmed record detail can expose quick school/faculty export actions, verifies export preview/CSV output without internal quality-screening details, and checks that the student surface can search and open confirmed school details without exposing booking or internal review UI.
 Run the two frontend smoke commands one after another because both rebuild `frontend/dist`.
 
 ## Ownership

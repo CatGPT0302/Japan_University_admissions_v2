@@ -24,7 +24,7 @@ Keep these surfaces separate:
 
 - Owner/admin workspace: upload/fetch sources, run extraction, review entries, confirm records, export confirmed data, monitor quality and source changes.
 - Partner service center: submit materials and see processing progress under owner control.
-- Student/parent frontend: profile input, confirmed-only school recommendations, plain-language requirements, consultation booking.
+- Student/parent frontend: profile input, confirmed-only school recommendations, and plain-language requirements. It should not collect consultation bookings.
 
 Do not merge these into one hash-route dashboard or expose owner actions from partner/student surfaces.
 

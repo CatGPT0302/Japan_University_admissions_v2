@@ -28,7 +28,7 @@ The repository now supports separate surfaces:
 3. Student/parent frontend
    - Users enter a profile.
    - The app shows schools worth checking and plain-language requirements.
-   - Users can book a consultation.
+   - The app does not collect consultation bookings.
    - Student-facing UI must not expose internal quality, evidence, staging, or review terms.
 
 Keep these surfaces visually, semantically, and operationally separate.
@@ -60,7 +60,7 @@ Prefer changes that improve one of these loops:
 - extraction -> staging -> field evidence -> human correction -> confirm
 - confirmed records -> search/filter -> quick export
 - export preview -> source review handoff
-- student profile -> confirmed-only recommendation -> consultation booking
+- student profile -> confirmed-only recommendation -> school detail
 
 ## Do Not Do Without Asking
 
