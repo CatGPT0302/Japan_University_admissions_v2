@@ -8,6 +8,7 @@ import {
   getQualityOverview,
   getSourceReviewQueue,
   getSourceWatchlist,
+  ownerIssuesCsvUrl,
   reextractSourceReviewItem,
   runSourceChecks,
   sourceReviewReportUrl,
@@ -460,7 +461,12 @@ export default function QualityPage({ onOpenReview }: Props) {
                   <h3 className="panel-title">今天先处理这些</h3>
                   <p className="panel-copy">把导出空白、官网变化、基准薄弱和最近手修集中到一张清单里，按顺序处理即可。</p>
                 </div>
-                <span className="badge badge-blue">{ownerIssues?.summary.total ?? 0} 项</span>
+                <div className="inline-actions inline-actions-tight">
+                  <span className="badge badge-blue">{ownerIssues?.summary.total ?? 0} 项</span>
+                  <a className="btn btn-ghost btn-small" href={ownerIssuesCsvUrl()} target="_blank" rel="noreferrer">
+                    导出清单
+                  </a>
+                </div>
               </div>
 
               <div className="owner-issue-list">

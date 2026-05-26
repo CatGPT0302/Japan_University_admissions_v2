@@ -353,6 +353,10 @@ export async function getOwnerIssues(limit = 20): Promise<OwnerIssuesResponse> {
   return data;
 }
 
+export function ownerIssuesCsvUrl(limit = 100): string {
+  return `${BASE_URL}/metrics/owner-issues.csv?limit=${limit}`;
+}
+
 export async function getCorrectionEvents(params?: {
   doc_id?: number;
   limit?: number;

@@ -212,6 +212,21 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertTrue(issue["doc_id"])
         self.assertIn("复审页", issue["suggested_action"])
 
+    def test_owner_issues_can_be_downloaded_as_csv(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed_with_gaps(db, "Gap University", "2027", "Letters")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/metrics/owner-issues.csv")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response.headers["content-type"])
+        self.assertIn("owner-quality-issues.csv", response.headers.get("content-disposition", ""))
+        self.assertIn("Gap University", response.text)
+        self.assertIn("suggested_action", response.text)
+
     def test_export_csv_uses_same_filters(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

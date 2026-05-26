@@ -1450,6 +1450,35 @@ def owner_top_issues(request: Request, limit: int = 20) -> dict[str, Any]:
     return _owner_top_issues(limit=limit)
 
 
+@app.get("/metrics/owner-issues.csv")
+def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingResponse:
+    _require_owner(request)
+    payload = _owner_top_issues(limit=limit)
+    buffer = io.StringIO()
+    fieldnames = [
+        "priority",
+        "kind",
+        "title",
+        "university",
+        "admission_year",
+        "faculty",
+        "department",
+        "field_label",
+        "source_document",
+        "source_url",
+        "suggested_action",
+    ]
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    for issue in payload.get("issues") or []:
+        writer.writerow({key: issue.get(key, "") for key in fieldnames})
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="owner-quality-issues.csv"'},
+    )
+
+
 @app.get("/metrics/corrections")
 def correction_events(request: Request, doc_id: int | None = None, limit: int = 100) -> list[dict[str, Any]]:
     _require_owner(request)
