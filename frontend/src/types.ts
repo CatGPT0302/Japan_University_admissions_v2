@@ -121,6 +121,7 @@ export interface DocumentListItem {
   filename: string;
   created_at?: string;
   staging_count: number;
+  review_count?: number;
   confirmed_count: number;
   status?: string;
 }

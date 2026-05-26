@@ -157,6 +157,50 @@ class ExportCenterApiTest(unittest.TestCase):
         for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
             self.assertNotIn(hidden_key, str(payload))
 
+    def test_document_list_includes_review_count_for_owner_queue_status(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            doc_id = db.create_source_document(
+                "Review Queue University",
+                "review-queue.pdf",
+                "/tmp/review-queue.pdf",
+                "https://example.test/review-queue.pdf",
+                "2027",
+            )
+            db.insert_staging_record(
+                doc_id,
+                1,
+                {
+                    "university": "Review Queue University",
+                    "admission_year": "2027",
+                    "faculty": "Letters",
+                    "department": "Department",
+                    "needs_review": 1,
+                },
+            )
+            db.insert_staging_record(
+                doc_id,
+                2,
+                {
+                    "university": "Review Queue University",
+                    "admission_year": "2027",
+                    "faculty": "Law",
+                    "department": "Department",
+                    "needs_review": 0,
+                    "is_reviewed": 1,
+                },
+            )
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/documents", params={"q": "Review Queue"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload[0]["staging_count"], 2)
+        self.assertEqual(payload[0]["review_count"], 1)
+        self.assertEqual(payload[0]["confirmed_count"], 0)
+
     def test_export_excel_hides_internal_quality_columns(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

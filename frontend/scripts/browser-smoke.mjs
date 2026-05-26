@@ -323,6 +323,7 @@ async function runSurfaceAction(page, surface) {
   if (surface.action === "owner-review-seeded") {
     await page.getByRole("button", { name: /人工核对/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} document queue`);
+    await assertBodyIncludes(page, "条待复审", `${surface.name} document queue status`);
     await assertBodyIncludes(page, "待处理", `${surface.name} review filters`);
     await assertBodyIncludes(page, "先看", `${surface.name} review filters`);
     await page.getByRole("button", { name: /东京测试大学/ }).click();

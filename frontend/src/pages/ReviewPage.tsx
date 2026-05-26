@@ -132,6 +132,23 @@ function rowStatus(row: StagingRecord) {
   return "待确认";
 }
 
+function documentStatusText(doc: DocumentListItem) {
+  const reviewCount = Number(doc.review_count || 0);
+  const confirmedCount = Number(doc.confirmed_count || 0);
+  const stagingCount = Number(doc.staging_count || 0);
+  if (reviewCount > 0) return `${reviewCount} 条待复审`;
+  if (confirmedCount > 0) return "可导出";
+  if (stagingCount > 0) return "待确认入库";
+  return "等待整理";
+}
+
+function documentStatusClass(doc: DocumentListItem) {
+  if (Number(doc.review_count || 0) > 0) return "badge badge-amber";
+  if (Number(doc.confirmed_count || 0) > 0) return "badge badge-green";
+  if (Number(doc.staging_count || 0) > 0) return "badge badge-blue";
+  return "badge badge-gray";
+}
+
 function isReviewed(row: StagingRecord) {
   return Boolean(Number(row.is_reviewed) || Number(row.is_confirmed));
 }
@@ -375,10 +392,13 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               onClick={() => void openDocument(doc.doc_id)}
               type="button"
             >
-              <span>{doc.admission_year || "未标年度"}</span>
+              <div className="item-card-topline">
+                <span>{doc.admission_year || "未标年度"}</span>
+                <span className={documentStatusClass(doc)}>{documentStatusText(doc)}</span>
+              </div>
               <strong>{doc.university_name || "未命名学校"}</strong>
               <em>
-                {doc.staging_count} 条待处理 / {doc.confirmed_count} 条已入库
+                {doc.staging_count} 条草稿 / {doc.confirmed_count} 条正式资料
               </em>
             </button>
           ))}

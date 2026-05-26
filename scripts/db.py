@@ -2582,10 +2582,14 @@ def get_documents(query: str | None = None, year: str | None = None, limit: int 
             sd.status,
             sd.created_at,
             COALESCE(st.staging_count, 0) AS staging_count,
+            COALESCE(st.review_count, 0) AS review_count,
             COALESCE(cf.confirmed_count, 0) AS confirmed_count
         FROM source_documents sd
         LEFT JOIN (
-            SELECT document_id, COUNT(*) AS staging_count
+            SELECT
+                document_id,
+                COUNT(*) AS staging_count,
+                SUM(CASE WHEN COALESCE(needs_review, 0) <> 0 THEN 1 ELSE 0 END) AS review_count
             FROM admission_records_staging
             GROUP BY document_id
         ) st ON st.document_id = sd.id
