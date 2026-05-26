@@ -23,6 +23,7 @@ CRITICAL_FIELD_MINIMUMS = {
     "deadline_rule": 5,
     "enrollment_period": 5,
     "required_documents": 5,
+    "eligibility": 5,
     "eju_session": 5,
     "eju_japanese": 5,
     "eju_general": 5,
