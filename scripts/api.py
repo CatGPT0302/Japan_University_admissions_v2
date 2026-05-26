@@ -492,8 +492,17 @@ def _owner_review_target_map(rows: list[dict[str, Any]]) -> dict[tuple[str, str]
     }
 
 
+def _owner_document_map() -> dict[int, dict[str, Any]]:
+    return {
+        int(item.get("doc_id") or 0): item
+        for item in db_get_documents(limit=1000, offset=0)
+        if int(item.get("doc_id") or 0)
+    }
+
+
 def _export_gap_owner_issues(rows: list[dict[str, Any]], *, limit: int = 30) -> list[dict[str, Any]]:
     target_map = _owner_review_target_map(rows)
+    doc_map = _owner_document_map()
     issues: list[dict[str, Any]] = []
     for row in rows:
         missing = _export_missing_required(row)
@@ -501,7 +510,8 @@ def _export_gap_owner_issues(rows: list[dict[str, Any]], *, limit: int = 30) -> 
             continue
         university = str(row.get("university") or "").strip()
         year = str(row.get("admission_year") or "").strip()
-        target = target_map.get((university, year), {})
+        direct_doc_id = int(row.get("document_id") or 0)
+        target = doc_map.get(direct_doc_id) or target_map.get((university, year), {})
         for field in missing:
             issues.append(
                 {

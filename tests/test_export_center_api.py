@@ -29,7 +29,7 @@ class ExportCenterApiTest(unittest.TestCase):
         response = client.post("/auth/login", json={"email": "owner@example.com", "password": "owner-admin"})
         self.assertEqual(response.status_code, 200)
 
-    def _insert_confirmed(self, db, university: str, year: str, faculty: str) -> None:
+    def _insert_confirmed(self, db, university: str, year: str, faculty: str) -> int:
         doc_id = db.create_source_document(
             university,
             f"{university}.pdf",
@@ -81,8 +81,9 @@ class ExportCenterApiTest(unittest.TestCase):
         )
         conn.commit()
         conn.close()
+        return doc_id
 
-    def _insert_confirmed_with_gaps(self, db, university: str, year: str, faculty: str) -> None:
+    def _insert_confirmed_with_gaps(self, db, university: str, year: str, faculty: str) -> int:
         doc_id = db.create_source_document(
             university,
             f"{university}.pdf",
@@ -134,6 +135,7 @@ class ExportCenterApiTest(unittest.TestCase):
         )
         conn.commit()
         conn.close()
+        return doc_id
 
     def test_export_preview_filters_confirmed_rows_and_hides_quality_fields(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -223,6 +225,27 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(issue["source_document"], "Gap University.pdf")
         self.assertTrue(issue["doc_id"])
         self.assertIn("复审页", issue["suggested_action"])
+
+    def test_owner_issues_use_exact_document_for_same_school_year_export_gap(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            ready_doc_id = self._insert_confirmed(db, "Same University", "2027", "Ready Faculty")
+            gap_doc_id = self._insert_confirmed_with_gaps(db, "Same University", "2027", "Gap Faculty")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/metrics/owner-issues")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        gap_issue = next(
+            item
+            for item in payload["issues"]
+            if item["kind"] == "export_gap" and item["university"] == "Same University"
+        )
+        self.assertEqual(gap_issue["doc_id"], gap_doc_id)
+        self.assertNotEqual(gap_issue["doc_id"], ready_doc_id)
+        self.assertEqual(gap_issue["source_document"], "Same University.pdf")
 
     def test_owner_issues_can_be_downloaded_as_csv(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
