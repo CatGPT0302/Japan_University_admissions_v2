@@ -377,6 +377,7 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /东京测试大学/ }).click();
     await assertBodyIncludes(page, "导出这所学校", `${surface.name} record detail export`);
     await assertBodyIncludes(page, "导出当前学部", `${surface.name} record detail export`);
+    await assertBodyIncludes(page, "导出 CSV", `${surface.name} record detail CSV export`);
 
     const exportParams = new URLSearchParams({
       universities: "东京测试大学",
