@@ -177,6 +177,7 @@ def build_seed_data_package(
                 "university": item.get("university") or "",
                 "admission_year": item.get("admission_year") or "",
                 "source_document": _source_document_name(item),
+                "source_path": str(item.get("source_path") or ""),
                 "source_url": item.get("source_url") or "",
                 "expected_path": str(item.get("expected_path") or ""),
                 "record_count": len(extracted_records),

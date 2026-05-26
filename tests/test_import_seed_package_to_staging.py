@@ -21,6 +21,8 @@ class ImportSeedPackageToStagingTest(unittest.TestCase):
 
     def _write_package(self, package_dir: Path) -> None:
         package_dir.mkdir(parents=True)
+        source_pdf = package_dir / "sample.pdf"
+        source_pdf.write_bytes(b"%PDF-1.4 sample")
         (package_dir / "documents.json").write_text(
             json.dumps(
                 [
@@ -29,6 +31,7 @@ class ImportSeedPackageToStagingTest(unittest.TestCase):
                         "university": "Sample University",
                         "admission_year": "2027",
                         "source_document": "sample.pdf",
+                        "source_path": str(source_pdf),
                         "source_url": "https://example.test/sample.pdf",
                         "record_count": 1,
                         "status": "passed",
@@ -89,6 +92,7 @@ class ImportSeedPackageToStagingTest(unittest.TestCase):
             payload = import_seed_package_to_staging(package_dir=package_dir, apply=True)
             conn = db.get_conn()
             documents = conn.execute("SELECT COUNT(*) FROM source_documents").fetchone()[0]
+            document_row = conn.execute("SELECT * FROM source_documents").fetchone()
             staging_row = conn.execute("SELECT * FROM admission_records_staging").fetchone()
             confirmed = conn.execute("SELECT COUNT(*) FROM admission_records").fetchone()[0]
             conn.close()
@@ -97,6 +101,7 @@ class ImportSeedPackageToStagingTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["created_documents"], 1)
         self.assertEqual(payload["summary"]["created_staging_records"], 1)
         self.assertEqual(documents, 1)
+        self.assertTrue(str(document_row["file_path"]).endswith("sample.pdf"))
         self.assertEqual(staging_row["university"], "Sample University")
         self.assertEqual(staging_row["needs_review"], 1)
         self.assertEqual(confirmed, 0)

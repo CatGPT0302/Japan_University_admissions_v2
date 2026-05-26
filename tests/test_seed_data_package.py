@@ -76,6 +76,7 @@ class SeedDataPackageTest(unittest.TestCase):
         self.assertEqual(summary["records"], 1)
         self.assertEqual(summary["database_status"], "not_imported")
         self.assertEqual(documents[0]["status"], "passed")
+        self.assertIn("source_path", documents[0])
         self.assertEqual(records[0]["database_status"], "not_imported")
         self.assertEqual(records[0]["review_status"], "human_checked_seed_package")
         self.assertEqual(review_queue["summary"]["items"], 1)

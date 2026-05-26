@@ -83,6 +83,18 @@ def _existing_seed_document(db: Any, *, file_name: str, university: str, admissi
     return None
 
 
+def _source_file_path(*, package_dir: Path, doc: dict[str, Any], source_document: str) -> str:
+    candidates = [
+        Path(str(doc.get("source_path") or "")),
+        ROOT / "data" / "uploads" / source_document,
+        package_dir / source_document,
+    ]
+    for path in candidates:
+        if str(path).strip() and path.exists() and path.is_file():
+            return str(path)
+    return ""
+
+
 def import_seed_package_to_staging(*, package_dir: Path, apply: bool = False) -> dict[str, Any]:
     records = _read_jsonl(package_dir / "records.jsonl")
     documents = _package_documents(package_dir)
@@ -122,6 +134,7 @@ def import_seed_package_to_staging(*, package_dir: Path, apply: bool = False) ->
         admission_year = str(doc.get("admission_year") or first.get("admission_year") or "")
         source_document = str(doc.get("source_document") or first.get("source_document") or f"{seed_id}.pdf")
         source_url = str(doc.get("source_url") or first.get("source_url") or first.get("pdf_url") or "")
+        source_file_path = _source_file_path(package_dir=package_dir, doc=doc, source_document=source_document)
         file_name = f"seed-package-{source_document}"
         existing = _existing_seed_document(db, file_name=file_name, university=university, admission_year=admission_year)
         if existing and (int(existing.get("staging_count") or 0) > 0 or int(existing.get("confirmed_count") or 0) > 0):
@@ -140,7 +153,7 @@ def import_seed_package_to_staging(*, package_dir: Path, apply: bool = False) ->
         doc_id = db.create_source_document(
             university,
             file_name,
-            str(package_dir / "records.jsonl"),
+            source_file_path,
             source_url,
             admission_year,
         )
