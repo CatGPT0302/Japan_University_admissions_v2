@@ -37,6 +37,12 @@ CRITICAL_FIELD_MINIMUMS = {
     "screening_schedule": 5,
 }
 
+LANGUAGE_REQUIREMENT_FIELDS = {
+    "eju_japanese": "EJU Japanese",
+    "jlpt_requirement": "JLPT",
+    "english_requirement": "English",
+}
+
 SEED_RECORD_MINIMUMS = {
     "meiji-2027-schedule": 12,
     "waseda-2027-official": 12,
@@ -69,6 +75,7 @@ def build_quality_overview(*, include_source_text_health: bool = False) -> dict[
         "overall_status": "seed_suite_failed" if not seed_suite.get("passed") else ("needs_owner_action" if owner_todo else "quality_gate_ready"),
         "seed_suite": seed_suite,
         "gap_report": gap_report,
+        "language_requirement_coverage": _language_requirement_coverage(seed_suite),
         "quality_todo": quality_todo,
         "owner_todo": owner_todo,
         "next_owner_action": owner_todo[0] if owner_todo else None,
@@ -89,6 +96,31 @@ def _field_coverage_totals(seed_suite: dict[str, Any]) -> dict[str, int]:
             if isinstance(stats, dict):
                 totals[str(field)] = totals.get(str(field), 0) + int(stats.get("checked") or 0)
     return totals
+
+
+def _field_coverage_passed_totals(seed_suite: dict[str, Any]) -> dict[str, int]:
+    totals: dict[str, int] = {}
+    for item in seed_suite.get("items") or []:
+        baseline = item.get("baseline") if isinstance(item, dict) else {}
+        coverage = baseline.get("field_coverage") if isinstance(baseline, dict) else {}
+        if not isinstance(coverage, dict):
+            continue
+        for field, stats in coverage.items():
+            if isinstance(stats, dict):
+                totals[str(field)] = totals.get(str(field), 0) + int(stats.get("passed") or 0)
+    return totals
+
+
+def _language_requirement_coverage(seed_suite: dict[str, Any]) -> dict[str, dict[str, int]]:
+    checked_totals = _field_coverage_totals(seed_suite)
+    passed_totals = _field_coverage_passed_totals(seed_suite)
+    return {
+        field: {
+            "checked": int(checked_totals.get(field) or 0),
+            "passed": int(passed_totals.get(field) or 0),
+        }
+        for field in LANGUAGE_REQUIREMENT_FIELDS
+    }
 
 
 def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> list[dict[str, Any]]:
@@ -185,6 +217,13 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
     source_summary = source_health.get("summary") if isinstance(source_health.get("summary"), dict) else {}
     if source_summary:
         lines.append(f"source text checks: {source_summary.get('manual_text_check_needed', 0)} need manual/vision review")
+    language_coverage = overview.get("language_requirement_coverage") if isinstance(overview.get("language_requirement_coverage"), dict) else {}
+    if language_coverage:
+        parts = []
+        for field, label in LANGUAGE_REQUIREMENT_FIELDS.items():
+            stats = language_coverage.get(field) if isinstance(language_coverage.get(field), dict) else {}
+            parts.append(f"{label} checked={int(stats.get('checked') or 0)}")
+        lines.append("language requirements: " + "; ".join(parts))
     weak_fields = _weak_field_coverage(overview.get("seed_suite", {}))
     if weak_fields:
         lines.append("weak field coverage: " + "; ".join(weak_fields))
