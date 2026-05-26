@@ -1,0 +1,14 @@
+{
+  "status": "cached",
+  "stem": "keio_2027_medicine",
+  "source_url": "https://www.keio.ac.jp/files/66f9e69c6550ffb5f9da5ee62c5be61aaba0f159b4e619e4752ebdee5b207fba",
+  "cached_path": "data/uploads/keio_2027_medicine.pdf",
+  "sha256": "66f9e69c6550ffb5f9da5ee62c5be61aaba0f159b4e619e4752ebdee5b207fba",
+  "size_bytes": 3009468,
+  "markers": [
+    "慶應義塾大学",
+    "2027年度",
+    "医学部外国人留学生対象"
+  ],
+  "checked_at": "2026-05-26T01:20:08+00:00"
+}

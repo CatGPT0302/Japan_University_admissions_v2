@@ -1,0 +1,52 @@
+[
+  {
+    "id": "keio-2027-medicine",
+    "source_document": "https://www.keio.ac.jp/files/66f9e69c6550ffb5f9da5ee62c5be61aaba0f159b4e619e4752ebdee5b207fba",
+    "source_note": "Official Keio University 2027 Faculty of Medicine admissions guide for international students. Checked against the cover, overview, application, documents, exam, and results pages.",
+    "match": {
+      "university": "慶應義塾大学",
+      "admission_year": "2027",
+      "faculty": "医学部",
+      "department": "医学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["Webエントリー", "2026年7月3日", "7月14日", "出願書類の郵送", "7月15日"]
+      },
+      "deadline_rule": {
+        "contains": ["速達", "簡易書留", "締切日必着"]
+      },
+      "eligibility": {
+        "contains": ["学校教育課程", "12年以上", "2027年3月31日", "海外の学校教育制度"]
+      },
+      "required_documents": {
+        "contains": ["出願書類チェックリスト", "入学志願票", "入学志願者調書", "志望理由書", "エッセイ", "成績証明書", "推薦状", "日本留学試験結果", "TOEFL", "IELTS", "パスポート"]
+      },
+      "eju_session": {
+        "contains": ["2024年度第2回", "2025年度第2回", "2026年度第1回"]
+      },
+      "eju_subjects": {
+        "contains": ["日本留学試験", "基準点は設けていません"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS Academic Module", "2024年9月1日", "2026年6月30日", "基準点は設けていません"]
+      },
+      "screening_method": {
+        "contains": ["第1次選考", "書類選考", "第2次選考", "総合問題", "模擬講義", "面接"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年9月27日", "8:45", "9:00", "信濃町キャンパス"]
+      },
+      "result_date": {
+        "contains": ["第1次選考合格発表", "2026年9月8日", "最終合格発表", "2026年9月29日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年11月30日", "12月11日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.3", "p.4-p.6", "p.12-p.19", "p.21", "p.24-p.25"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  }
+]

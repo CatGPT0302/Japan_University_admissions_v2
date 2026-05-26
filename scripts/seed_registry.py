@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
@@ -35,6 +36,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": [["Waseda", "早稲田大学", "早稻田大学"], ["2027", "2027年度"]],
         "text_markers": ["早稲田大学", "2027年度", "外国学生"],
         "extractor": extract_waseda_2027_records,
+    },
+    "keio_2027_medicine": {
+        "stem": "keio_2027_medicine",
+        "id": "keio-2027-medicine",
+        "university": "慶應義塾大学",
+        "admission_year": "2027",
+        "script": "scripts/keio_medicine_2027_extractor.py",
+        "expected_path": "quality_baselines/keio_2027_medicine.expected.json",
+        "source_url": "https://www.keio.ac.jp/files/66f9e69c6550ffb5f9da5ee62c5be61aaba0f159b4e619e4752ebdee5b207fba",
+        "source_candidates": ["data/uploads/keio_2027_medicine.pdf"],
+        "source_markers": ["慶應義塾大学", "2027年度", "医学部外国人留学生対象"],
+        "text_markers": ["慶應義塾大学", "2027年度", "医学部外国人留学生対象", "入学試験募集要項"],
+        "extractor": extract_keio_2027_medicine_records,
     },
 }
 
