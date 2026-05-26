@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "okayama_2026_undergrad",
+  "source_url": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+  "cached_path": "data/uploads/okayama_2026_undergrad.pdf",
+  "sha256": "60d680bdeaa15055367db03210c83f6003538e411a7d46941ba1ef8859ad9f68",
+  "size_bytes": 4261891,
+  "markers": [
+    "岡山大学",
+    "私費外国人留学生",
+    "日本留学試験",
+    "出願期間"
+  ],
+  "checked_at": "2026-05-26T03:40:42+00:00"
+}

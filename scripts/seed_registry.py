@@ -12,6 +12,7 @@ from scripts.kyoto_institute_tech_2027_undergrad_extractor import extract_kit_20
 from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
 from scripts.nagoya_2026_undergrad_extractor import extract_nagoya_2026_undergrad_records
+from scripts.okayama_2026_undergrad_extractor import extract_okayama_2026_undergrad_records
 from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_metropolitan_2027_undergrad_records
 from scripts.osaka_university_2026_undergrad_extractor import extract_osaka_university_2026_undergrad_records
 from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
@@ -245,6 +246,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["名古屋大学", "私費外国人留学生募集要項", "日本留学試験", "TOEFL"],
         "text_markers": ["名古屋大学", "私費外国人留学生募集要項", "日本留学試験", "出願資格及び要件"],
         "extractor": extract_nagoya_2026_undergrad_records,
+    },
+    "okayama_2026_undergrad": {
+        "stem": "okayama_2026_undergrad",
+        "id": "okayama-2026-undergrad",
+        "university": "岡山大学",
+        "admission_year": "2026",
+        "script": "scripts/okayama_2026_undergrad_extractor.py",
+        "expected_path": "quality_baselines/okayama_2026_undergrad.expected.json",
+        "source_url": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+        "source_candidates": ["data/uploads/okayama_2026_undergrad.pdf"],
+        "source_markers": ["岡山大学", "私費外国人留学生", "日本留学試験", "出願期間"],
+        "text_markers": ["岡山大学", "私費外国人留学生", "日本留学試験", "入学者選抜方法"],
+        "extractor": extract_okayama_2026_undergrad_records,
     },
 }
 

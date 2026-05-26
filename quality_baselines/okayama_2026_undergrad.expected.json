@@ -1,0 +1,123 @@
+[
+  {
+    "id": "okayama-2026-literature",
+    "source_document": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+    "source_note": "Official Okayama University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "岡山大学", "admission_year": "2026", "faculty": "文学部"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "1月29日", "17時必着", "1月27日", "2026年1月13日"]},
+      "deadline_rule": {"contains": ["インターネット出願", "入学検定料", "カラー印刷", "書留・速達", "持参"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年の課程", "2026年3月31日", "在留資格", "出願できない"]},
+      "required_documents": {"contains": ["志願票", "写真票", "身上記録", "日本留学試験", "英語資格"]},
+      "eju_session": {"contains": ["2025年度日本留学試験", "2025年6月", "11月"]},
+      "eju_japanese": {"contains": ["文学部", "580点以上", "記述を含まない"]},
+      "eju_general": {"contains": ["総合科目"]},
+      "eju_math": {"contains": ["数学コース1", "コース2"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "IELTS", "TOEIC", "My Best", "Home Edition"]},
+      "screening_method": {"contains": ["書類審査", "日本語作文", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "日本語作文9:00-10:30", "面接13:00", "津島"]},
+      "result_date": {"contains": ["2026年3月7日", "15時"]},
+      "enrollment_period": {"contains": ["2026年3月18日", "17時", "郵送"]},
+      "evidence": {"contains": ["p.1", "p.1-p.2", "p.3", "p.4-p.7", "p.7", "p.8", "p.18-p.21"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "okayama-2026-economics",
+    "source_document": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+    "source_note": "Official Okayama University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "岡山大学", "admission_year": "2026", "faculty": "経済学部"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "1月29日", "17時必着"]},
+      "deadline_rule": {"contains": ["インターネット出願", "書留・速達"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年の課程", "在留資格"]},
+      "required_documents": {"contains": ["志願票", "成績証明書", "日本留学試験"]},
+      "eju_session": {"contains": ["2025年度", "6月", "11月"]},
+      "eju_japanese": {"contains": ["経済学部", "560点以上"]},
+      "eju_general": {"contains": ["総合科目110点以上"]},
+      "eju_math": {"contains": ["数学110点以上", "自由選択"]},
+      "english_requirement": {"contains": ["TOEFL", "TOEIC", "団体受験"]},
+      "screening_method": {"contains": ["小論文", "面接", "総合"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "小論文", "9:00-10:30", "面接13:00"]},
+      "result_date": {"contains": ["2026年3月7日"]},
+      "enrollment_period": {"contains": ["2026年3月18日"]},
+      "evidence": {"contains": ["p.1-p.2", "p.4-p.7"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "okayama-2026-medicine",
+    "source_document": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+    "source_note": "Official Okayama University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "岡山大学", "admission_year": "2026", "faculty": "医学部", "department": "医学科"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "1月29日", "17時必着"]},
+      "deadline_rule": {"contains": ["インターネット出願", "入学検定料", "書留・速達"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "2026年3月31日", "在留資格"]},
+      "required_documents": {"contains": ["志願票", "写真票", "日本留学試験", "住民票"]},
+      "eju_session": {"contains": ["2025年度日本留学試験"]},
+      "eju_japanese": {"contains": ["医学部医学科", "760点以上", "記述"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["物理", "必須"]},
+      "eju_chemistry": {"contains": ["化学", "選択"]},
+      "eju_biology": {"contains": ["生物", "選択"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "Test Date", "Home Edition"]},
+      "screening_method": {"contains": ["外国語", "理科", "数学", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "外国語9:00-11:00", "理科12:30-14:30", "数学16:00-18:00", "2月26日", "鹿田"]},
+      "result_date": {"contains": ["2026年3月7日"]},
+      "enrollment_period": {"contains": ["2026年3月18日"]},
+      "evidence": {"contains": ["p.1-p.2", "p.4-p.7", "p.8"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "okayama-2026-engineering-mechanical",
+    "source_document": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+    "source_note": "Official Okayama University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU table, selection method, documents, result date, and enrollment procedure.",
+    "match": {"university": "岡山大学", "admission_year": "2026", "faculty": "工学部", "department": "工学科機械システム系"},
+    "expect": {
+      "application_period": {"contains": ["2026年1月26日", "1月29日", "17時必着"]},
+      "deadline_rule": {"contains": ["インターネット出願", "書留・速達"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年の課程"]},
+      "required_documents": {"contains": ["身上記録", "日本留学試験", "英語資格"]},
+      "eju_session": {"contains": ["2025年度", "日本留学試験"]},
+      "eju_japanese": {"contains": ["工学部", "日本語"]},
+      "eju_math": {"contains": ["数学コース2"]},
+      "eju_physics": {"contains": ["物理", "必須"]},
+      "eju_chemistry": {"contains": ["化学", "選択"]},
+      "eju_biology": {"contains": ["生物", "選択"]},
+      "english_requirement": {"contains": ["TOEFL", "TOEIC", "My Best"]},
+      "screening_method": {"contains": ["理科", "数学", "小論文", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "理科12:30-14:30", "数学16:00-18:00", "津島"]},
+      "result_date": {"contains": ["2026年3月7日"]},
+      "enrollment_period": {"contains": ["2026年3月18日"]},
+      "evidence": {"contains": ["p.1-p.2", "p.4-p.7"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "okayama-2026-agriculture-global",
+    "source_document": "https://www.okayama-u.ac.jp/user/st/nyushika/2026/pdf/bosyuyoko/shihi2026.pdf",
+    "source_note": "Official Okayama University 2026 privately financed international undergraduate admissions guide. Checked against agriculture global admissions schedule, documents, selection method, result date, enrollment procedure, and shared English-test list.",
+    "match": {"university": "岡山大学", "admission_year": "2026", "faculty": "農学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年11月4日", "11月11日", "2025年11月9日"]},
+      "deadline_rule": {"contains": ["インターネット出願", "書留・速達", "持参"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12年の課程"]},
+      "required_documents": {"contains": ["日本留学試験", "英語資格", "志望動機書", "課題作文"]},
+      "eju_session": {"contains": ["2024年度日本留学試験", "2025年度日本留学試験"]},
+      "eju_japanese": {"contains": ["農学部", "日本語"]},
+      "eju_math": {"contains": ["農学部", "数学"]},
+      "eju_physics": {"contains": ["理科", "物理"]},
+      "eju_chemistry": {"contains": ["理科", "化学"]},
+      "eju_biology": {"contains": ["理科", "生物"]},
+      "english_requirement": {"contains": ["2024年4月以降", "英語資格・検定試験", "CEFR"]},
+      "screening_method": {"contains": ["書類審査", "日本留学試験", "英語資格", "志望動機", "課題作文", "オンライン面接"]},
+      "screening_schedule": {"contains": ["2025年12月6日", "13:00", "オンライン面接", "2025年12月3日"]},
+      "result_date": {"contains": ["2025年12月22日", "10時"]},
+      "enrollment_period": {"contains": ["2026年1月28日", "17時"]},
+      "evidence": {"contains": ["p.18-p.21", "p.31-p.32"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]
