@@ -89,13 +89,14 @@ function sourceStatusText(value: string) {
   if (value === "failed") return "检查失败";
   if (value === "marker_mismatch") return "内容不匹配";
   if (value === "not_pdf") return "链接需确认";
+  if (value === "first_check") return "新来源待确认";
   return "需要查看";
 }
 
 function sourceStatusClass(value: string) {
   if (value === "changed") return "badge badge-amber";
   if (value === "failed" || value === "not_pdf") return "badge badge-red";
-  if (value === "marker_mismatch") return "badge badge-blue";
+  if (value === "marker_mismatch" || value === "first_check") return "badge badge-blue";
   return "badge badge-gray";
 }
 
@@ -123,6 +124,7 @@ function sourceActionText(value: string) {
   if (value === "marker_mismatch") return "来源内容和预期不一致，先确认链接是否仍然正确。";
   if (value === "not_pdf") return "学校可能换了链接或页面形式，需要重新确认来源。";
   if (value === "failed") return "这次没有检查成功，可以稍后重试或手动打开官网。";
+  if (value === "first_check") return "第一次抓到来源内容，请确认后再接受为正式来源凭据。";
   return "查看来源后决定是否需要复审。";
 }
 
@@ -160,6 +162,7 @@ function checkStatusText(value?: string, days?: number | null) {
   if (value === "changed") return "来源有变化";
   if (value === "marker_mismatch") return "内容不匹配";
   if (value === "not_pdf") return "形式已变化";
+  if (value === "first_check") return "新来源待确认";
   if (value === "never_checked") return "还未检查";
   if (value === "stale") return days === null || days === undefined ? "需要复查" : `${days} 天未检查`;
   if (value === "recent") return days === null || days === undefined ? "近期已查" : `${days} 天前检查`;
@@ -168,7 +171,7 @@ function checkStatusText(value?: string, days?: number | null) {
 
 function checkStatusClass(value?: string) {
   if (value === "failed" || value === "not_pdf") return "badge badge-red";
-  if (value === "changed" || value === "marker_mismatch") return "badge badge-amber";
+  if (value === "changed" || value === "marker_mismatch" || value === "first_check") return "badge badge-amber";
   if (value === "never_checked" || value === "stale") return "badge badge-amber";
   if (value === "recent") return "badge badge-green";
   return "badge badge-gray";
@@ -370,7 +373,7 @@ export default function QualityPage({ onOpenReview }: Props) {
     .filter((item) => item.source_url || item.cached_path)
     .sort((a, b) => {
       const priorityValue = (item: typeof a) =>
-        ["failed", "changed", "marker_mismatch", "not_pdf"].includes(String(item.check_status || ""))
+        ["failed", "changed", "marker_mismatch", "not_pdf", "first_check"].includes(String(item.check_status || ""))
           ? 0
           : item.check_status === "never_checked"
             ? 1

@@ -18,6 +18,7 @@ except Exception:
 from scripts.seed_registry import registered_seed_extractors  # noqa: E402
 
 STALE_CHECK_DAYS = 30
+ATTENTION_CHECK_STATUSES = {"failed", "changed", "marker_mismatch", "not_pdf", "first_check"}
 
 
 def _read_json(path: Path) -> Any:
@@ -138,7 +139,7 @@ def _maintenance_for_checked_at(
     stale_days: int = STALE_CHECK_DAYS,
 ) -> dict[str, Any]:
     status = str(last_check_status or "").strip()
-    if status in {"failed", "changed", "marker_mismatch", "not_pdf"}:
+    if status in ATTENTION_CHECK_STATUSES:
         return {"check_status": status, "days_since_checked": None}
     checked_at = _parse_checked_at(value)
     if not checked_at:
@@ -188,7 +189,7 @@ def summarize_watchlist(
                 oldest_checked_at = checked_at.isoformat()
         if not str(item.get("source_note") or "").strip():
             gaps["missing_source_note"] += 1
-        if str(item.get("last_check_status") or "").strip() in {"failed", "changed", "marker_mismatch", "not_pdf"}:
+        if str(item.get("last_check_status") or "").strip() in ATTENTION_CHECK_STATUSES:
             gaps["last_check_needs_attention"] = gaps.get("last_check_needs_attention", 0) + 1
     return {
         "total": len(items),

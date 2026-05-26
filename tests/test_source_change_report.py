@@ -74,6 +74,32 @@ class SourceChangeReportTest(unittest.TestCase):
 
         self.assertEqual(loaded["summary"]["needs_review"], 0)
 
+    def test_first_check_is_explained_as_source_confirmation(self) -> None:
+        from scripts.source_change_report import build_change_report, format_markdown_report
+
+        report = build_change_report(
+            {
+                "summary": {"needs_review": 1, "first_check": 1},
+                "items": [
+                    {
+                        "stem": "sample_2027_undergrad",
+                        "university": "Sample University",
+                        "admission_year": "2027",
+                        "source_url": "https://example.test/sample.pdf",
+                        "status": "first_check",
+                        "new_sha256": "1" * 64,
+                        "checked_at": "2026-05-26T10:00:00+00:00",
+                    }
+                ],
+            }
+        )
+        markdown = format_markdown_report(report)
+
+        self.assertEqual(report["items"][0]["status_label"], "新来源待确认")
+        self.assertIn("接受为新的来源凭据", report["items"][0]["recommended_action"])
+        self.assertIn("官网来源", report["items"][0]["likely_changed_areas"])
+        self.assertIn("Sample University", markdown)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -34,6 +34,8 @@ def _action_for_status(status: str) -> str:
         return "学校可能换了资料形式，先手动打开官网确认。"
     if status == "failed":
         return "这次没有检查成功，稍后重试或手动打开官网。"
+    if status == "first_check":
+        return "这是第一次记录到来源内容，请确认来源正确后再接受为新的来源凭据。"
     return "查看来源状态。"
 
 
@@ -46,6 +48,8 @@ def _status_label(status: str) -> str:
         return "链接形式需要确认"
     if status == "failed":
         return "检查失败"
+    if status == "first_check":
+        return "新来源待确认"
     return "需要查看"
 
 
@@ -67,7 +71,7 @@ def _likely_changed_areas(item: dict[str, Any]) -> list[str]:
         areas.extend(["申请时间", "考试要求", "提交材料"])
     if status == "marker_mismatch" and not areas:
         areas.append("来源链接")
-    if status in {"not_pdf", "failed"} and not areas:
+    if status in {"not_pdf", "failed", "first_check"} and not areas:
         areas.append("官网来源")
     return areas[:4]
 
@@ -85,6 +89,8 @@ def _owner_summary(item: dict[str, Any]) -> str:
         return f"{university}（{year}）的来源不再像 PDF，需要确认学校是否改成网页或换了文件。"
     if status == "failed":
         return f"{university}（{year}）这次没有检查成功，正式资料未被改动。"
+    if status == "first_check":
+        return f"{university}（{year}）已经抓到来源内容，但还没有正式来源凭据，需要人工确认后再接受。"
     return f"{university}（{year}）{label}，需要人工确认下一步。"
 
 
@@ -98,6 +104,8 @@ def _next_steps(item: dict[str, Any]) -> list[str]:
         return ["打开官网资料", "确认新的资料形式", "补齐新的 PDF 或页面来源"]
     if status == "failed":
         return ["稍后重试检查", "如果连续失败，手动打开官网", "确认链接是否还能访问"]
+    if status == "first_check":
+        return ["打开官网来源", "确认学校、年度和留学生招生内容正确", "确认无误后接受来源凭据"]
     return ["打开来源", "判断是否需要复审"]
 
 
@@ -115,7 +123,7 @@ def _diff_preview(item: dict[str, Any]) -> dict[str, Any]:
 def _attention_level(status: str) -> str:
     if status == "changed":
         return "needs_review"
-    if status in {"marker_mismatch", "not_pdf", "failed"}:
+    if status in {"marker_mismatch", "not_pdf", "failed", "first_check"}:
         return "source_check"
     return "watch"
 

@@ -564,7 +564,7 @@ def _source_review_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
         if review_status in {"reviewed", "deferred"}:
             continue
         status = str(item.get("status") or "")
-        priority = 90 if status == "changed" else 85 if status in {"failed", "marker_mismatch"} else 75
+        priority = 90 if status == "changed" else 85 if status in {"failed", "marker_mismatch", "first_check"} else 75
         issues.append(
             {
                 "kind": "source_change",

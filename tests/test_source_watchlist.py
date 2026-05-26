@@ -195,6 +195,40 @@ class SourceWatchlistTest(unittest.TestCase):
         self.assertEqual(report["items"][0]["last_check_error"], "network down")
         self.assertEqual(report["summary"]["metadata_gaps"]["last_check_needs_attention"], 1)
 
+    def test_watchlist_report_keeps_first_check_visible_until_accepted(self) -> None:
+        from scripts.source_watchlist import build_watchlist_report
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "quality_sources").mkdir(parents=True)
+            (root / "quality_sources" / "sample_2027_undergrad.source.json").write_text(
+                json.dumps(
+                    {
+                        "source_url": "https://example.test/sample.pdf",
+                        "checked_at": "2026-05-26T00:00:00+00:00",
+                        "last_check_status": "first_check",
+                        "last_check_sha256": "b" * 64,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = build_watchlist_report(
+                root=root,
+                seeds={
+                    "sample_2027_undergrad": {
+                        "stem": "sample_2027_undergrad",
+                        "id": "sample-2027-undergrad",
+                        "university": "Sample University",
+                        "admission_year": "2027",
+                        "source_url": "https://example.test/sample.pdf",
+                    }
+                },
+            )
+
+        self.assertEqual(report["items"][0]["check_status"], "first_check")
+        self.assertEqual(report["summary"]["metadata_gaps"]["last_check_needs_attention"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

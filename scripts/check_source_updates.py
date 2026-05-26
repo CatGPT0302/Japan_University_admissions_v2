@@ -26,6 +26,7 @@ from scripts.source_watchlist import build_source_watchlist  # noqa: E402
 
 FetchResult = dict[str, Any]
 Fetcher = Callable[[str], FetchResult]
+SOURCE_REVIEW_STATUSES = {"changed", "failed", "marker_mismatch", "not_pdf", "first_check"}
 DIFF_FOCUS_TOKENS = [
     "出願",
     "締切",
@@ -217,7 +218,7 @@ def _check_one(item: dict[str, Any], *, fetcher: Fetcher, checked_at: str, root:
             "content_type": content_type,
             "final_url": str(fetched.get("final_url") or url),
             "new_sha256": new_hash,
-            "needs_review": status in {"changed", "failed", "marker_mismatch", "not_pdf"},
+            "needs_review": status in SOURCE_REVIEW_STATUSES,
             **extra,
         }
     except Exception as exc:
@@ -272,6 +273,7 @@ def _review_queue(items: list[dict[str, Any]], *, checked_at: str) -> dict[str, 
             "failed": sum(1 for item in review_items if item.get("status") == "failed"),
             "marker_mismatch": sum(1 for item in review_items if item.get("status") == "marker_mismatch"),
             "not_pdf": sum(1 for item in review_items if item.get("status") == "not_pdf"),
+            "first_check": sum(1 for item in review_items if item.get("status") == "first_check"),
         },
         "items": review_items,
     }

@@ -103,6 +103,33 @@ class CheckSourceUpdatesTest(unittest.TestCase):
         self.assertIn("9月20日", diff_preview["new_excerpt"][0])
         self.assertEqual(queue["items"][0]["diff_preview"], diff_preview)
 
+    def test_first_check_without_known_hash_enters_review_queue(self) -> None:
+        from scripts.check_source_updates import check_watchlist_sources
+
+        content = b"%PDF-1.4\nSample University 2027 admissions"
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "quality_sources").mkdir(parents=True)
+            receipt = root / "quality_sources" / "sample_2027_undergrad.source.json"
+            receipt.write_text(json.dumps({"source_url": "https://example.test/sample.pdf"}), encoding="utf-8")
+
+            report = check_watchlist_sources(
+                watchlist=[self._watch_item(old_hash="")],
+                root=root,
+                fetcher=lambda _url: {"status_code": 200, "content": content, "content_type": "application/pdf"},
+                now="2026-05-26T10:00:00+00:00",
+            )
+            queue = json.loads((root / "data" / "source_review_queue.json").read_text(encoding="utf-8"))
+            stored_receipt = json.loads(receipt.read_text(encoding="utf-8"))
+
+        self.assertEqual(report["summary"]["first_check"], 1)
+        self.assertEqual(report["summary"]["needs_review"], 1)
+        self.assertEqual(queue["summary"]["first_check"], 1)
+        self.assertEqual(queue["items"][0]["status"], "first_check")
+        self.assertEqual(stored_receipt["last_check_status"], "first_check")
+        self.assertEqual(stored_receipt["last_check_sha256"], report["items"][0]["new_sha256"])
+        self.assertNotIn("sha256", stored_receipt)
+
     def test_successful_check_refreshes_watchlist_maintenance_time(self) -> None:
         from scripts.check_source_updates import check_watchlist_sources, content_sha256
         from scripts.source_watchlist import build_watchlist_report
