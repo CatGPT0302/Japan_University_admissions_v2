@@ -371,10 +371,12 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(created.json()["processing_status"], "submitted")
         self.assertEqual(partner_queue.status_code, 200)
         self.assertEqual(partner_queue.json()[0]["original_file_name"], "keio.pdf")
-        self.assertTrue(partner_queue.json()[0]["file_name"].endswith(".pdf"))
+        for hidden_key in ("file_name", "document_id", "organization_name", "client_name"):
+            self.assertNotIn(hidden_key, partner_queue.json()[0])
         self.assertEqual(partner_records.status_code, 403)
         self.assertEqual(owner_queue.status_code, 200)
         self.assertEqual(owner_queue.json()[0]["original_file_name"], "keio.pdf")
+        self.assertTrue(owner_queue.json()[0]["file_name"].endswith(".pdf"))
 
     def test_public_program_hides_internal_quality_metadata_from_staging(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -506,6 +508,8 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(created.json()["status"], "submitted")
         self.assertEqual(detail.status_code, 200)
         self.assertEqual(detail.json()["processing_status"], "submitted")
+        for hidden_key in ("file_name", "document_id", "organization_name", "client_name"):
+            self.assertNotIn(hidden_key, detail.json())
         self.assertEqual(uploaded.status_code, 200)
         self.assertEqual(uploaded.json()["processing_status"], "submitted")
         self.assertNotIn("raw_llm_json", detail.json())

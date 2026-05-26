@@ -333,6 +333,23 @@ def _log_success(request: Request, context: dict[str, Any], scope: str) -> None:
     )
 
 
+def _partner_submission_view(row: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "id",
+        "university",
+        "admission_year",
+        "pdf_url",
+        "page_url",
+        "original_file_name",
+        "notes",
+        "processing_status",
+        "status",
+        "created_at",
+        "updated_at",
+    }
+    return {key: row.get(key) for key in allowed if key in row}
+
+
 def _split_filter(value: str | None) -> list[str]:
     if not value:
         return []
@@ -1409,7 +1426,7 @@ def licensed_document_submission_detail(submission_id: int, request: Request) ->
         )
         raise HTTPException(status_code=404, detail="Submission not found")
     _log_success(request, context, "documents:read_status")
-    return submission
+    return _partner_submission_view(submission)
 
 
 async def _submission_payload_from_request(request: Request) -> dict[str, Any]:
@@ -1468,12 +1485,13 @@ def partner_submissions(
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     user = _require_user(request, {"partner_staff"})
-    return list_document_submissions(
+    rows = list_document_submissions(
         status=status,
         limit=limit,
         offset=offset,
         organization_id=int(user.get("organization_id") or 0),
     )
+    return [_partner_submission_view(row) for row in rows]
 
 
 @app.get("/stats")
