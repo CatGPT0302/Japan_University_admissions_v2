@@ -6,6 +6,7 @@ import {
   getSourceReviewQueue,
   runSourceChecks,
   toErrorMessage,
+  updateSourceReviewItem,
 } from "../api/client";
 import { PieSummary, TreemapSummary } from "../components/DashboardCharts";
 import type { CorrectionEvent, DocumentListItem, QualityMetricsResponse, SourceReviewItem, SourceReviewResponse } from "../types";
@@ -54,6 +55,20 @@ function sourceStatusClass(value: string) {
   return "badge badge-gray";
 }
 
+function reviewStatusText(value?: string) {
+  if (value === "reviewed") return "已查看";
+  if (value === "needs_reextract") return "需要重新整理";
+  if (value === "deferred") return "暂不处理";
+  return "待查看";
+}
+
+function reviewStatusClass(value?: string) {
+  if (value === "reviewed") return "badge badge-green";
+  if (value === "needs_reextract") return "badge badge-amber";
+  if (value === "deferred") return "badge badge-gray";
+  return "badge badge-blue";
+}
+
 function sourceActionText(value: string) {
   if (value === "changed") return "打开对应资料，对照官网确认是否需要更新。";
   if (value === "marker_mismatch") return "来源内容和预期不一致，先确认链接是否仍然正确。";
@@ -94,6 +109,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingSources, setCheckingSources] = useState(false);
+  const [updatingSourceId, setUpdatingSourceId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -130,6 +146,42 @@ export default function QualityPage({ onOpenReview }: Props) {
       setError(toErrorMessage(nextError));
     } finally {
       setCheckingSources(false);
+    }
+  }
+
+  async function setSourceItemStatus(itemId: string, reviewStatus: string) {
+    setUpdatingSourceId(itemId);
+    setError("");
+    try {
+      const state = await updateSourceReviewItem(itemId, { review_status: reviewStatus });
+      setSourceQueue((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          summary: {
+            ...current.summary,
+            open: current.items.filter((item) => (item.item_id === itemId ? state.review_status : item.review_status) === "open").length,
+            reviewed: current.items.filter((item) => (item.item_id === itemId ? state.review_status : item.review_status) === "reviewed").length,
+            needs_reextract: current.items.filter((item) => (item.item_id === itemId ? state.review_status : item.review_status) === "needs_reextract").length,
+            deferred: current.items.filter((item) => (item.item_id === itemId ? state.review_status : item.review_status) === "deferred").length,
+          },
+          items: current.items.map((item) =>
+            item.item_id === itemId
+              ? {
+                  ...item,
+                  review_status: state.review_status,
+                  review_note: state.note,
+                  review_updated_at: state.updated_at,
+                }
+              : item,
+          ),
+        };
+      });
+      setMessage(`已标记为：${reviewStatusText(state.review_status)}。`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setUpdatingSourceId("");
     }
   }
 
@@ -250,15 +302,15 @@ export default function QualityPage({ onOpenReview }: Props) {
               <div className="source-review-summary">
                 <div>
                   <span>待查看</span>
-                  <strong>{sourceSummary.needs_review ?? 0}</strong>
+                  <strong>{sourceSummary.open ?? sourceSummary.needs_review ?? 0}</strong>
                 </div>
                 <div>
-                  <span>内容变化</span>
-                  <strong>{sourceSummary.changed ?? 0}</strong>
+                  <span>需重新整理</span>
+                  <strong>{sourceSummary.needs_reextract ?? 0}</strong>
                 </div>
                 <div>
-                  <span>检查失败</span>
-                  <strong>{sourceSummary.failed ?? 0}</strong>
+                  <span>已查看</span>
+                  <strong>{sourceSummary.reviewed ?? 0}</strong>
                 </div>
               </div>
 
@@ -269,6 +321,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                     <article className="source-review-card" key={`${item.stem}-${item.checked_at}-${item.status}`}>
                       <div className="item-card-topline">
                         <span className={sourceStatusClass(item.status)}>{sourceStatusText(item.status)}</span>
+                        <span className={reviewStatusClass(item.review_status)}>{reviewStatusText(item.review_status)}</span>
                         <span className="badge badge-gray">{item.admission_year || "未标年度"}</span>
                       </div>
                       <h4 className="item-title">{item.university || item.stem || "未命名来源"}</h4>
@@ -287,6 +340,32 @@ export default function QualityPage({ onOpenReview }: Props) {
                           ) : null}
                         </div>
                         <span>{item.checked_at || sourceQueue?.generated_at || ""}</span>
+                      </div>
+                      <div className="source-review-decisions">
+                        <button
+                          className="btn btn-ghost btn-small"
+                          disabled={updatingSourceId === item.item_id}
+                          type="button"
+                          onClick={() => void setSourceItemStatus(item.item_id, "reviewed")}
+                        >
+                          已查看
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-small"
+                          disabled={updatingSourceId === item.item_id}
+                          type="button"
+                          onClick={() => void setSourceItemStatus(item.item_id, "needs_reextract")}
+                        >
+                          需要重新整理
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-small"
+                          disabled={updatingSourceId === item.item_id}
+                          type="button"
+                          onClick={() => void setSourceItemStatus(item.item_id, "deferred")}
+                        >
+                          暂不处理
+                        </button>
                       </div>
                     </article>
                   );

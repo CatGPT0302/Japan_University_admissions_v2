@@ -3978,12 +3978,18 @@ a {
   background: rgba(255, 255, 255, 0.68);
 }
 
-.source-review-actions {
+.source-review-actions,
+.source-review-decisions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: space-between;
+}
+
+.source-review-decisions {
+  justify-content: flex-start;
+  padding-top: 4px;
 }
 
 .quality-row {

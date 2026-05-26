@@ -62,6 +62,7 @@ from scripts.export_excel import export_excel_bytes_from_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
+from scripts.source_review_state import update_source_review_state  # noqa: E402
 from scripts.validator import validate  # noqa: E402
 
 ensure_runtime_dirs()
@@ -200,6 +201,11 @@ class LicensedDocumentSubmissionRequest(BaseModel):
 class AdminSubmissionUpdateRequest(BaseModel):
     processing_status: str | None = None
     document_id: int | None = None
+
+
+class SourceReviewStateRequest(BaseModel):
+    review_status: str = Field(..., min_length=1)
+    note: str = ""
 
 
 class LoginRequest(BaseModel):
@@ -995,6 +1001,16 @@ def correction_events(request: Request, doc_id: int | None = None, limit: int = 
 def source_review_queue(request: Request) -> dict[str, Any]:
     _require_owner(request)
     return build_change_report(load_review_queue())
+
+
+@app.patch("/admin/source-review-queue/{item_id}")
+def update_source_review_queue_item(item_id: str, payload: SourceReviewStateRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    try:
+        state = update_source_review_state(item_id, payload.review_status, note=payload.note)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return state
 
 
 @app.post("/admin/source-checks/run")

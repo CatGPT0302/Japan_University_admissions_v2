@@ -181,6 +181,7 @@ export interface CorrectionEvent {
 }
 
 export interface SourceReviewItem {
+  item_id: string;
   stem: string;
   university: string;
   admission_year: string;
@@ -193,6 +194,9 @@ export interface SourceReviewItem {
   error?: string;
   missing_markers?: string[];
   recommended_action: string;
+  review_status: "open" | "reviewed" | "needs_reextract" | "deferred" | string;
+  review_note?: string;
+  review_updated_at?: string;
   confirmed_records_unchanged: boolean;
 }
 
@@ -204,6 +208,10 @@ export interface SourceReviewResponse {
     failed?: number;
     marker_mismatch?: number;
     not_pdf?: number;
+    open?: number;
+    reviewed?: number;
+    needs_reextract?: number;
+    deferred?: number;
     [key: string]: number | undefined;
   };
   items: SourceReviewItem[];
@@ -214,6 +222,13 @@ export interface SourceCheckRunResponse {
   checked_at: string;
   summary: Record<string, number>;
   review_queue: SourceReviewResponse;
+}
+
+export interface SourceReviewStateResponse {
+  item_id: string;
+  review_status: "open" | "reviewed" | "needs_reextract" | "deferred" | string;
+  note: string;
+  updated_at: string;
 }
 
 export interface UploadResponse {

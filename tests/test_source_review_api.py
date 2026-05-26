@@ -66,7 +66,10 @@ class SourceReviewApiTest(unittest.TestCase):
         payload = response.json()
         self.assertTrue(payload["confirmed_records_unchanged"])
         self.assertEqual(payload["summary"]["needs_review"], 1)
+        self.assertEqual(payload["summary"]["open"], 1)
         self.assertEqual(payload["items"][0]["status"], "changed")
+        self.assertEqual(payload["items"][0]["review_status"], "open")
+        self.assertTrue(payload["items"][0]["item_id"])
         self.assertIn("confirmed_records_unchanged", payload["items"][0])
 
     def test_run_source_checks_returns_queue_without_data_update_claims(self) -> None:
@@ -88,6 +91,40 @@ class SourceReviewApiTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["summary"]["unchanged"], 1)
         self.assertTrue(payload["review_queue"]["confirmed_records_unchanged"])
+
+    def test_source_review_item_status_can_be_saved_by_owner(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+            state_path = Path(tmp) / "states.json"
+
+            with patch.object(api, "update_source_review_state", wraps=lambda item_id, status, note="": __import__(
+                "scripts.source_review_state", fromlist=["update_source_review_state"]
+            ).update_source_review_state(item_id, status, note=note, path=state_path, now="2026-05-26T00:00:00+00:00")):
+                response = client.patch(
+                    "/admin/source-review-queue/sample-item",
+                    json={"review_status": "needs_reextract", "note": "source changed"},
+                )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["item_id"], "sample-item")
+        self.assertEqual(payload["review_status"], "needs_reextract")
+        self.assertEqual(payload["note"], "source changed")
+
+    def test_source_review_item_status_rejects_unknown_state(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.patch(
+                "/admin/source-review-queue/sample-item",
+                json={"review_status": "delete_everything"},
+            )
+
+        self.assertEqual(response.status_code, 400)
 
 
 if __name__ == "__main__":

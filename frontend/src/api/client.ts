@@ -23,6 +23,7 @@ import type {
   RecommendationResponse,
   SourceCheckRunResponse,
   SourceReviewResponse,
+  SourceReviewStateResponse,
   StagingRecord,
   StatsResponse,
   StudentProfile,
@@ -307,6 +308,14 @@ export async function runSourceChecks(limit?: number): Promise<SourceCheckRunRes
   const { data } = await client.post<SourceCheckRunResponse>("/admin/source-checks/run", undefined, {
     params: limit ? { limit } : undefined,
   });
+  return data;
+}
+
+export async function updateSourceReviewItem(
+  itemId: string,
+  payload: { review_status: string; note?: string },
+): Promise<SourceReviewStateResponse> {
+  const { data } = await client.patch<SourceReviewStateResponse>(`/admin/source-review-queue/${itemId}`, payload);
   return data;
 }
 

@@ -14,6 +14,8 @@ try:
 except Exception:
     pass
 
+from scripts.source_review_state import load_source_review_states, source_review_item_id  # noqa: E402
+
 
 def load_review_queue(*, root: Path = ROOT, path: Path | None = None) -> dict[str, Any]:
     queue_path = path or root / "data" / "source_review_queue.json"
@@ -35,13 +37,18 @@ def _action_for_status(status: str) -> str:
     return "review source status"
 
 
-def build_change_report(queue: dict[str, Any]) -> dict[str, Any]:
+def build_change_report(queue: dict[str, Any], states: dict[str, Any] | None = None) -> dict[str, Any]:
     items = [item for item in queue.get("items") or [] if isinstance(item, dict)]
+    state_map = states if states is not None else load_source_review_states()
     report_items = []
     for item in items:
         status = str(item.get("status") or "")
+        item_id = source_review_item_id(item)
+        state = state_map.get(item_id) if isinstance(state_map.get(item_id), dict) else {}
+        review_status = str(state.get("review_status") or "open")
         report_items.append(
             {
+                "item_id": item_id,
                 "stem": item.get("stem", ""),
                 "university": item.get("university", ""),
                 "admission_year": item.get("admission_year", ""),
@@ -54,11 +61,18 @@ def build_change_report(queue: dict[str, Any]) -> dict[str, Any]:
                 "error": item.get("error", ""),
                 "missing_markers": item.get("missing_markers", []),
                 "recommended_action": _action_for_status(status),
+                "review_status": review_status,
+                "review_note": state.get("note", ""),
+                "review_updated_at": state.get("updated_at", ""),
                 "confirmed_records_unchanged": True,
             }
         )
     summary = dict(queue.get("summary") or {})
     summary.setdefault("needs_review", len(report_items))
+    summary["open"] = sum(1 for item in report_items if item.get("review_status") == "open")
+    summary["reviewed"] = sum(1 for item in report_items if item.get("review_status") == "reviewed")
+    summary["needs_reextract"] = sum(1 for item in report_items if item.get("review_status") == "needs_reextract")
+    summary["deferred"] = sum(1 for item in report_items if item.get("review_status") == "deferred")
     return {
         "generated_at": queue.get("generated_at", ""),
         "summary": summary,
