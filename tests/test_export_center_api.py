@@ -306,6 +306,53 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("seed_id", csv_response.text)
         self.assertIn("waseda-2027-official", csv_response.text)
 
+    def test_owner_issues_manual_corrections_link_back_to_review_document(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            doc_id = db.create_source_document(
+                "Review University",
+                "review.pdf",
+                "/tmp/review.pdf",
+                "https://example.test/review.pdf",
+                "2027",
+            )
+            staging_id = db.insert_staging_record(
+                doc_id,
+                4,
+                {
+                    "university": "Review University",
+                    "admission_year": "2027",
+                    "faculty": "Policy",
+                    "department": "Policy",
+                    "application_period": "",
+                    "english_requirement": "",
+                    "screening_method": "Documents",
+                    "needs_review": True,
+                },
+            )
+            db.update_staging_record(
+                staging_id,
+                {
+                    "application_period": "2026-09-01 - 2026-09-10",
+                    "is_reviewed": 1,
+                },
+            )
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/metrics/owner-issues")
+            csv_response = client.get("/metrics/owner-issues.csv")
+
+        self.assertEqual(response.status_code, 200)
+        issue = next(item for item in response.json()["issues"] if item["kind"] == "manual_correction")
+        self.assertEqual(issue["doc_id"], doc_id)
+        self.assertEqual(issue["document_id"], doc_id)
+        self.assertEqual(issue["field"], "application_period")
+        self.assertEqual(issue["source_document"], "review.pdf")
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn("doc_id", csv_response.text.splitlines()[0])
+        self.assertIn(str(doc_id), csv_response.text)
+
     def test_export_csv_uses_same_filters(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

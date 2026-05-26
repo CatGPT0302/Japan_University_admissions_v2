@@ -496,14 +496,14 @@ export default function QualityPage({ onOpenReview }: Props) {
                       {item.script ? <span>脚本 {fileName(item.script)}</span> : null}
                     </div>
                     <div className="inline-actions inline-actions-tight">
-                      {item.doc_id && onOpenReview ? (
+                      {(item.doc_id || item.document_id) && onOpenReview ? (
                         <button
                           className="btn btn-primary btn-small"
                           type="button"
                           onClick={() =>
-                            onOpenReview(Number(item.doc_id), {
+                            onOpenReview(Number(item.doc_id || item.document_id), {
                               token: Date.now(),
-                              docId: Number(item.doc_id),
+                              docId: Number(item.doc_id || item.document_id),
                               field: item.field || undefined,
                               university: item.university,
                               admission_year: item.admission_year,

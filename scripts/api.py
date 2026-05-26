@@ -626,11 +626,14 @@ def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
                 "source_url": str(doc.get("source_url") or ""),
                 "count": 0,
                 "latest_at": "",
+                "doc_id": document_id,
+                "document_id": document_id,
                 "suggested_action": "这项最近被人工改过，优先回看抽取规则或基准样本，避免同类资料反复手修。",
             },
         )
         current["count"] = int(current.get("count") or 0) + 1
         current["latest_at"] = max(str(current.get("latest_at") or ""), str(item.get("created_at") or ""))
+        current["doc_id"] = document_id
         current["document_id"] = document_id
         if doc:
             current["source_document"] = str(doc.get("filename") or current.get("source_document") or "")
@@ -1538,6 +1541,7 @@ def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingRespons
         "script",
         "checked",
         "minimum",
+        "doc_id",
         "document_id",
         "suggested_action",
     ]
