@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "tohoku_2026_undergrad",
+  "source_url": "https://admissions.tohoku.ac.jp/ja/adcms/wp-content/uploads/2025/12/r8shihi.pdf",
+  "cached_path": "data/uploads/tohoku_2026_undergrad.pdf",
+  "sha256": "68529aa54c8c73c80f501eb136d7072e058b249ddfe3bf4fd1a32b81f0e14451",
+  "size_bytes": 991567,
+  "markers": [
+    "東北大学",
+    "私費外国人留学生",
+    "日本留学試験",
+    "出 願 受 付 期 間"
+  ],
+  "checked_at": "2026-05-26T03:04:13+00:00"
+}

@@ -1,0 +1,235 @@
+[
+  {
+    "id": "tohoku-2026-literature",
+    "source_document": "https://admissions.tohoku.ac.jp/ja/adcms/wp-content/uploads/2025/12/r8shihi.pdf",
+    "source_note": "Official Tohoku University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL requirements, document list, and exam timetable.",
+    "match": {
+      "university": "東北大学",
+      "admission_year": "2026",
+      "faculty": "文学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年2月2日", "2月5日", "正午必着", "TAO", "2026年)1月3日"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "入学検定料", "速達・簡易書留", "正午必着", "持参は受け付けない"]
+      },
+      "eligibility": {
+        "contains": ["日本国籍を有しない", "在留資格が留学", "永住許可", "12年の課程"]
+      },
+      "required_documents": {
+        "contains": ["入学志願書", "写真票", "卒業", "成績証明書", "日本留学試験", "TOEFL", "旅券", "入学検定料"]
+      },
+      "eju_session": {
+        "contains": ["2025年度", "6月", "11月"]
+      },
+      "eju_japanese": {
+        "contains": ["文学部", "日本語", "380点以上"]
+      },
+      "eju_general": {
+        "contains": ["文系", "日本語", "総合科目", "数学コース1", "基礎学力290点以上"]
+      },
+      "eju_math": {
+        "contains": ["数学コース1"]
+      },
+      "english_requirement": {
+        "contains": ["2024年3月1日", "TOEFL iBT", "79点以上", "Test Date", "Home Edition", "TOEFL ITPは不可"]
+      },
+      "screening_method": {
+        "contains": ["出願書類", "日本留学試験", "面接試験", "学力試験を実施しない", "10:00"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年2月12日", "2026年3月10日"]
+      },
+      "result_date": {
+        "contains": ["2026年3月18日", "午後5時"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年3月24日", "3月27日", "2026年4月"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.7-p.8", "p.9", "p.10", "p.11-p.15", "p.17"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tohoku-2026-medicine",
+    "source_document": "https://admissions.tohoku.ac.jp/ja/adcms/wp-content/uploads/2025/12/r8shihi.pdf",
+    "source_note": "Official Tohoku University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL requirements, document list, and exam timetable.",
+    "match": {
+      "university": "東北大学",
+      "admission_year": "2026",
+      "faculty": "医学部",
+      "department": "医学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年2月2日", "2月5日", "正午必着", "TAO"]
+      },
+      "deadline_rule": {
+        "contains": ["出願登録", "入学検定料", "出願完了にならない", "正午必着"]
+      },
+      "eligibility": {
+        "contains": ["日本国籍を有しない", "留学", "永住許可", "12年の課程"]
+      },
+      "required_documents": {
+        "contains": ["入学志願書", "写真票", "日本留学試験", "TOEFL", "旅券"]
+      },
+      "eju_session": {
+        "contains": ["2025年度", "6月", "11月"]
+      },
+      "eju_japanese": {
+        "contains": ["医学部医学科", "日本語", "380点以上"]
+      },
+      "eju_math": {
+        "contains": ["数学コース2", "基礎学力350点以上"]
+      },
+      "eju_physics": {
+        "contains": ["物理", "化学", "生物", "2科目自由選択"]
+      },
+      "eju_chemistry": {
+        "contains": ["物理", "化学", "生物", "2科目自由選択"]
+      },
+      "eju_biology": {
+        "contains": ["物理", "化学", "生物", "2科目自由選択"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "79点以上", "Home Edition", "TOEFL ITPは不可"]
+      },
+      "screening_method": {
+        "contains": ["出願書類", "日本留学試験", "面接試験", "学力試験を実施しない"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年2月12日", "2026年3月10日"]
+      },
+      "result_date": {
+        "contains": ["2026年3月18日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年3月24日", "3月27日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.7-p.8", "p.9", "p.10", "p.11-p.15", "p.17"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tohoku-2026-engineering",
+    "source_document": "https://admissions.tohoku.ac.jp/ja/adcms/wp-content/uploads/2025/12/r8shihi.pdf",
+    "source_note": "Official Tohoku University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL requirements, document list, and exam timetable.",
+    "match": {
+      "university": "東北大学",
+      "admission_year": "2026",
+      "faculty": "工学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年2月2日", "2月5日", "正午必着"]
+      },
+      "deadline_rule": {
+        "contains": ["速達・簡易書留", "正午必着", "出願完了にならない"]
+      },
+      "eligibility": {
+        "contains": ["日本国籍を有しない", "留学", "永住許可", "12年の課程"]
+      },
+      "required_documents": {
+        "contains": ["入学志願書", "写真票", "成績証明書", "日本留学試験", "TOEFL"]
+      },
+      "eju_session": {
+        "contains": ["2025年度", "6月", "11月"]
+      },
+      "eju_japanese": {
+        "contains": ["工学部", "日本語", "270点以上"]
+      },
+      "eju_math": {
+        "contains": ["数学コース2", "基礎学力320点以上"]
+      },
+      "eju_physics": {
+        "contains": ["工学部", "物理", "化学", "2科目"]
+      },
+      "eju_chemistry": {
+        "contains": ["工学部", "物理", "化学", "2科目"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "79点以上", "MyBest", "Home Edition"]
+      },
+      "screening_method": {
+        "contains": ["出願書類", "日本留学試験", "面接試験", "学力試験を実施しない", "10:00"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年2月12日", "2026年3月10日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.7-p.8", "p.9", "p.10", "p.17"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tohoku-2026-agriculture",
+    "source_document": "https://admissions.tohoku.ac.jp/ja/adcms/wp-content/uploads/2025/12/r8shihi.pdf",
+    "source_note": "Official Tohoku University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL requirements, document list, and exam timetable.",
+    "match": {
+      "university": "東北大学",
+      "admission_year": "2026",
+      "faculty": "農学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年2月2日", "2月5日", "正午必着"]
+      },
+      "deadline_rule": {
+        "contains": ["速達・簡易書留", "正午必着", "持参は受け付けない"]
+      },
+      "eligibility": {
+        "contains": ["日本国籍を有しない", "留学", "永住許可", "12年の課程"]
+      },
+      "required_documents": {
+        "contains": ["入学志願書", "写真票", "成績証明書", "日本留学試験", "TOEFL"]
+      },
+      "eju_session": {
+        "contains": ["2025年度", "6月", "11月"]
+      },
+      "eju_japanese": {
+        "contains": ["農学部", "日本語", "270点以上"]
+      },
+      "eju_general": {
+        "contains": ["農学部", "理系", "基礎学力260点以上"]
+      },
+      "eju_math": {
+        "contains": ["数学コース2"]
+      },
+      "eju_physics": {
+        "contains": ["物理", "化学", "生物", "2科目自由選択"]
+      },
+      "eju_chemistry": {
+        "contains": ["物理", "化学", "生物", "2科目自由選択"]
+      },
+      "eju_biology": {
+        "contains": ["物理", "化学", "生物", "2科目自由選択"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "79点以上", "Test Date", "TOEFL ITPは不可"]
+      },
+      "screening_method": {
+        "contains": ["学力試験", "面接試験", "数学", "9:30-11:00", "13:00"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年2月12日", "2026年3月10日"]
+      },
+      "result_date": {
+        "contains": ["2026年3月18日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年3月24日", "3月27日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.7-p.8", "p.9", "p.10", "p.11-p.15", "p.17"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  }
+]

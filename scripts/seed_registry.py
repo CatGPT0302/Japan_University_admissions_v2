@@ -12,6 +12,7 @@ from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_underg
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
 from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_metropolitan_2027_undergrad_records
 from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
+from scripts.tohoku_2026_undergrad_extractor import extract_tohoku_2026_undergrad_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
 
@@ -161,6 +162,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["私費外国人留学生", "令和９(2027)年度", "日本留学試験", "出願期間"],
         "text_markers": ["令和9(2027)年度", "私費外国人留学生", "入試基本方針", "日本留学試験"],
         "extractor": extract_hokkaido_2027_undergrad_records,
+    },
+    "tohoku_2026_undergrad": {
+        "stem": "tohoku_2026_undergrad",
+        "id": "tohoku-2026-undergrad",
+        "university": "東北大学",
+        "admission_year": "2026",
+        "script": "scripts/tohoku_2026_undergrad_extractor.py",
+        "expected_path": "quality_baselines/tohoku_2026_undergrad.expected.json",
+        "source_url": "https://admissions.tohoku.ac.jp/ja/adcms/wp-content/uploads/2025/12/r8shihi.pdf",
+        "source_candidates": ["data/uploads/tohoku_2026_undergrad.pdf"],
+        "source_markers": ["東北大学", "私費外国人留学生", "日本留学試験", "出 願 受 付 期 間"],
+        "text_markers": ["令和8年度", "東北大学", "私費外国人留学生入試", "日本留学試験"],
+        "extractor": extract_tohoku_2026_undergrad_records,
     },
 }
 
