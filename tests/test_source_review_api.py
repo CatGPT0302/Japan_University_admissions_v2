@@ -126,6 +126,69 @@ class SourceReviewApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_source_review_item_can_be_reextracted_without_confirming_records(self) -> None:
+        queue = {
+            "generated_at": "2026-05-26T00:00:00+00:00",
+            "summary": {"needs_review": 1, "changed": 1},
+            "items": [
+                {
+                    "stem": "sample",
+                    "university": "Sample University",
+                    "admission_year": "2027",
+                    "admission_type": "undergraduate",
+                    "source_type": "pdf",
+                    "source_url": "https://example.test/admissions.pdf",
+                    "status": "changed",
+                    "old_sha256": "aaa",
+                    "new_sha256": "bbb",
+                    "checked_at": "2026-05-26T00:00:00+00:00",
+                    "needs_review": True,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+            report = api.build_change_report(queue, states={})
+            item_id = report["items"][0]["item_id"]
+
+            with patch.object(api, "load_review_queue", return_value=queue), patch.object(
+                api,
+                "run_agent_workflow",
+                return_value={
+                    "status": "completed",
+                    "doc_id": 42,
+                    "records": 3,
+                    "quality_status": "needs_review",
+                    "source": {"selected_pdf_url": "https://example.test/admissions.pdf"},
+                },
+            ) as workflow, patch.object(api, "update_source_review_state") as update_state:
+                response = client.post(f"/admin/source-review-queue/{item_id}/reextract")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["doc_id"], 42)
+        self.assertTrue(payload["review_required"])
+        workflow.assert_called_once()
+        request = workflow.call_args.args[0]
+        self.assertEqual(request.pdf_url, "https://example.test/admissions.pdf")
+        self.assertEqual(request.university, "Sample University")
+        self.assertEqual(request.year, "2027")
+        update_state.assert_called_once()
+        self.assertEqual(update_state.call_args.args[1], "reviewed")
+
+    def test_source_review_reextract_requires_existing_queue_item(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            with patch.object(api, "load_review_queue", return_value={"summary": {"needs_review": 0}, "items": []}):
+                response = client.post("/admin/source-review-queue/missing/reextract")
+
+        self.assertEqual(response.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -186,6 +186,7 @@ export interface SourceReviewItem {
   university: string;
   admission_year: string;
   admission_type: string;
+  source_type?: string;
   source_url: string;
   status: "changed" | "failed" | "marker_mismatch" | "not_pdf" | string;
   old_sha256?: string;
@@ -229,6 +230,15 @@ export interface SourceReviewStateResponse {
   review_status: "open" | "reviewed" | "needs_reextract" | "deferred" | string;
   note: string;
   updated_at: string;
+}
+
+export interface SourceReviewReextractResponse {
+  status: string;
+  doc_id?: number | null;
+  records: number;
+  quality_status?: "ok" | "needs_review" | "failed";
+  review_required: boolean;
+  source?: AgentSource;
 }
 
 export interface UploadResponse {

@@ -53,6 +53,7 @@ def build_change_report(queue: dict[str, Any], states: dict[str, Any] | None = N
                 "university": item.get("university", ""),
                 "admission_year": item.get("admission_year", ""),
                 "admission_type": item.get("admission_type", ""),
+                "source_type": item.get("source_type", ""),
                 "source_url": item.get("source_url", ""),
                 "status": status,
                 "old_sha256": item.get("old_sha256", ""),

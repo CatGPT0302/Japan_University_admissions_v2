@@ -1013,6 +1013,49 @@ def update_source_review_queue_item(item_id: str, payload: SourceReviewStateRequ
     return state
 
 
+@app.post("/admin/source-review-queue/{item_id}/reextract")
+def reextract_source_review_queue_item(item_id: str, request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    report = build_change_report(load_review_queue())
+    item = next((entry for entry in report.get("items", []) if entry.get("item_id") == item_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="source review item not found")
+    source_url = str(item.get("source_url") or "").strip()
+    if not source_url:
+        raise HTTPException(status_code=400, detail="source review item has no source URL")
+
+    source_type = str(item.get("source_type") or "").strip().lower()
+    is_pdf = source_type == "pdf" or source_url.lower().split("?", 1)[0].endswith(".pdf")
+    workflow_request = AgentRequest(
+        pdf_url=source_url if is_pdf else "",
+        page_url="" if is_pdf else source_url,
+        university=str(item.get("university") or ""),
+        year=str(item.get("admission_year") or "2026"),
+    )
+    try:
+        result = run_agent_workflow(workflow_request)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail={"error": "source reextract failed", "message": str(exc)})
+
+    doc_id = int(result.get("doc_id") or 0)
+    if doc_id:
+        update_source_review_state(item_id, "reviewed", note=f"重新整理完成，待复审资料 #{doc_id}")
+    else:
+        update_source_review_state(item_id, "needs_reextract", note="已尝试重新整理，但仍需要确认来源")
+    return {
+        "status": result.get("status", "completed"),
+        "doc_id": doc_id or None,
+        "records": result.get("records", 0),
+        "quality_status": result.get("quality_status", "needs_review"),
+        "review_required": True,
+        "source": result.get("source", {}),
+    }
+
+
 @app.post("/admin/source-checks/run")
 def run_source_checks(request: Request, limit: int | None = None) -> dict[str, Any]:
     _require_owner(request)

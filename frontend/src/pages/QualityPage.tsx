@@ -4,6 +4,7 @@ import {
   getDocuments,
   getQualityMetrics,
   getSourceReviewQueue,
+  reextractSourceReviewItem,
   runSourceChecks,
   toErrorMessage,
   updateSourceReviewItem,
@@ -110,6 +111,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [loading, setLoading] = useState(false);
   const [checkingSources, setCheckingSources] = useState(false);
   const [updatingSourceId, setUpdatingSourceId] = useState("");
+  const [reextractingSourceId, setReextractingSourceId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -182,6 +184,22 @@ export default function QualityPage({ onOpenReview }: Props) {
       setError(toErrorMessage(nextError));
     } finally {
       setUpdatingSourceId("");
+    }
+  }
+
+  async function reextractSourceItem(itemId: string) {
+    setReextractingSourceId(itemId);
+    setError("");
+    setMessage("");
+    try {
+      const result = await reextractSourceReviewItem(itemId);
+      setMessage(`已重新整理出 ${result.records || 0} 条待复审内容。`);
+      await load(selectedDocId);
+      if (result.doc_id && onOpenReview) onOpenReview(result.doc_id);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setReextractingSourceId("");
     }
   }
 
@@ -333,6 +351,14 @@ export default function QualityPage({ onOpenReview }: Props) {
                               进入复审
                             </button>
                           ) : null}
+                          <button
+                            className="btn btn-green btn-small"
+                            disabled={reextractingSourceId === item.item_id}
+                            type="button"
+                            onClick={() => void reextractSourceItem(item.item_id)}
+                          >
+                            {reextractingSourceId === item.item_id ? "正在整理" : "重新整理并复审"}
+                          </button>
                           {item.source_url ? (
                             <a className="btn btn-ghost btn-small" href={item.source_url} target="_blank" rel="noreferrer">
                               打开官网资料

@@ -22,6 +22,7 @@ import type {
   QualityMetricsResponse,
   RecommendationResponse,
   SourceCheckRunResponse,
+  SourceReviewReextractResponse,
   SourceReviewResponse,
   SourceReviewStateResponse,
   StagingRecord,
@@ -316,6 +317,11 @@ export async function updateSourceReviewItem(
   payload: { review_status: string; note?: string },
 ): Promise<SourceReviewStateResponse> {
   const { data } = await client.patch<SourceReviewStateResponse>(`/admin/source-review-queue/${itemId}`, payload);
+  return data;
+}
+
+export async function reextractSourceReviewItem(itemId: string): Promise<SourceReviewReextractResponse> {
+  const { data } = await client.post<SourceReviewReextractResponse>(`/admin/source-review-queue/${itemId}/reextract`);
   return data;
 }
 
