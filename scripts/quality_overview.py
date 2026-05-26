@@ -36,6 +36,11 @@ CRITICAL_FIELD_MINIMUMS = {
     "screening_schedule": 5,
 }
 
+SEED_RECORD_MINIMUMS = {
+    "meiji-2027-schedule": 6,
+    "waseda-2027-official": 10,
+}
+
 
 def _overall_status(seed_suite: dict[str, Any], gap_report: dict[str, Any]) -> str:
     if not seed_suite.get("passed"):
@@ -49,7 +54,7 @@ def build_quality_overview() -> dict[str, Any]:
     seed_suite = run_seed_baseline_suite()
     gap_report = build_quality_gap_report()
     gap_todo = gap_report.get("owner_todo") if isinstance(gap_report.get("owner_todo"), list) else []
-    quality_todo = _critical_field_todos(seed_suite) + _weak_field_todos(seed_suite)
+    quality_todo = _seed_record_todos(seed_suite) + _critical_field_todos(seed_suite) + _weak_field_todos(seed_suite)
     owner_todo = gap_todo + quality_todo
     return {
         "overall_status": "seed_suite_failed" if not seed_suite.get("passed") else ("needs_owner_action" if owner_todo else "quality_gate_ready"),
@@ -117,6 +122,33 @@ def _critical_field_todos(seed_suite: dict[str, Any]) -> list[dict[str, Any]]:
                     "checked": checked,
                     "minimum": minimum,
                     "details": f"Add human-checked baseline expectations for {field} until at least {minimum} records are covered.",
+                }
+            )
+    return todos
+
+
+def _seed_record_todos(seed_suite: dict[str, Any]) -> list[dict[str, Any]]:
+    todos = []
+    for item in seed_suite.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        seed_id = str(item.get("id") or "")
+        minimum = SEED_RECORD_MINIMUMS.get(seed_id)
+        if minimum is None:
+            continue
+        baseline = item.get("baseline") if isinstance(item.get("baseline"), dict) else {}
+        if "expected_count" not in baseline:
+            continue
+        checked = int(baseline.get("expected_count") or 0)
+        if checked < minimum:
+            todos.append(
+                {
+                    "priority": 35,
+                    "action": "seed_record_count_below_target",
+                    "seed": seed_id,
+                    "checked": checked,
+                    "minimum": minimum,
+                    "details": f"Add human-checked seed records for {seed_id} until at least {minimum} records are covered.",
                 }
             )
     return todos

@@ -512,6 +512,63 @@ class QualityOverviewTest(unittest.TestCase):
         self.assertEqual(critical[0]["checked"], 4)
         self.assertEqual(critical[0]["minimum"], 5)
 
+    def test_treats_seed_record_count_as_quality_gate(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "waseda-2027-official",
+                            "baseline": {
+                                "expected_count": 9,
+                                "field_coverage": {
+                                    "application_period": {"checked": 9, "passed": 9},
+                                    "deadline_rule": {"checked": 9, "passed": 9},
+                                    "enrollment_period": {"checked": 5, "passed": 5},
+                                    "required_documents": {"checked": 9, "passed": 9},
+                                    "eligibility": {"checked": 9, "passed": 9},
+                                    "evidence": {"checked": 9, "passed": 9},
+                                    "eju_session": {"checked": 5, "passed": 5},
+                                    "eju_japanese": {"checked": 5, "passed": 5},
+                                    "eju_general": {"checked": 5, "passed": 5},
+                                    "eju_math": {"checked": 2, "passed": 2},
+                                    "eju_physics": {"checked": 1, "passed": 1},
+                                    "eju_chemistry": {"checked": 1, "passed": 1},
+                                    "english_requirement": {"checked": 9, "passed": 9},
+                                    "result_date": {"checked": 9, "passed": 9},
+                                    "screening_schedule": {"checked": 9, "passed": 9},
+                                },
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        record_todos = [todo for todo in overview["quality_todo"] if todo["action"] == "seed_record_count_below_target"]
+        self.assertEqual(overview["overall_status"], "needs_owner_action")
+        self.assertEqual(record_todos[0]["seed"], "waseda-2027-official")
+        self.assertEqual(record_todos[0]["checked"], 9)
+        self.assertEqual(record_todos[0]["minimum"], 10)
+
     def test_treats_granular_eju_subjects_as_critical_coverage(self) -> None:
         from scripts.quality_overview import build_quality_overview
 
