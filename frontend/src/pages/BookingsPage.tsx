@@ -68,6 +68,10 @@ function followUpBucket(item: AdminConsultationBooking, today = todayKey()): Fol
   return "later";
 }
 
+function printBookingHandoff() {
+  window.print();
+}
+
 export default function BookingsPage() {
   const [items, setItems] = useState<AdminConsultationBooking[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -397,6 +401,46 @@ export default function BookingsPage() {
                 </label>
               </div>
 
+              <div className="booking-print-sheet" aria-label="咨询交接摘要">
+                <div className="booking-print-head">
+                  <div>
+                    <div className="card-kicker">交接摘要</div>
+                    <h3>{selected.student_name || "未填写姓名"}</h3>
+                  </div>
+                  <span>{statusText(selected.status)}</span>
+                </div>
+                <dl>
+                  <div>
+                    <dt>联系方式</dt>
+                    <dd>{contactText(selected)}</dd>
+                  </div>
+                  <div>
+                    <dt>目标学校</dt>
+                    <dd>{programText(selected)}</dd>
+                  </div>
+                  <div>
+                    <dt>目标年度</dt>
+                    <dd>{selected.target_year || selected.admission_year || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>方便时间</dt>
+                    <dd>{selected.preferred_times || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>想咨询的问题</dt>
+                    <dd>{selected.question || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>跟进备注</dt>
+                    <dd>{ownerNote || selected.owner_note || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>下次跟进</dt>
+                    <dd>{nextActionAt || selected.next_action_at || "-"}</dd>
+                  </div>
+                </dl>
+              </div>
+
               <div className="inline-actions">
                 <button
                   className="btn btn-primary"
@@ -405,6 +449,9 @@ export default function BookingsPage() {
                   onClick={() => void saveFollowUp(selected)}
                 >
                   保存跟进安排
+                </button>
+                <button className="btn btn-ghost" type="button" onClick={printBookingHandoff}>
+                  打印交接单
                 </button>
                 <button
                   className="btn btn-ghost"

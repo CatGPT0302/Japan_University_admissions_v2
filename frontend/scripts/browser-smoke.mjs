@@ -411,6 +411,8 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} inbox`);
     await assertBodyIncludes(page, "student-smoke@example.com", `${surface.name} inbox`);
     await assertBodyIncludes(page, "导出当前咨询", `${surface.name} export action`);
+    await assertBodyIncludes(page, "打印交接单", `${surface.name} print handoff action`);
+    await assertBodyIncludes(page, "交接摘要", `${surface.name} handoff summary`);
     await assertBodyIncludes(page, "今日摘要", `${surface.name} daily summary`);
     await assertBodyIncludes(page, "先处理最需要跟进的请求", `${surface.name} daily summary`);
     await page.getByLabel("快速查找").fill("东京测试大学");

@@ -1144,6 +1144,61 @@ a {
   letter-spacing: 0;
 }
 
+.booking-print-sheet {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.booking-print-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.booking-print-head h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.booking-print-head span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.booking-print-sheet dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.booking-print-sheet dl div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.booking-print-sheet dt {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.booking-print-sheet dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
 .dropzone {
   min-height: 420px;
   display: grid;
@@ -2805,6 +2860,37 @@ a {
   .settings-copy-row strong {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .booking-print-sheet,
+  .booking-print-sheet * {
+    visibility: visible;
+  }
+
+  .booking-print-sheet {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .booking-print-sheet dl {
+    grid-template-columns: 1fr;
   }
 }
 
