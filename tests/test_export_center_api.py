@@ -295,6 +295,12 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("text/csv", response.headers["content-type"])
         self.assertIn("admissions_Kyushu_University_2026_Engineering.csv", response.headers["content-disposition"])
         body = response.text
+        header = body.splitlines()[0]
+        self.assertIn("学校", header)
+        self.assertIn("英语要求", header)
+        self.assertIn("来源依据", header)
+        for internal_key in ("id", "document_id", "source_staging_id", "pdf_url", "export_missing"):
+            self.assertNotIn(internal_key, header)
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
 

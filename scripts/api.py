@@ -64,7 +64,7 @@ from scripts.db import (  # noqa: E402
     update_document_submission,
     update_staging_record,
 )
-from scripts.export_excel import export_confirmed_excel_bytes_from_records  # noqa: E402
+from scripts.export_excel import CONFIRMED_EXPORT_COLUMNS, export_confirmed_excel_bytes_from_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.quality_overview import build_quality_overview  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
@@ -1749,9 +1749,11 @@ def export_csv(
     if not rows:
         raise HTTPException(status_code=404, detail="No records found for the given filters")
     buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=list(rows[0].keys()))
+    csv_fields = [label for _key, label in CONFIRMED_EXPORT_COLUMNS]
+    writer = csv.DictWriter(buffer, fieldnames=csv_fields)
     writer.writeheader()
-    writer.writerows(rows)
+    for row in rows:
+        writer.writerow({label: row.get(key, "") for key, label in CONFIRMED_EXPORT_COLUMNS})
     return StreamingResponse(
         iter([buffer.getvalue()]),
         media_type="text/csv; charset=utf-8",
