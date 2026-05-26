@@ -1,0 +1,17 @@
+{
+  "status": "cached",
+  "stem": "fukui_engineering_2027_undergrad",
+  "source_url": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+  "cached_path": "data/uploads/fukui_engineering_2027_undergrad.pdf",
+  "sha256": "8edebbfb8e70dceccc353d16e2cc706dd68da73c6052c1779065de84f209a72c",
+  "size_bytes": 2257133,
+  "markers": [
+    "2027",
+    "福井大学",
+    "工学部",
+    "私費外国人留学生選抜",
+    "日本留学試験",
+    "TOEFL"
+  ],
+  "checked_at": "2026-05-26T02:15:29+00:00"
+}

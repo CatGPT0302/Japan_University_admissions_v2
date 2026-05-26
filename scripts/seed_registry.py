@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from scripts.chukyo_gakuin_2027_undergrad_extractor import extract_chukyo_gakuin_2027_undergrad_records
+from scripts.fukui_engineering_2027_undergrad_extractor import extract_fukui_engineering_2027_undergrad_records
 from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
 from scripts.kyoto_institute_tech_2027_undergrad_extractor import extract_kit_2027_undergrad_records
@@ -133,6 +134,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["2027年度", "京都工芸繊維大学", "私費外国人留学生入試"],
         "text_markers": ["京都工芸繊維大学", "2027", "私費外国人留学生入試"],
         "extractor": extract_kit_2027_undergrad_records,
+    },
+    "fukui_engineering_2027_undergrad": {
+        "stem": "fukui_engineering_2027_undergrad",
+        "id": "fukui-engineering-2027-undergrad",
+        "university": "福井大学",
+        "admission_year": "2027",
+        "script": "scripts/fukui_engineering_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/fukui_engineering_2027_undergrad.expected.json",
+        "source_url": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+        "source_candidates": ["data/uploads/fukui_engineering_2027_undergrad.pdf"],
+        "source_markers": ["2027", "福井大学", "工学部", "私費外国人留学生選抜"],
+        "text_markers": ["福井大学", "工学部", "私費外国人留学生選抜"],
+        "extractor": extract_fukui_engineering_2027_undergrad_records,
     },
 }
 

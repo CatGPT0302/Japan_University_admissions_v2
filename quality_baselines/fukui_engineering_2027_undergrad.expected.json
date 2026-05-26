@@ -1,0 +1,121 @@
+[
+  {
+    "id": "fukui-2027-mechanical-systems",
+    "source_document": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+    "source_note": "Official University of Fukui 2027 Faculty of Engineering privately financed international student selection guideline. Checked against schedule overview, eligibility, documents, EJU/TOEFL requirements, selection method, result date, and enrollment procedure.",
+    "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "機械・システム工学科"},
+    "expect": {
+      "application_period": {"contains": ["2026", "10 月 13 日", "10 月 20 日", "16 時"]},
+      "deadline_rule": {"contains": ["必着", "簡易書留速達", "10 月 19 日", "持参"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "12 年", "日本留学試験", "TOEFL", "留学"]},
+      "required_documents": {"contains": ["入学志願票", "受験票", "出願確認票", "日本留学試験", "TOEFL", "住民票", "返信用封筒"]},
+      "eju_session": {"contains": ["2025 年度", "2026 年度", "第 1 回"]},
+      "eju_japanese": {"contains": ["日本語", "出題言語", "日本語に限ります"]},
+      "eju_math": {"contains": ["数学", "コース２"]},
+      "eju_general": {"contains": ["総合科目", "課さない"]},
+      "eju_physics": {"contains": ["物理", "化学", "生物", "２科目"]},
+      "eju_chemistry": {"contains": ["物理", "化学", "生物", "２科目"]},
+      "english_requirement": {"contains": ["TOEFL", "Home Edition", "2025", "Official Score Report"]},
+      "screening_method": {"contains": ["日本留学試験", "TOEFL", "面接", "口頭試問", "出願書類"]},
+      "screening_schedule": {"contains": ["2026", "10 月 30 日", "13:00", "13:30"]},
+      "result_date": {"contains": ["2026", "11 月 30 日", "10 時"]},
+      "enrollment_period": {"contains": ["2026", "12 月 14 日", "12 月 25 日", "16 時"]},
+      "evidence": {"contains": ["p.0", "p.6", "p.7", "p.8", "p.9", "p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "fukui-2027-electrical-electronic-information",
+    "source_document": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+    "source_note": "Official University of Fukui 2027 Faculty of Engineering privately financed international student selection guideline. Checked against schedule overview, eligibility, documents, EJU/TOEFL requirements, selection method, result date, and enrollment procedure.",
+    "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "電気電子情報工学科"},
+    "expect": {
+      "application_period": {"contains": ["10 月 13 日", "10 月 20 日"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "2027", "日本留学試験", "TOEFL"]},
+      "required_documents": {"contains": ["入学志願票", "出願資格証明書", "Test Taker Score Report", "Official Score Report"]},
+      "eju_japanese": {"contains": ["日本語", "日本語に限ります"]},
+      "eju_math": {"contains": ["コース２"]},
+      "eju_general": {"contains": ["総合科目", "課さない"]},
+      "eju_physics": {"contains": ["２科目"]},
+      "eju_chemistry": {"contains": ["２科目"]},
+      "english_requirement": {"contains": ["TOEFL", "DI コード", "0184"]},
+      "screening_method": {"contains": ["面接", "口頭試問"]},
+      "screening_schedule": {"contains": ["13:30"]},
+      "result_date": {"contains": ["11 月 30 日"]},
+      "enrollment_period": {"contains": ["12 月 25 日"]},
+      "evidence": {"contains": ["p.6", "p.8", "p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "fukui-2027-architecture-urban-environment",
+    "source_document": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+    "source_note": "Official University of Fukui 2027 Faculty of Engineering privately financed international student selection guideline. Checked against schedule overview, eligibility, documents, EJU/TOEFL requirements, selection method, result date, and enrollment procedure.",
+    "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "建築・都市環境工学科"},
+    "expect": {
+      "application_period": {"contains": ["10 月 13 日", "16 時"]},
+      "eligibility": {"contains": ["12 年", "修了見込み", "在留資格"]},
+      "required_documents": {"contains": ["受験票", "写真票", "あて名票", "出願用封筒"]},
+      "eju_japanese": {"contains": ["日本語"]},
+      "eju_math": {"contains": ["数学", "コース２"]},
+      "eju_general": {"contains": ["×"]},
+      "eju_physics": {"contains": ["物理・化学・生物", "２科目"]},
+      "eju_chemistry": {"contains": ["物理・化学・生物", "２科目"]},
+      "english_requirement": {"contains": ["TOEFL", "Home Edition"]},
+      "screening_method": {"contains": ["出願書類", "総合"]},
+      "screening_schedule": {"contains": ["文京キャンパス", "受付"]},
+      "result_date": {"contains": ["合格者発表"]},
+      "enrollment_period": {"contains": ["入学手続"]},
+      "evidence": {"contains": ["p.6", "p.7", "p.8", "p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "fukui-2027-materials-life-chemistry",
+    "source_document": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+    "source_note": "Official University of Fukui 2027 Faculty of Engineering privately financed international student selection guideline. Checked against schedule overview, eligibility, documents, EJU/TOEFL requirements, selection method, result date, and enrollment procedure.",
+    "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "物質・生命化学科"},
+    "expect": {
+      "application_period": {"contains": ["10 月 20 日"]},
+      "eligibility": {"contains": ["2025 年度", "2026 年度", "日本留学試験"]},
+      "required_documents": {"contains": ["成績証明書", "日本語訳", "TOEFL のスコア票"]},
+      "eju_japanese": {"contains": ["日本語"]},
+      "eju_math": {"contains": ["コース２"]},
+      "eju_general": {"contains": ["課さない"]},
+      "eju_physics": {"contains": ["物理", "２科目"]},
+      "eju_chemistry": {"contains": ["化学", "２科目"]},
+      "english_requirement": {"contains": ["TOEFL", "2024", "10 月以降"]},
+      "screening_method": {"contains": ["日本留学試験", "TOEFL", "面接等"]},
+      "screening_schedule": {"contains": ["10 月 30 日"]},
+      "result_date": {"contains": ["10 時"]},
+      "enrollment_period": {"contains": ["16 時までに必着"]},
+      "evidence": {"contains": ["p.6", "p.7", "p.8", "p.9", "p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "fukui-2027-applied-physics",
+    "source_document": "https://www.u-fukui.ac.jp/wp/wp-content/uploads/bsy27_shihiryu_youkou.pdf",
+    "source_note": "Official University of Fukui 2027 Faculty of Engineering privately financed international student selection guideline. Checked against schedule overview, eligibility, documents, EJU/TOEFL requirements, selection method, result date, and enrollment procedure.",
+    "match": {"university": "福井大学", "admission_year": "2027", "faculty": "工学部", "department": "応用物理学科"},
+    "expect": {
+      "application_period": {"contains": ["2026", "10 月 13 日", "10 月 20 日"]},
+      "deadline_rule": {"contains": ["必着", "発信局日付印"]},
+      "eligibility": {"contains": ["日本国永住許可", "日本国籍を有しない", "留学"]},
+      "required_documents": {"contains": ["パスポート", "在留資格", "返信用封筒"]},
+      "eju_session": {"contains": ["2026", "第 1 回"]},
+      "eju_japanese": {"contains": ["日本語に限ります"]},
+      "eju_math": {"contains": ["コース２"]},
+      "eju_general": {"contains": ["総合科目", "×"]},
+      "eju_physics": {"contains": ["物理", "２科目"]},
+      "eju_chemistry": {"contains": ["化学", "２科目"]},
+      "english_requirement": {"contains": ["TOEFL", "0184"]},
+      "screening_method": {"contains": ["面接及び口頭試問"]},
+      "screening_schedule": {"contains": ["13:00", "13:30"]},
+      "result_date": {"contains": ["11 月 30 日"]},
+      "enrollment_period": {"contains": ["12 月 14 日", "12 月 25 日"]},
+      "evidence": {"contains": ["p.0", "p.6", "p.8", "p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]
