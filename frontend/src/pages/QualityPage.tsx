@@ -392,6 +392,14 @@ export default function QualityPage({ onOpenReview }: Props) {
   }
 
   async function importSeedImportPreview() {
+    if (seedImportPreview?.summary.mode !== "dry_run") {
+      setMessage("请先预览导入内容，再确认导入待复审。");
+      return;
+    }
+    const ok = window.confirm(
+      `确认把 ${seedImportPreview.summary.documents} 份资料、${seedImportPreview.summary.records} 条内容导入待复审吗？正式资料库不会被自动改动。`,
+    );
+    if (!ok) return;
     setSeedPackageBusy(true);
     setError("");
     setMessage("");
@@ -645,8 +653,13 @@ export default function QualityPage({ onOpenReview }: Props) {
                 <button className="btn btn-ghost btn-small" type="button" disabled={seedPackageBusy} onClick={() => void previewSeedImport()}>
                   预览导入
                 </button>
-                <button className="btn btn-primary btn-small" type="button" disabled={seedPackageBusy} onClick={() => void importSeedImportPreview()}>
-                  导入待复审
+                <button
+                  className="btn btn-primary btn-small"
+                  type="button"
+                  disabled={seedPackageBusy || seedImportPreview?.summary.mode !== "dry_run"}
+                  onClick={() => void importSeedImportPreview()}
+                >
+                  确认导入待复审
                 </button>
               </div>
               {seedImportPreview?.items?.length ? (
