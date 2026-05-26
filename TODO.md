@@ -21,7 +21,7 @@
 
 ## Out Of Scope For v1
 
--倍率数据
+- 倍率数据
 - Full SaaS tenant management
 - Partner self-confirmation into the master database
 - Full database export for partner users

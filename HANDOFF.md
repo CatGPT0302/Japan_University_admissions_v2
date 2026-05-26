@@ -72,4 +72,4 @@ npm run build
 - Do not rewrite the whole extraction pipeline.
 - Do not split the database into a large new schema migration unless the owner approves.
 - Do not expose internal review details or full exports to private schools.
-- Do not add倍率数据 in v1.
+- Do not add 倍率数据 in v1.
