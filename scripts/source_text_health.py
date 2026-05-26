@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -116,6 +117,63 @@ def _candidate_source_path(root: Path | None, candidates: list[str]) -> Path | N
     return root / first
 
 
+def _manual_text_review_receipt(root: Path | None, stem: str) -> dict[str, Any] | None:
+    if root is None or not stem:
+        return None
+    path = root / "quality_sources" / f"{stem}.text_health.json"
+    if not path.exists():
+        return None
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"status": "invalid_manual_review", "path": str(path)}
+    if not isinstance(receipt, dict):
+        return {"status": "invalid_manual_review", "path": str(path)}
+    receipt["path"] = str(path)
+    return receipt
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _apply_manual_text_review(
+    text_health: dict[str, Any],
+    *,
+    receipt: dict[str, Any] | None,
+    source_path: Path | None,
+) -> dict[str, Any]:
+    if not receipt:
+        return text_health
+    checked = dict(text_health)
+    if receipt.get("status") != "manual_vision_checked":
+        checked["manual_review_status"] = str(receipt.get("status") or "invalid_manual_review")
+        return checked
+
+    expected_hash = str(receipt.get("source_sha256") or "")
+    if source_path is not None and source_path.exists() and expected_hash:
+        actual_hash = _sha256(source_path)
+        if actual_hash != expected_hash:
+            checked["manual_review_status"] = "source_hash_mismatch"
+            checked["manual_review_path"] = receipt.get("path", "")
+            return checked
+
+    return {
+        **checked,
+        "status": "manual_vision_checked",
+        "underlying_status": checked.get("status", ""),
+        "requires_manual_text_check": False,
+        "reason": str(receipt.get("review_note") or "Manual/vision review receipt covers this garbled text layer."),
+        "manual_review_status": "matched",
+        "manual_review_path": receipt.get("path", ""),
+        "reviewed_pages": list(receipt.get("reviewed_pages") or []),
+    }
+
+
 def audit_seed_source_text_layers(
     *,
     root: Path | None = ROOT,
@@ -128,6 +186,7 @@ def audit_seed_source_text_layers(
 
     for seed_key, seed in sorted(seed_map.items()):
         candidates = [str(candidate) for candidate in seed.get("source_candidates") or []]
+        stem = str(seed.get("stem") or seed_key)
         source_path = _candidate_source_path(root, candidates)
         source_label = candidates[0] if candidates else ""
 
@@ -145,6 +204,11 @@ def audit_seed_source_text_layers(
             }
         else:
             text_health = analyze_text_layer(_read_pdf_text(source_path))
+        text_health = _apply_manual_text_review(
+            text_health,
+            receipt=_manual_text_review_receipt(root, stem),
+            source_path=source_path,
+        )
 
         items.append(
             {

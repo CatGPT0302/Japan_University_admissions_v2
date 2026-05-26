@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 
 def test_classifies_readable_japanese_admissions_text() -> None:
     from scripts.source_text_health import analyze_text_layer
@@ -67,3 +70,70 @@ def test_audits_seed_sources_without_blocking_baseline_status() -> None:
     assert by_id["readable_seed"]["text_health"]["status"] == "readable"
     assert by_id["garbled_seed"]["text_health"]["status"] == "garbled_text_layer"
     assert by_id["missing_seed"]["text_health"]["status"] == "missing_source"
+
+
+def test_manual_vision_review_receipt_clears_garbled_text_warning(tmp_path) -> None:
+    from scripts.source_text_health import audit_seed_source_text_layers
+
+    source_path = tmp_path / "data" / "uploads" / "osaka.pdf"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_bytes(b"official osaka pdf bytes")
+    source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    receipt_dir = tmp_path / "quality_sources"
+    receipt_dir.mkdir()
+    (receipt_dir / "osaka_seed.text_health.json").write_text(
+        json.dumps(
+            {
+                "status": "manual_vision_checked",
+                "source_sha256": source_hash,
+                "reviewed_pages": ["p.1", "p.3", "p.5", "p.6"],
+                "review_note": "Visual review confirmed the table cells needed by the seed baseline.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = audit_seed_source_text_layers(
+        root=tmp_path,
+        seeds={"osaka_seed": {"stem": "osaka_seed", "source_candidates": ["data/uploads/osaka.pdf"]}},
+        text_by_path={
+            "data/uploads/osaka.pdf": "\u2400\u2401\u2402\u2403\u2404\u2405\u2406\u2407\u2408\u2409 2027",
+        },
+    )
+
+    assert report["summary"]["manual_text_check_needed"] == 0
+    item = report["items"][0]
+    assert item["text_health"]["status"] == "manual_vision_checked"
+    assert item["text_health"]["underlying_status"] == "garbled_text_layer"
+    assert item["text_health"]["reviewed_pages"] == ["p.1", "p.3", "p.5", "p.6"]
+
+
+def test_manual_vision_review_receipt_must_match_source_hash(tmp_path) -> None:
+    from scripts.source_text_health import audit_seed_source_text_layers
+
+    source_path = tmp_path / "data" / "uploads" / "osaka.pdf"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_bytes(b"changed pdf bytes")
+    receipt_dir = tmp_path / "quality_sources"
+    receipt_dir.mkdir()
+    (receipt_dir / "osaka_seed.text_health.json").write_text(
+        json.dumps(
+            {
+                "status": "manual_vision_checked",
+                "source_sha256": "0" * 64,
+                "review_note": "Stale review for another source file.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = audit_seed_source_text_layers(
+        root=tmp_path,
+        seeds={"osaka_seed": {"stem": "osaka_seed", "source_candidates": ["data/uploads/osaka.pdf"]}},
+        text_by_path={
+            "data/uploads/osaka.pdf": "\u2400\u2401\u2402\u2403\u2404\u2405\u2406\u2407\u2408\u2409 2027",
+        },
+    )
+
+    assert report["summary"]["manual_text_check_needed"] == 1
+    assert report["items"][0]["text_health"]["manual_review_status"] == "source_hash_mismatch"

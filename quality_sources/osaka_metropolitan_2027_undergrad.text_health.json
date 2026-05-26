@@ -1,0 +1,7 @@
+{
+  "status": "manual_vision_checked",
+  "source_sha256": "82733fc0645f32bc6e2133b5b0335f33a00128e4a05a24adcf388b95eee346a8",
+  "reviewed_pages": ["p.1", "p.3", "p.5", "p.6"],
+  "review_note": "Official PDF text layer is garbled, but the seed rows were manually checked against the visible table. Knowledge Information and Law have no English external-test requirement; Agriculture Applied Biological Sciences has the TOEFL iBT requirement reflected in the baseline.",
+  "checked_at": "2026-05-26"
+}
