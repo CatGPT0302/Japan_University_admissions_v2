@@ -1,0 +1,13 @@
+{
+  "status": "cached",
+  "stem": "meiji_2027_schedule",
+  "source_url": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+  "cached_path": "data/uploads/meiji_2027_schedule_official.pdf",
+  "sha256": "97aa37bec6e48aaf7edcbed62d796ccb92807e14927e2fa648b7108db93ee829",
+  "size_bytes": 490473,
+  "markers": [
+    "明治大学",
+    "2027"
+  ],
+  "checked_at": "2026-05-26T00:41:55+00:00"
+}
