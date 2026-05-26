@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { checkHealth, getCurrentUser, login, logout, toErrorMessage } from "./api/client";
+import BookingsPage from "./pages/BookingsPage";
 import ExportPage from "./pages/ExportPage";
 import OwnerPartnersPage from "./pages/OwnerPartnersPage";
 import QualityPage from "./pages/QualityPage";
@@ -17,7 +18,8 @@ const NAV: OwnerNavItem[] = [
   { key: "review", label: "人工核对", hint: "对着来源资料快速修正词条", short: "02" },
   { key: "records", label: "正式资料", hint: "查看已经确认的招生资料", short: "03" },
   { key: "exports", label: "导出中心", hint: "按学校、年度和学部取出表格", short: "04" },
-  { key: "quality", label: "质量与更新", hint: "查看来源变化和整理稳定性", short: "05" },
+  { key: "bookings", label: "咨询请求", hint: "处理学生预约和后续联系", short: "05" },
+  { key: "quality", label: "质量与更新", hint: "查看来源变化和整理稳定性", short: "06" },
 ];
 
 const NAV_GROUPS: Array<{ title: string; note: string; items: OwnerNavItem[] }> = [
@@ -30,6 +32,11 @@ const NAV_GROUPS: Array<{ title: string; note: string; items: OwnerNavItem[] }> 
     title: "资料库",
     note: "查询、取出、合并表格",
     items: NAV.filter((item) => item.key === "records" || item.key === "exports"),
+  },
+  {
+    title: "服务跟进",
+    note: "学生预约和后续联系",
+    items: NAV.filter((item) => item.key === "bookings"),
   },
   {
     title: "维护",
@@ -276,6 +283,8 @@ export default function App() {
             <RecordsPage />
           ) : page === "exports" ? (
             <ExportPage />
+          ) : page === "bookings" ? (
+            <BookingsPage />
           ) : (
             <QualityPage
               onOpenReview={(docId) => {

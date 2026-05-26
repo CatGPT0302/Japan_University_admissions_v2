@@ -1,6 +1,7 @@
 import axios from "axios";
 import type {
   AgentRunResponse,
+  AdminConsultationBooking,
   AdminSubmission,
   AppUser,
   ApiCenterResponse,
@@ -9,6 +10,7 @@ import type {
   ConfirmedRecord,
   ConsultationBookingRequest,
   ConsultationBookingResponse,
+  ConsultationBookingStatus,
   CorrectionEvent,
   DocumentListItem,
   DocumentSummary,
@@ -223,6 +225,23 @@ export async function createConsultationBooking(
   payload: ConsultationBookingRequest,
 ): Promise<ConsultationBookingResponse> {
   const { data } = await client.post<ConsultationBookingResponse>("/public/bookings", payload);
+  return data;
+}
+
+export async function getAdminBookings(params?: {
+  status?: ConsultationBookingStatus | "";
+  limit?: number;
+  offset?: number;
+}): Promise<AdminConsultationBooking[]> {
+  const { data } = await client.get<AdminConsultationBooking[]>("/admin/bookings", { params });
+  return data;
+}
+
+export async function updateAdminBooking(
+  bookingId: number,
+  payload: { status: ConsultationBookingStatus },
+): Promise<AdminConsultationBooking> {
+  const { data } = await client.patch<AdminConsultationBooking>(`/admin/bookings/${bookingId}`, payload);
   return data;
 }
 

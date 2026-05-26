@@ -52,10 +52,12 @@ from scripts.db import (  # noqa: E402
     init_db,
     insert_staging_record,
     issue_api_key,
+    list_consultation_bookings,
     list_document_submissions,
     log_api_usage,
     mark_api_key_used,
     recommend_public_programs,
+    update_consultation_booking_status,
     update_document_submission,
     update_staging_record,
 )
@@ -202,6 +204,10 @@ class LicensedDocumentSubmissionRequest(BaseModel):
 class AdminSubmissionUpdateRequest(BaseModel):
     processing_status: str | None = None
     document_id: int | None = None
+
+
+class AdminBookingUpdateRequest(BaseModel):
+    status: str
 
 
 class SourceReviewStateRequest(BaseModel):
@@ -722,6 +728,29 @@ def public_booking(payload: ConsultationBookingRequest) -> dict[str, Any]:
     data["status"] = "new"
     booking_id = create_consultation_booking(data)
     return {"status": "received", "id": booking_id}
+
+
+@app.get("/admin/bookings")
+def admin_bookings(
+    request: Request,
+    status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    _require_owner(request)
+    return list_consultation_bookings(status=status, limit=limit, offset=offset)
+
+
+@app.patch("/admin/bookings/{booking_id}")
+def admin_update_booking(booking_id: int, payload: AdminBookingUpdateRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    allowed = {"new", "contacted", "done", "closed"}
+    if payload.status not in allowed:
+        raise HTTPException(status_code=400, detail="booking status is not supported")
+    updated = update_consultation_booking_status(booking_id, payload.status)
+    if not updated:
+        raise HTTPException(status_code=404, detail="booking not found")
+    return updated
 
 
 @app.get("/settings/api-center")

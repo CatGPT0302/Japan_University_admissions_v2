@@ -2086,6 +2086,81 @@ def create_consultation_booking(payload: dict[str, Any]) -> int:
     return row_id
 
 
+def list_consultation_bookings(
+    *,
+    status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    clauses: list[str] = []
+    params: list[Any] = []
+    if status:
+        clauses.append(f"cb.status={_ph()}")
+        params.append(status)
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    params.extend([int(limit), int(offset)])
+    sql = f"""
+        SELECT
+            cb.id,
+            cb.student_name,
+            cb.contact_email,
+            cb.contact_phone,
+            cb.role,
+            cb.target_year,
+            cb.program_id,
+            cb.preferred_times,
+            cb.question,
+            cb.status,
+            cb.created_at,
+            ar.university AS school_name,
+            ar.faculty,
+            ar.department,
+            ar.admission_year
+        FROM consultation_bookings cb
+        LEFT JOIN admission_records ar ON ar.id = cb.program_id
+        {where}
+        ORDER BY cb.created_at DESC, cb.id DESC
+        LIMIT {_ph()} OFFSET {_ph()}
+    """
+    conn = get_conn()
+    rows = _fetchall(conn, sql, tuple(params))
+    conn.close()
+    return rows
+
+
+def update_consultation_booking_status(booking_id: int, status: str) -> dict[str, Any] | None:
+    conn = get_conn()
+    _execute(conn, f"UPDATE consultation_bookings SET status={_ph()} WHERE id={_ph()}", (status, int(booking_id)))
+    conn.commit()
+    row = _fetchone(
+        conn,
+        f"""
+        SELECT
+            cb.id,
+            cb.student_name,
+            cb.contact_email,
+            cb.contact_phone,
+            cb.role,
+            cb.target_year,
+            cb.program_id,
+            cb.preferred_times,
+            cb.question,
+            cb.status,
+            cb.created_at,
+            ar.university AS school_name,
+            ar.faculty,
+            ar.department,
+            ar.admission_year
+        FROM consultation_bookings cb
+        LEFT JOIN admission_records ar ON ar.id = cb.program_id
+        WHERE cb.id={_ph()}
+        """,
+        (int(booking_id),),
+    )
+    conn.close()
+    return row
+
+
 def get_stats() -> dict:
     conn = get_conn()
     total = (_fetchone(conn, "SELECT COUNT(*) AS c FROM admission_records") or {}).get("c", 0)

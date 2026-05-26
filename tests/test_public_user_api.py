@@ -204,6 +204,45 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertGreater(valid.json()["id"], 0)
         self.assertEqual(len(stored), 1)
 
+    def test_owner_can_list_and_update_student_booking_requests(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            program_id = self._insert_confirmed_program(db)
+            client = TestClient(api.app)
+
+            created = client.post(
+                "/public/bookings",
+                json={
+                    "student_name": "王小明",
+                    "contact_email": "student@example.com",
+                    "role": "学生本人",
+                    "target_year": "2027",
+                    "program_id": program_id,
+                    "preferred_times": "周六下午",
+                    "question": "想确认EJU要求",
+                },
+            )
+            unauth = client.get("/admin/bookings")
+            self._login_partner(client)
+            partner = client.get("/admin/bookings")
+            client.post("/auth/logout")
+            self._login_owner(client)
+            inbox = client.get("/admin/bookings")
+            updated = client.patch(f"/admin/bookings/{created.json()['id']}", json={"status": "contacted"})
+            filtered = client.get("/admin/bookings", params={"status": "contacted"})
+
+        self.assertEqual(created.status_code, 200)
+        self.assertEqual(unauth.status_code, 401)
+        self.assertEqual(partner.status_code, 403)
+        self.assertEqual(inbox.status_code, 200)
+        self.assertEqual(inbox.json()[0]["student_name"], "王小明")
+        self.assertEqual(inbox.json()[0]["school_name"], "明治大学")
+        self.assertEqual(inbox.json()[0]["faculty"], "理工学部")
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json()["status"], "contacted")
+        self.assertEqual(filtered.status_code, 200)
+        self.assertEqual(filtered.json()[0]["status"], "contacted")
+
     def test_admin_staging_confirm_records_flow_still_works(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

@@ -62,6 +62,17 @@ const surfaces = [
     action: "student-search-confirmed",
     reject: ["登录资料中心", "登录服务中心"],
   },
+  {
+    name: "owner-bookings",
+    buildSurface: "owner",
+    path: "/",
+    expect: ["登录资料中心", "邮箱", "密码"],
+    login: ownerCredentials,
+    afterLoginExpect: ["招生资料中心", "咨询请求", "资料库"],
+    action: "owner-booking-inbox",
+    reject: ["学生・家长入口", "登录服务中心"],
+    afterLoginReject: ["学生・家长入口", "登录服务中心"],
+  },
 ];
 
 const ignoredConsoleErrorSnippets = [
@@ -379,6 +390,26 @@ async function runSurfaceAction(page, surface) {
       throw new Error(`${surface.name} booking returned an unexpected response`);
     }
     await assertBodyIncludes(page, "已经收到。我们会按你留下的联系方式继续沟通。", `${surface.name} booking success`);
+    return;
+  }
+
+  if (surface.action === "owner-booking-inbox") {
+    await page.getByRole("button", { name: /咨询请求/ }).click();
+    await assertBodyIncludes(page, "学生预约与后续联系", `${surface.name} inbox`);
+    await assertBodyIncludes(page, "浏览器测试学生", `${surface.name} inbox`);
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} inbox`);
+    await assertBodyIncludes(page, "student-smoke@example.com", `${surface.name} inbox`);
+
+    await page.getByRole("button", { name: /浏览器测试学生/ }).click();
+    const updateResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/bookings/") && response.request().method() === "PATCH", {
+      timeout: 10_000,
+    });
+    await page.getByRole("button", { name: "标记已联系" }).click();
+    const updateResponse = await updateResponsePromise;
+    if (!updateResponse.ok()) {
+      throw new Error(`${surface.name} booking update failed with ${updateResponse.status()}`);
+    }
+    await assertBodyIncludes(page, "已标记为：已联系。", `${surface.name} booking updated`);
   }
 }
 

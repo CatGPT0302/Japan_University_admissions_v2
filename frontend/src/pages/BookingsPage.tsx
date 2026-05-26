@@ -1,0 +1,248 @@
+import { useEffect, useMemo, useState } from "react";
+import { getAdminBookings, toErrorMessage, updateAdminBooking } from "../api/client";
+import type { AdminConsultationBooking, ConsultationBookingStatus } from "../types";
+
+const STATUS_OPTIONS: Array<{ key: ConsultationBookingStatus | ""; label: string }> = [
+  { key: "", label: "全部" },
+  { key: "new", label: "待联系" },
+  { key: "contacted", label: "已联系" },
+  { key: "done", label: "已处理" },
+  { key: "closed", label: "暂不跟进" },
+];
+
+function statusText(status?: string): string {
+  if (status === "new") return "待联系";
+  if (status === "contacted") return "已联系";
+  if (status === "done") return "已处理";
+  if (status === "closed") return "暂不跟进";
+  return "待联系";
+}
+
+function statusClass(status?: string): string {
+  if (status === "new") return "badge badge-amber";
+  if (status === "contacted") return "badge badge-blue";
+  if (status === "done") return "badge badge-green";
+  return "badge badge-gray";
+}
+
+function contactText(item: AdminConsultationBooking): string {
+  return item.contact_email || item.contact_phone || "未留联系方式";
+}
+
+function programText(item: AdminConsultationBooking): string {
+  const school = item.school_name || "未选择学校";
+  const program = [item.faculty, item.department].filter(Boolean).join(" / ");
+  return program ? `${school} · ${program}` : school;
+}
+
+export default function BookingsPage() {
+  const [items, setItems] = useState<AdminConsultationBooking[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [status, setStatus] = useState<ConsultationBookingStatus | "">("new");
+  const [loading, setLoading] = useState(false);
+  const [workingId, setWorkingId] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  async function load(nextStatus = status) {
+    setLoading(true);
+    setError("");
+    try {
+      const rows = await getAdminBookings({ status: nextStatus || undefined, limit: 100 });
+      setItems(rows);
+      setSelectedId((current) => (current && rows.some((item) => item.id === current) ? current : rows[0]?.id ?? null));
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const selected = useMemo(
+    () => items.find((item) => item.id === selectedId) ?? items[0] ?? null,
+    [items, selectedId],
+  );
+  const openCount = items.filter((item) => item.status === "new").length;
+
+  async function setBookingStatus(item: AdminConsultationBooking, nextStatus: ConsultationBookingStatus) {
+    setWorkingId(item.id);
+    setError("");
+    setMessage("");
+    try {
+      const updated = await updateAdminBooking(item.id, { status: nextStatus });
+      setItems((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+      setSelectedId(updated.id);
+      setMessage(`已标记为：${statusText(updated.status)}。`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setWorkingId(null);
+    }
+  }
+
+  return (
+    <div className="page-shell bookings-page">
+      <section className="hero-panel">
+        <div className="split-row split-row-start">
+          <div>
+            <div className="section-kicker">咨询请求</div>
+            <h2 className="section-title">学生预约与后续联系</h2>
+            <p className="section-copy">学生端提交的预约会到这里。先看联系方式、目标学校和问题，再标记跟进状态。</p>
+          </div>
+          <div className="hero-metrics">
+            <div className="metric-card">
+              <span className="metric-label">当前筛选</span>
+              <strong className="metric-value">{items.length}</strong>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">待联系</span>
+              <strong className="metric-value">{openCount}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="content-grid">
+        <aside className="sidebar-panel">
+          <div className="toolbar-shell">
+            <h3 className="panel-title">跟进状态</h3>
+            <p className="panel-copy">用状态把新预约和已处理请求分开。</p>
+            <div className="filter-row">
+              {STATUS_OPTIONS.map((option) => (
+                <button
+                  className={`filter-chip${status === option.key ? " is-active" : ""}`}
+                  key={option.label}
+                  type="button"
+                  onClick={() => {
+                    setStatus(option.key);
+                    void load(option.key);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <button className="btn btn-ghost" type="button" onClick={() => void load()}>
+              {loading ? "刷新中" : "刷新"}
+            </button>
+          </div>
+        </aside>
+
+        <div className="item-detail">
+          {error ? <div className="message-box error">{error}</div> : null}
+          {message ? <div className="message-box info">{message}</div> : null}
+
+          <div className="detail-shell">
+            <div className="detail-header">
+              <div>
+                <div className="card-kicker">预约列表</div>
+                <h3 className="panel-title">选择一条请求查看详情</h3>
+              </div>
+              <span className="badge badge-gray">{items.length} 条</span>
+            </div>
+
+            <div className="document-list">
+              {items.map((item) => (
+                <button
+                  className={`item-card${selected?.id === item.id ? " is-active" : ""}`}
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedId(item.id)}
+                >
+                  <div className="item-card-topline">
+                    <span className={statusClass(item.status)}>{statusText(item.status)}</span>
+                    <span className="badge badge-gray">{item.target_year || item.admission_year || "未填年度"}</span>
+                  </div>
+                  <h4 className="item-title">{item.student_name || "未填写姓名"}</h4>
+                  <p className="item-subtitle">{programText(item)}</p>
+                  <p className="item-subtitle">{contactText(item)}</p>
+                </button>
+              ))}
+            </div>
+
+            {!items.length && !loading ? (
+              <div className="empty-state empty-state-quiet">
+                <h3 className="panel-title">暂时没有预约</h3>
+                <p className="panel-copy">学生端提交后，这里会出现联系方式和想咨询的问题。</p>
+              </div>
+            ) : null}
+          </div>
+
+          {selected ? (
+            <div className="detail-shell detail-shell-editing">
+              <div className="detail-header">
+                <div>
+                  <div className="card-kicker">请求详情</div>
+                  <h3 className="panel-title">{selected.student_name}</h3>
+                </div>
+                <span className={statusClass(selected.status)}>{statusText(selected.status)}</span>
+              </div>
+
+              <div className="detail-grid">
+                <div className="detail-field">
+                  <span className="detail-label">联系方式</span>
+                  <div className="detail-value">{contactText(selected)}</div>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-label">身份</span>
+                  <div className="detail-value">{selected.role || "-"}</div>
+                </div>
+                <div className="detail-field is-span-2">
+                  <span className="detail-label">目标学校</span>
+                  <div className="detail-value">{programText(selected)}</div>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-label">目标年度</span>
+                  <div className="detail-value">{selected.target_year || selected.admission_year || "-"}</div>
+                </div>
+                <div className="detail-field">
+                  <span className="detail-label">方便时间</span>
+                  <div className="detail-value">{selected.preferred_times || "-"}</div>
+                </div>
+                <div className="detail-field is-span-2">
+                  <span className="detail-label">想咨询的问题</span>
+                  <div className="detail-value">{selected.question || "-"}</div>
+                </div>
+                <div className="detail-field is-span-2">
+                  <span className="detail-label">提交时间</span>
+                  <div className="detail-value">{selected.created_at || "-"}</div>
+                </div>
+              </div>
+
+              <div className="inline-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  disabled={workingId === selected.id}
+                  onClick={() => void setBookingStatus(selected, "contacted")}
+                >
+                  标记已联系
+                </button>
+                <button
+                  className="btn btn-green"
+                  type="button"
+                  disabled={workingId === selected.id}
+                  onClick={() => void setBookingStatus(selected, "done")}
+                >
+                  标记已处理
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  disabled={workingId === selected.id}
+                  onClick={() => void setBookingStatus(selected, "closed")}
+                >
+                  暂不跟进
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  );
+}

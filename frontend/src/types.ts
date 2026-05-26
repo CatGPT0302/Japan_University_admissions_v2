@@ -1,4 +1,4 @@
-export type NavPage = "run" | "review" | "records" | "exports" | "quality";
+export type NavPage = "run" | "review" | "records" | "exports" | "bookings" | "quality";
 export type OwnerPage = NavPage;
 export type AppRole = "owner_admin" | "partner_staff";
 
@@ -432,6 +432,26 @@ export interface ConsultationBookingRequest {
 export interface ConsultationBookingResponse {
   status: "received";
   id: number;
+}
+
+export type ConsultationBookingStatus = "new" | "contacted" | "done" | "closed";
+
+export interface AdminConsultationBooking {
+  id: number;
+  student_name: string;
+  contact_email?: string;
+  contact_phone?: string;
+  role?: string;
+  target_year?: string;
+  program_id?: number | null;
+  preferred_times?: string;
+  question?: string;
+  status: ConsultationBookingStatus;
+  created_at: string;
+  school_name?: string;
+  faculty?: string;
+  department?: string;
+  admission_year?: string;
 }
 
 export interface ApiCenterKey {
