@@ -205,6 +205,7 @@ export interface OwnerIssue {
   department?: string;
   field?: string;
   field_label?: string;
+  seed_id?: string;
   record_id?: number | null;
   doc_id?: number | null;
   document_id?: number | null;
@@ -214,6 +215,7 @@ export interface OwnerIssue {
   count?: number;
   checked?: number;
   minimum?: number;
+  script?: string;
   latest_at?: string;
   suggested_action: string;
 }

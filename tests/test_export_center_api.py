@@ -237,6 +237,50 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("Gap University", response.text)
         self.assertIn("suggested_action", response.text)
 
+    def test_owner_issues_adds_source_context_to_baseline_gaps(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, _db = self._load_api(Path(tmp))
+            original_overview = api.build_quality_overview
+
+            def fake_overview(*, include_source_text_health: bool = False):
+                return {
+                    "overall_status": "needs_owner_action",
+                    "per_seed_thin_coverage": [
+                        {"seed": "waseda-2027-official", "field": "eju_japanese", "checked": 1, "minimum": 3}
+                    ],
+                    "quality_todo": [
+                        {
+                            "priority": 40,
+                            "action": "critical_field_coverage_below_target",
+                            "field": "eju_japanese",
+                            "checked": 1,
+                            "minimum": 5,
+                            "details": "Add checked EJU Japanese rows.",
+                        }
+                    ],
+                }
+
+            api.build_quality_overview = fake_overview
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            try:
+                response = client.get("/metrics/owner-issues")
+                csv_response = client.get("/metrics/owner-issues.csv")
+            finally:
+                api.build_quality_overview = original_overview
+
+        self.assertEqual(response.status_code, 200)
+        issue = next(item for item in response.json()["issues"] if item["kind"] == "baseline_gap")
+        self.assertEqual(issue["seed_id"], "waseda-2027-official")
+        self.assertEqual(issue["admission_year"], "2027")
+        self.assertEqual(issue["source_document"], "data/uploads/waseda_2027_official.pdf")
+        self.assertIn("waseda.jp", issue["source_url"])
+        self.assertIn("scripts/waseda_2027_extractor.py", issue["script"])
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn("seed_id", csv_response.text)
+        self.assertIn("waseda-2027-official", csv_response.text)
+
     def test_export_csv_uses_same_filters(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

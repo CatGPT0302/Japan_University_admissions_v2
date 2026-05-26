@@ -66,6 +66,7 @@ from scripts.export_excel import export_confirmed_excel_bytes_from_records  # no
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.quality_overview import build_quality_overview  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
+from scripts.seed_registry import SEED_EXTRACTORS  # noqa: E402
 from scripts.source_change_report import build_change_report, format_markdown_report, load_review_queue  # noqa: E402
 from scripts.source_review_state import accept_source_review_receipt, update_source_review_state  # noqa: E402
 from scripts.source_watchlist import build_watchlist_report  # noqa: E402
@@ -439,6 +440,42 @@ def _owner_issue_field_label(field: str) -> str:
     return OWNER_ISSUE_FIELD_LABELS.get(field, field)
 
 
+def _seed_meta_index() -> dict[str, dict[str, Any]]:
+    index: dict[str, dict[str, Any]] = {}
+    for stem, meta in SEED_EXTRACTORS.items():
+        if not isinstance(meta, dict):
+            continue
+        values = {
+            str(stem),
+            str(meta.get("stem") or ""),
+            str(meta.get("id") or ""),
+            str(meta.get("expected_path") or "").replace("\\", "/").removesuffix(".expected.json").split("/")[-1],
+        }
+        for value in values:
+            if value:
+                index[value] = meta
+    return index
+
+
+def _seed_issue_context(seed: str, overview: dict[str, Any], field: str = "") -> dict[str, str]:
+    seed_value = str(seed or "")
+    if not seed_value and field:
+        for row in overview.get("per_seed_thin_coverage") or []:
+            if isinstance(row, dict) and str(row.get("field") or "") == field:
+                seed_value = str(row.get("seed") or "")
+                break
+    meta = _seed_meta_index().get(seed_value, {})
+    source_candidates = meta.get("source_candidates") if isinstance(meta.get("source_candidates"), list) else []
+    return {
+        "seed_id": str(meta.get("id") or seed_value),
+        "university": str(meta.get("university") or ""),
+        "admission_year": str(meta.get("admission_year") or ""),
+        "source_document": str(source_candidates[0] if source_candidates else meta.get("expected_path") or seed_value),
+        "source_url": str(meta.get("source_url") or ""),
+        "script": str(meta.get("script") or ""),
+    }
+
+
 def _owner_review_target_map(rows: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, Any]]:
     targets = _export_review_targets(rows, limit=500)
     return {
@@ -519,17 +556,22 @@ def _baseline_owner_issues(overview: dict[str, Any], *, limit: int = 20) -> list
             continue
         field = str(todo.get("field") or "")
         seed = str(todo.get("seed") or "")
+        context = _seed_issue_context(seed, overview, field)
+        field_label = _owner_issue_field_label(field) if field else ""
+        target = field_label or context.get("seed_id") or seed
         issues.append(
             {
                 "kind": "baseline_gap",
                 "priority": int(todo.get("priority") or 40),
-                "title": f"基准覆盖还需要补看：{_owner_issue_field_label(field) if field else seed}",
-                "university": "",
-                "admission_year": "",
+                "title": f"基准样本还需要补看：{target}",
+                "seed_id": context.get("seed_id") or seed,
+                "university": context.get("university", ""),
+                "admission_year": context.get("admission_year", ""),
                 "field": field,
-                "field_label": _owner_issue_field_label(field) if field else "",
-                "source_document": seed,
-                "source_url": "",
+                "field_label": field_label,
+                "source_document": context.get("source_document", "") or seed,
+                "source_url": context.get("source_url", ""),
+                "script": context.get("script", ""),
                 "checked": todo.get("checked"),
                 "minimum": todo.get("minimum"),
                 "suggested_action": str(todo.get("details") or "补充人工确认过的基准样本。"),
@@ -542,8 +584,11 @@ def _baseline_owner_issues(overview: dict[str, Any], *, limit: int = 20) -> list
 
 def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
     corrections = db_get_correction_events(limit=200)
+    docs = {int(doc.get("doc_id") or 0): doc for doc in db_get_documents(limit=1000, offset=0)}
     grouped: dict[tuple[str, str, str], dict[str, Any]] = {}
     for item in corrections:
+        document_id = int(item.get("document_id") or 0)
+        doc = docs.get(document_id, {})
         key = (
             str(item.get("university") or ""),
             str(item.get("admission_year") or ""),
@@ -559,8 +604,8 @@ def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
                 "admission_year": key[1],
                 "field": key[2],
                 "field_label": _owner_issue_field_label(key[2]),
-                "source_document": "",
-                "source_url": "",
+                "source_document": str(doc.get("filename") or ""),
+                "source_url": str(doc.get("source_url") or ""),
                 "count": 0,
                 "latest_at": "",
                 "suggested_action": "这项最近被人工改过，优先回看抽取规则或基准样本，避免同类资料反复手修。",
@@ -568,7 +613,10 @@ def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
         )
         current["count"] = int(current.get("count") or 0) + 1
         current["latest_at"] = max(str(current.get("latest_at") or ""), str(item.get("created_at") or ""))
-        current["document_id"] = item.get("document_id")
+        current["document_id"] = document_id
+        if doc:
+            current["source_document"] = str(doc.get("filename") or current.get("source_document") or "")
+            current["source_url"] = str(doc.get("source_url") or current.get("source_url") or "")
     issues = list(grouped.values())
     for issue in issues:
         issue["title"] = f"{issue.get('university') or '未命名学校'}的{issue.get('field_label') or issue.get('field')}被人工修改 {issue.get('count')} 次"
@@ -1466,8 +1514,13 @@ def owner_top_issues_csv(request: Request, limit: int = 100) -> StreamingRespons
         "faculty",
         "department",
         "field_label",
+        "seed_id",
         "source_document",
         "source_url",
+        "script",
+        "checked",
+        "minimum",
+        "document_id",
         "suggested_action",
     ]
     writer = csv.DictWriter(buffer, fieldnames=fieldnames)
