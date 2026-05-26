@@ -185,6 +185,8 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["missing_required"]["required_documents"], 1)
         self.assertEqual(len(payload["review_targets"]), 2)
         gap_row = next(row for row in payload["rows"] if row["university"] == "Gap University")
+        self.assertTrue(gap_row["review_doc_id"])
+        self.assertNotIn("document_id", gap_row)
         self.assertEqual(
             set(gap_row["export_missing"]),
             {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date", "eligibility", "required_documents"},

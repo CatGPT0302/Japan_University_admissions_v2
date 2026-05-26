@@ -237,6 +237,11 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
 
   async function openReviewForSchool(university: string, year?: string, focusRow?: ConfirmedRecord | null, focusField?: string) {
     if (!university.trim() || !onOpenReview) return;
+    const directDocId = Number(focusRow?.review_doc_id || 0);
+    if (directDocId) {
+      onOpenReview(directDocId, reviewFocusForRow(directDocId, focusRow, focusField));
+      return;
+    }
     const target = (preview?.review_targets || []).find(
       (item) => item.university === university.trim() && sameYear(item.admission_year, year),
     );

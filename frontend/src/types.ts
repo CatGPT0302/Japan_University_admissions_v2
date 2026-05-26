@@ -425,6 +425,7 @@ export interface StagingRecord {
 
 export interface ConfirmedRecord {
   id: number;
+  review_doc_id?: number | null;
   university: string;
   admission_year: string;
   faculty: string;
