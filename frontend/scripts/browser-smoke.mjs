@@ -332,9 +332,20 @@ async function runSurfaceAction(page, surface) {
     await page.getByLabel("跳到 PDF 页码").fill("2");
     await page.getByRole("button", { name: "前往" }).click();
     await assertBodyIncludes(page, "第 2 页", `${surface.name} pdf page jump`);
-    await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部");
+    await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部2");
     await assertBodyIncludes(page, "1 处修改未保存", `${surface.name} dirty review summary`);
     await assertBodyIncludes(page, "保存后再确认入库", `${surface.name} dirty review summary`);
+    const keyboardSaveResponsePromise = page.waitForResponse((response) => response.url().includes("/staging/") && response.request().method() === "PATCH", {
+      timeout: 15_000,
+    });
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+S" : "Control+S");
+    const keyboardSaveResponse = await keyboardSaveResponsePromise;
+    if (!keyboardSaveResponse.ok()) {
+      throw new Error(`${surface.name} keyboard save failed with ${keyboardSaveResponse.status()}`);
+    }
+    await assertBodyIncludes(page, "修改已保存。", `${surface.name} keyboard save`);
+    await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部");
+    await assertBodyIncludes(page, "1 处修改未保存", `${surface.name} dirty review summary after keyboard save`);
     const saveResponsePromise = page.waitForResponse((response) => response.url().includes("/staging/") && response.request().method() === "PATCH", {
       timeout: 15_000,
     });

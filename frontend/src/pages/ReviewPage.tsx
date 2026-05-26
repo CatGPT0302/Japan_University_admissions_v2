@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   confirmDoc,
   documentPageImageUrl,
@@ -181,6 +181,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [focusedEvidencePage, setFocusedEvidencePage] = useState<number | null>(null);
   const [pageInput, setPageInput] = useState("1");
+  const editorPanelRef = useRef<HTMLElement | null>(null);
 
   const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
   const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
@@ -303,6 +304,55 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   function commitPdfPage() {
     setPdfPage(Number(pageInput));
   }
+
+  function focusReviewField(key: keyof StagingRecord) {
+    setActiveGroupIndex(groupIndexForField(key));
+    const evidence = evidenceForField(selectedRow, key);
+    if (evidence?.page) setFocusedEvidencePage(evidence.page);
+    window.setTimeout(() => {
+      const selector = `[data-review-key="${String(key)}"]`;
+      const field = editorPanelRef.current?.querySelector<HTMLTextAreaElement>(selector);
+      field?.focus();
+      field?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 0);
+  }
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!selectedRow) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        void save(false);
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        void save(true, true);
+        return;
+      }
+      if (event.altKey && event.key === "ArrowDown") {
+        event.preventDefault();
+        selectRelative(1);
+        return;
+      }
+      if (event.altKey && event.key === "ArrowUp") {
+        event.preventDefault();
+        selectRelative(-1);
+        return;
+      }
+      if (event.altKey && event.key === "ArrowRight") {
+        event.preventDefault();
+        setPdfPage(currentPage + 1);
+        return;
+      }
+      if (event.altKey && event.key === "ArrowLeft") {
+        event.preventDefault();
+        setPdfPage(currentPage - 1);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [currentPage, draft, hasUnsavedChanges, orderedRows, selectedIndex, selectedRow]);
 
   return (
     <div className="review-workbench">
@@ -474,7 +524,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               </div>
             </section>
 
-            <section className="review-editor-panel">
+            <section className="review-editor-panel" ref={editorPanelRef}>
               <div className="review-panel-head">
                 <div>
                   <h3>{rowTitle(selectedRow)}</h3>
@@ -518,7 +568,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                     </div>
                     <div className="review-priority-chips" aria-label="建议先看的内容">
                       {currentHints.map((hint) => (
-                        <button key={String(hint.key)} type="button" onClick={() => setActiveGroupIndex(groupIndexForField(hint.key))}>
+                        <button key={String(hint.key)} type="button" onClick={() => focusReviewField(hint.key)}>
                           <span>{hint.label}</span>
                           <em>{hint.reason}</em>
                         </button>
@@ -552,6 +602,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                           <span className="field-label">{field.label}</span>
                           <textarea
                             className="field review-field"
+                            data-review-key={String(field.key)}
                             rows={field.rows || 1}
                             value={draft[field.key] ?? ""}
                             onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
