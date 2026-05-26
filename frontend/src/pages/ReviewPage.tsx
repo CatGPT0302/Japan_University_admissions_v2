@@ -69,6 +69,14 @@ function textValue(row: StagingRecord | null, key: keyof StagingRecord) {
   return value === undefined || value === null ? "" : String(value);
 }
 
+function reviewFieldLabel(key: string) {
+  for (const group of FIELD_GROUPS) {
+    const field = group.fields.find((item) => item.key === key);
+    if (field) return field.label;
+  }
+  return key;
+}
+
 function rowTitle(row: StagingRecord) {
   const faculty = row.faculty || "未识别学部";
   const department = row.department || "未识别学科";
@@ -117,6 +125,11 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   const reviewedCount = rows.filter((row) => Number(row.is_reviewed) || Number(row.is_confirmed)).length;
   const remainingCount = Math.max(rows.length - reviewedCount, 0);
   const currentPage = selectedRow?.page_number || 1;
+  const changedFields = useMemo(
+    () => REVIEW_KEYS.filter((key) => selectedRow && (draft[key] ?? "") !== textValue(selectedRow, key)),
+    [draft, selectedRow],
+  );
+  const hasUnsavedChanges = changedFields.length > 0;
 
   useEffect(() => {
     void refreshDocuments();
@@ -142,6 +155,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   }
 
   async function openDocument(docId: number) {
+    if (hasUnsavedChanges && !window.confirm("当前修改还没有保存。要先切换到其他资料吗？")) return;
     setError("");
     setMessage("");
     const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
@@ -193,7 +207,13 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
   function selectRelative(offset: number) {
     if (!orderedRows.length) return;
     const nextIndex = Math.min(Math.max(selectedIndex + offset, 0), orderedRows.length - 1);
-    setSelectedRowId(orderedRows[nextIndex]?.id ?? null);
+    selectRow(orderedRows[nextIndex]?.id ?? null);
+  }
+
+  function selectRow(rowId: number | null) {
+    if (rowId === selectedRowId) return;
+    if (hasUnsavedChanges && !window.confirm("当前修改还没有保存。要先切换到其他词条吗？")) return;
+    setSelectedRowId(rowId);
   }
 
   return (
@@ -275,7 +295,7 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
                   <button
                     key={row.id}
                     className={`review-record-card${row.id === selectedRow.id ? " is-active" : ""}`}
-                    onClick={() => setSelectedRowId(row.id)}
+                    onClick={() => selectRow(row.id)}
                     type="button"
                   >
                     <span className={statusClass(row)}>{rowStatus(row)}</span>
@@ -329,6 +349,20 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
               </div>
 
               <div className="review-editor-scroll">
+                <div className={`review-change-summary${hasUnsavedChanges ? " is-dirty" : ""}`}>
+                  <div>
+                    <strong>{hasUnsavedChanges ? `${changedFields.length} 处修改未保存` : "当前词条没有未保存修改"}</strong>
+                    <span>{hasUnsavedChanges ? "保存后再确认入库，避免改动丢失。" : "可以直接继续复审或切换下一条。"}</span>
+                  </div>
+                  {hasUnsavedChanges ? (
+                    <div className="review-change-tags" aria-label="已修改内容">
+                      {changedFields.slice(0, 6).map((key) => (
+                        <span key={key}>{reviewFieldLabel(String(key))}</span>
+                      ))}
+                      {changedFields.length > 6 ? <span>另 {changedFields.length - 6} 处</span> : null}
+                    </div>
+                  ) : null}
+                </div>
                 {FIELD_GROUPS.map((group) => (
                   <fieldset key={group.title} className="review-fieldset">
                     <legend>{group.title}</legend>

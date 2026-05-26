@@ -1556,6 +1556,47 @@ a {
   padding: 4px 16px 14px;
 }
 
+.review-change-summary {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 2px;
+  padding: 12px 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.76);
+}
+
+.review-change-summary.is-dirty {
+  border-color: rgba(180, 83, 9, 0.2);
+  background: rgba(255, 251, 235, 0.72);
+}
+
+.review-change-summary strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.review-change-summary span {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.review-change-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-change-tags span {
+  padding: 5px 8px;
+  border: 1px solid rgba(180, 83, 9, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--warning);
+}
+
 .review-fieldset {
   display: grid;
   gap: 12px;

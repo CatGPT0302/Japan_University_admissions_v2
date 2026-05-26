@@ -286,6 +286,8 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "留学生入試", `${surface.name} review row`);
     await assertBodyIncludes(page, "源 PDF", `${surface.name} pdf panel`);
     await page.locator("label").filter({ hasText: "学部" }).locator("textarea").fill("ブラウザテスト修正学部");
+    await assertBodyIncludes(page, "1 处修改未保存", `${surface.name} dirty review summary`);
+    await assertBodyIncludes(page, "保存后再确认入库", `${surface.name} dirty review summary`);
     const saveResponsePromise = page.waitForResponse((response) => response.url().includes("/staging/") && response.request().method() === "PATCH", {
       timeout: 15_000,
     });
