@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 from scripts.chukyo_gakuin_2027_undergrad_extractor import extract_chukyo_gakuin_2027_undergrad_records
 from scripts.fukui_engineering_2027_undergrad_extractor import extract_fukui_engineering_2027_undergrad_records
+from scripts.hokkaido_2027_undergrad_extractor import extract_hokkaido_2027_undergrad_records
 from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
 from scripts.kyoto_institute_tech_2027_undergrad_extractor import extract_kit_2027_undergrad_records
@@ -147,6 +148,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["2027", "福井大学", "工学部", "私費外国人留学生選抜"],
         "text_markers": ["福井大学", "工学部", "私費外国人留学生選抜"],
         "extractor": extract_fukui_engineering_2027_undergrad_records,
+    },
+    "hokkaido_2027_undergrad": {
+        "stem": "hokkaido_2027_undergrad",
+        "id": "hokkaido-2027-undergrad",
+        "university": "北海道大学",
+        "admission_year": "2027",
+        "script": "scripts/hokkaido_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/hokkaido_2027_undergrad.expected.json",
+        "source_url": "https://www.hokudai.ac.jp/admission/R9_shihi_kihonhoushin.pdf",
+        "source_candidates": ["data/uploads/hokkaido_2027_undergrad.pdf"],
+        "source_markers": ["私費外国人留学生", "令和９(2027)年度", "日本留学試験", "出願期間"],
+        "text_markers": ["令和9(2027)年度", "私費外国人留学生", "入試基本方針", "日本留学試験"],
+        "extractor": extract_hokkaido_2027_undergrad_records,
     },
 }
 

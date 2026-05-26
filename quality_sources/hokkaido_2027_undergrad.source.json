@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "hokkaido_2027_undergrad",
+  "source_url": "https://www.hokudai.ac.jp/admission/R9_shihi_kihonhoushin.pdf",
+  "cached_path": "data/uploads/hokkaido_2027_undergrad.pdf",
+  "sha256": "d3cfe8d823812d1f90da2cbfdd3635e7f98c2f5629f33216b7f5bce6a281875a",
+  "size_bytes": 230242,
+  "markers": [
+    "私費外国人留学生",
+    "令和９(2027)年度",
+    "日本留学試験",
+    "出願期間"
+  ],
+  "checked_at": "2026-05-26T02:55:30+00:00"
+}

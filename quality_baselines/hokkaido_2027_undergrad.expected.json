@@ -1,0 +1,232 @@
+[
+  {
+    "id": "hokkaido-2027-literature",
+    "source_document": "https://www.hokudai.ac.jp/admission/R9_shihi_kihonhoushin.pdf",
+    "source_note": "Official Hokkaido University 2027 privately financed international undergraduate admissions basic policy. Checked against schedule, eligibility, EJU thresholds, screening method, and EJU subject appendix.",
+    "match": {
+      "university": "北海道大学",
+      "admission_year": "2027",
+      "faculty": "文学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026)年9月7日", "2026)年9月17日", "2026)年9月14日", "2026)年9月18日", "期間内必着"]
+      },
+      "deadline_rule": {
+        "contains": ["出願書類の郵送", "9月18日", "17時", "期間内必着", "余裕をもって発送"]
+      },
+      "eligibility": {
+        "contains": ["日本の国籍を有しない", "永住許可を得ていない", "12年の課程", "2027)年3月31日", "2年以上継続"]
+      },
+      "required_documents": {
+        "contains": ["出願書類", "郵送", "募集要項", "確認"]
+      },
+      "eju_session": {
+        "contains": ["2024)年11月", "2025)年6月", "2025)年11月", "2026)年6月", "組み合わせることはできない"]
+      },
+      "eju_japanese": {
+        "contains": ["日本語", "270点以上", "基礎科目", "265点以上"]
+      },
+      "eju_general": {
+        "contains": ["文学部", "日本語", "総合科目", "数学", "理科は不要"]
+      },
+      "eju_math": {
+        "contains": ["コース1", "コース2"]
+      },
+      "english_requirement": {
+        "contains": ["文学部", "TOEFL-iBT", "Home Edition"]
+      },
+      "screening_method": {
+        "contains": ["大学入学共通テストを免除", "第1次選考", "出願書類", "第2次選考", "課題論文", "面接"]
+      },
+      "screening_schedule": {
+        "contains": ["2026)年10月27日", "2026)年11月15日"]
+      },
+      "result_date": {
+        "contains": ["2026)年12月8日", "16時"]
+      },
+      "enrollment_period": {
+        "contains": ["2026)年12月8日", "2026)年12月14日", "17時"]
+      },
+      "evidence": {
+        "contains": ["p.1-p.2", "p.2", "p.2-p.3", "p.4-p.9", "p.10"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "hokkaido-2027-medicine",
+    "source_document": "https://www.hokudai.ac.jp/admission/R9_shihi_kihonhoushin.pdf",
+    "source_note": "Official Hokkaido University 2027 privately financed international undergraduate admissions basic policy. Checked against schedule, eligibility, EJU thresholds, screening method, and EJU subject appendix.",
+    "match": {
+      "university": "北海道大学",
+      "admission_year": "2027",
+      "faculty": "医学部",
+      "department": "医学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026)年9月7日", "2026)年9月17日", "2026)年9月14日", "2026)年9月18日", "期間内必着"]
+      },
+      "deadline_rule": {
+        "contains": ["出願書類の郵送", "9月18日", "17時", "期間内必着", "余裕をもって発送"]
+      },
+      "eligibility": {
+        "contains": ["日本の国籍を有しない", "永住許可を得ていない", "12年の課程", "2027)年3月31日"]
+      },
+      "required_documents": {
+        "contains": ["出願書類", "郵送", "募集要項", "確認"]
+      },
+      "eju_session": {
+        "contains": ["2024)年11月", "2025)年6月", "2025)年11月", "2026)年6月"]
+      },
+      "eju_japanese": {
+        "contains": ["医学部医学科", "日本語", "385点以上"]
+      },
+      "eju_math": {
+        "contains": ["基礎科目", "理科と数学", "340点以上", "コース2"]
+      },
+      "eju_physics": {
+        "contains": ["医学部医学科", "物理", "化学"]
+      },
+      "eju_chemistry": {
+        "contains": ["医学部医学科", "物理", "化学"]
+      },
+      "english_requirement": {
+        "contains": ["医学部医学科", "TOEFL-iBT", "79点以上", "TOEIC L&R", "750点以上"]
+      },
+      "screening_method": {
+        "contains": ["大学入学共通テストを免除", "出願書類", "課題論文", "面接", "日本留学試験"]
+      },
+      "screening_schedule": {
+        "contains": ["2026)年10月27日", "2026)年11月15日"]
+      },
+      "result_date": {
+        "contains": ["2026)年12月8日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026)年12月8日", "2026)年12月14日", "17時"]
+      },
+      "evidence": {
+        "contains": ["p.1-p.2", "p.2", "p.2-p.3", "p.4-p.9", "p.10"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "hokkaido-2027-engineering",
+    "source_document": "https://www.hokudai.ac.jp/admission/R9_shihi_kihonhoushin.pdf",
+    "source_note": "Official Hokkaido University 2027 privately financed international undergraduate admissions basic policy. Checked against schedule, eligibility, EJU thresholds, screening method, and EJU subject appendix.",
+    "match": {
+      "university": "北海道大学",
+      "admission_year": "2027",
+      "faculty": "工学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026)年9月7日", "2026)年9月18日", "期間内必着"]
+      },
+      "deadline_rule": {
+        "contains": ["出願書類の郵送", "9月18日", "17時", "期間内必着", "余裕をもって発送"]
+      },
+      "eligibility": {
+        "contains": ["日本の国籍を有しない", "永住許可を得ていない", "12年の課程", "2027)年3月31日"]
+      },
+      "required_documents": {
+        "contains": ["出願書類", "郵送", "募集要項", "確認"]
+      },
+      "eju_session": {
+        "contains": ["2024)年11月", "2025)年6月", "2025)年11月", "2026)年6月"]
+      },
+      "eju_japanese": {
+        "contains": ["日本語", "270点以上", "基礎科目", "265点以上"]
+      },
+      "eju_math": {
+        "contains": ["工学部", "数学", "コース2"]
+      },
+      "eju_physics": {
+        "contains": ["応用物理工学", "情報エレクトロニクス", "機械知能", "環境社会", "物理"]
+      },
+      "eju_chemistry": {
+        "contains": ["応用化学", "応用マテリアル", "物理", "化学"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "TOEIC L&R", "国連英検", "ケンブリッジ英検", "IELTS"]
+      },
+      "screening_method": {
+        "contains": ["第1次選考", "出願書類", "第2次選考", "面接", "日本留学試験"]
+      },
+      "screening_schedule": {
+        "contains": ["2026)年10月27日", "2026)年11月15日"]
+      },
+      "result_date": {
+        "contains": ["2026)年12月8日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026)年12月8日", "2026)年12月14日", "17時"]
+      },
+      "evidence": {
+        "contains": ["p.1-p.2", "p.2", "p.2-p.3", "p.4-p.9", "p.10"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "hokkaido-2027-agriculture",
+    "source_document": "https://www.hokudai.ac.jp/admission/R9_shihi_kihonhoushin.pdf",
+    "source_note": "Official Hokkaido University 2027 privately financed international undergraduate admissions basic policy. Checked against schedule, eligibility, EJU thresholds, screening method, and EJU subject appendix.",
+    "match": {
+      "university": "北海道大学",
+      "admission_year": "2027",
+      "faculty": "農学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026)年9月7日", "2026)年9月18日", "期間内必着"]
+      },
+      "deadline_rule": {
+        "contains": ["出願書類の郵送", "9月18日", "17時", "期間内必着", "余裕をもって発送"]
+      },
+      "eligibility": {
+        "contains": ["日本の国籍を有しない", "永住許可を得ていない", "12年の課程", "2027)年3月31日"]
+      },
+      "required_documents": {
+        "contains": ["出願書類", "郵送", "募集要項", "確認"]
+      },
+      "eju_session": {
+        "contains": ["2024)年11月", "2025)年6月", "2025)年11月", "2026)年6月"]
+      },
+      "eju_japanese": {
+        "contains": ["農学部", "日本語", "340点以上"]
+      },
+      "eju_math": {
+        "contains": ["基礎科目", "理科と数学", "300点以上", "コース2"]
+      },
+      "eju_physics": {
+        "contains": ["農学部", "物理", "化学", "生物", "2科目"]
+      },
+      "eju_chemistry": {
+        "contains": ["農学部", "物理", "化学", "生物", "2科目"]
+      },
+      "eju_biology": {
+        "contains": ["農学部", "物理", "化学", "生物", "2科目"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "TOEIC L&R", "実用英語技能検定試験", "IELTS"]
+      },
+      "screening_method": {
+        "contains": ["第1次選考", "出願書類", "第2次選考", "課題論文", "面接"]
+      },
+      "result_date": {
+        "contains": ["2026)年12月8日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026)年12月8日", "2026)年12月14日", "17時"]
+      },
+      "evidence": {
+        "contains": ["p.1-p.2", "p.2", "p.2-p.3", "p.4-p.9", "p.10"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  }
+]
