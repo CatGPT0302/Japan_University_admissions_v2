@@ -146,6 +146,7 @@ function reviewFocusForRow(docId: number, row?: ConfirmedRecord | null, field?: 
     admission_year: yearText(row.admission_year),
     faculty: row.faculty,
     department: row.department,
+    origin_label: "从导出缺口进入",
   };
 }
 

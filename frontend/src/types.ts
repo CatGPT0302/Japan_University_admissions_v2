@@ -10,6 +10,7 @@ export interface ReviewFocus {
   admission_year?: string;
   faculty?: string;
   department?: string;
+  origin_label?: string;
 }
 
 export interface AppUser {

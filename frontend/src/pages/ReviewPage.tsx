@@ -654,7 +654,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
                 {focusNotice?.field && selectedRow ? (
                   <div className="review-focus-banner">
                     <div>
-                      <strong>从导出缺口进入</strong>
+                      <strong>{focusNotice.origin_label || "从导出缺口进入"}</strong>
                       <span>先补齐：{reviewFieldLabel(focusNotice.field)}</span>
                     </div>
                     <button className="btn btn-primary btn-small" type="button" onClick={() => focusReviewField(focusNotice.field as keyof StagingRecord)}>

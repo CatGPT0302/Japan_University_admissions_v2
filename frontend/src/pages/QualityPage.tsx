@@ -509,6 +509,7 @@ export default function QualityPage({ onOpenReview }: Props) {
                               admission_year: item.admission_year,
                               faculty: item.faculty,
                               department: item.department,
+                              origin_label: `从${ownerIssueKindText(item.kind)}进入`,
                             })
                           }
                         >
@@ -687,7 +688,19 @@ export default function QualityPage({ onOpenReview }: Props) {
                       <div className="source-review-actions">
                         <div className="inline-actions inline-actions-tight">
                           {matchedDoc && onOpenReview ? (
-                            <button className="btn btn-primary btn-small" type="button" onClick={() => onOpenReview(matchedDoc.doc_id)}>
+                            <button
+                              className="btn btn-primary btn-small"
+                              type="button"
+                              onClick={() =>
+                                onOpenReview(matchedDoc.doc_id, {
+                                  token: Date.now(),
+                                  docId: matchedDoc.doc_id,
+                                  university: item.university,
+                                  admission_year: item.admission_year,
+                                  origin_label: "从来源变化进入",
+                                })
+                              }
+                            >
                               进入复审
                             </button>
                           ) : null}
