@@ -25,6 +25,11 @@ const RECORD_FIELDS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "campus", label: "校区" },
 ];
 
+function yearNumber(value?: string | number | null): number | undefined {
+  const match = String(value || "").match(/\d{4}/);
+  return match ? Number(match[0]) : undefined;
+}
+
 export default function RecordsPage() {
   const [rows, setRows] = useState<ConfirmedRecord[]>([]);
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -188,6 +193,33 @@ export default function RecordsPage() {
                 <div>
                   <div className="card-kicker">资料详情</div>
                   <h3 className="panel-title">{selectedRow.university}</h3>
+                </div>
+                <div className="inline-actions inline-actions-tight">
+                  <button
+                    className="btn btn-green"
+                    type="button"
+                    onClick={() =>
+                      downloadExcel({
+                        university: selectedRow.university || undefined,
+                        year: yearNumber(selectedRow.admission_year),
+                      })
+                    }
+                  >
+                    导出这所学校
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() =>
+                      downloadExcel({
+                        university: selectedRow.university || undefined,
+                        faculty: selectedRow.faculty || undefined,
+                        year: yearNumber(selectedRow.admission_year),
+                      })
+                    }
+                  >
+                    导出当前学部
+                  </button>
                 </div>
               </div>
               <div className="detail-grid">
