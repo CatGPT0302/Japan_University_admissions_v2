@@ -446,6 +446,7 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "这所学校要看什么", `${surface.name} program detail`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} program detail`);
     await assertBodyIncludes(page, "EJU 日本语", `${surface.name} program detail`);
+    await assertBodyIncludes(page, "需要提前准备", `${surface.name} preparation checklist`);
     await assertBodyIncludes(page, "预约咨询", `${surface.name} booking form`);
 
     await page.getByPlaceholder("例如 王同学").fill("浏览器测试学生");

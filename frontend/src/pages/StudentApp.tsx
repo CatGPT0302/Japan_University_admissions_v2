@@ -190,6 +190,19 @@ function requirementRows(program: PublicProgram): Array<{ label: string; value: 
   ];
 }
 
+function preparationItems(program: PublicProgram, recommendedItems?: string[]): string[] {
+  const eju = program.requirements?.eju ?? {};
+  const items = [...(recommendedItems || [])];
+  if (program.application_period) items.push(`确认出愿时间：${program.application_period}`);
+  if (program.deadline_rule) items.push(`留意截止规则：${program.deadline_rule}`);
+  const ejuText = [eju.session, eju.japanese, eju.general, eju.math, eju.physics, eju.chemistry, eju.biology].filter(Boolean).join(" / ");
+  if (ejuText) items.push(`准备 EJU：${ejuText}`);
+  if (program.requirements?.english?.raw_text) items.push(`准备英语成绩：${program.requirements.english.raw_text}`);
+  if (program.exam_method) items.push(`确认校内考方式：${program.exam_method}`);
+  if (program.exam_date) items.push(`确认考试时间：${program.exam_date}`);
+  return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean))).slice(0, 6);
+}
+
 function ChoicePicker({
   label,
   value,
@@ -271,6 +284,7 @@ export default function StudentApp() {
   const [programs, setPrograms] = useState<PublicProgram[]>([]);
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
   const [submittedProfile, setSubmittedProfile] = useState<StudentProfile | null>(null);
+  const [selectedResult, setSelectedResult] = useState<DisplayResult | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<PublicProgram | null>(null);
 
   const [programsLoading, setProgramsLoading] = useState(true);
@@ -340,6 +354,7 @@ export default function StudentApp() {
   }, [submittedKeywordsText, submittedProfile]);
 
   async function selectResult(result: DisplayResult) {
+    setSelectedResult(result);
     setSelectedProgram(result.program);
     setActiveTab("detail");
     setBookingMessage("");
@@ -373,6 +388,7 @@ export default function StudentApp() {
       const response = await getPublicRecommendations(profile);
       const firstResult = response.results[0] ? { ...response.results[0], source: "recommendation" as const } : null;
       setRecommendations(response.results);
+      setSelectedResult(firstResult);
       setSelectedProgram(firstResult?.program ?? null);
       setActiveTab("explore");
     } catch (err) {
@@ -416,6 +432,12 @@ export default function StudentApp() {
   }
 
   const activeProgram = selectedProgram;
+  const activeResult = activeProgram
+    ? selectedResult?.program.id === activeProgram.id
+      ? selectedResult
+      : displayResults.find((item) => item.program.id === activeProgram.id) ?? null
+    : null;
+  const activePreparationItems = activeProgram ? preparationItems(activeProgram, activeResult?.check_items) : [];
 
   return (
     <div className="student-shell student-shell-ios">
@@ -678,6 +700,17 @@ export default function StudentApp() {
                     </div>
                   ))}
                 </div>
+
+                {activePreparationItems.length ? (
+                  <div className="student-prepare-panel">
+                    <h4>需要提前准备</h4>
+                    <ul>
+                      {activePreparationItems.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
 
                 <div className="student-source-panel">
                   <h4>资料来源</h4>

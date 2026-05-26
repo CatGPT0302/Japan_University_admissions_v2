@@ -2146,6 +2146,9 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
         eju = requirements.get("eju") or {}
         english = (requirements.get("english") or {}).get("raw_text") or ""
         eju_text = " ".join(str(value or "") for value in eju.values())
+        application_period = str(program.get("application_period") or "").strip()
+        deadline_rule = str(program.get("deadline_rule") or "").strip()
+        exam_method = str(program.get("exam_method") or "").strip()
 
         if profile.get("target_year") and str(program.get("admission_year")) == str(profile.get("target_year")):
             score += 18
@@ -2176,12 +2179,26 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
             check_items.append("这所学校的要求还有不完整或复杂的地方，咨询前需要再看原文")
         elif risk_level == "medium":
             check_items.append("有选择条件或需要进一步确认的地方")
+        if application_period:
+            check_items.append(f"确认出愿时间：{application_period}")
+        else:
+            check_items.append("出愿时间需要进一步确认")
+        if deadline_rule:
+            check_items.append(f"留意截止规则：{deadline_rule}")
+        if eju_text.strip():
+            check_items.append(f"准备 EJU 科目：{eju_text.strip()}")
         if not english:
             check_items.append("英语要求没有写清楚，需要确认是否不要求")
+        else:
+            check_items.append(f"准备英语成绩：{english}")
         if not eju_text.strip():
             check_items.append("EJU 要求没有写清楚，需要确认是否不要求")
+        if exam_method:
+            check_items.append(f"确认校内考方式：{exam_method}")
         if not reasons:
             reasons.append("可以作为备选先看，具体条件再确认")
+
+        deduped_check_items = list(dict.fromkeys(check_items))
 
         if score >= 62 and risk_level == "low":
             fit_level = "likely_fit"
@@ -2195,7 +2212,7 @@ def recommend_public_programs(profile: dict[str, Any], *, limit: int = 20) -> di
                 "score": score,
                 "fit_level": fit_level,
                 "reasons": reasons,
-                "check_items": check_items or ["请顾问确认最新募集要项和个人成绩条件"],
+                "check_items": deduped_check_items[:6] or ["请顾问确认最新募集要项和个人成绩条件"],
             }
         )
 

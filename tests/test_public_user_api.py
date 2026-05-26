@@ -166,6 +166,9 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertGreater(len(results[0]["reasons"]), 0)
         self.assertTrue(any("理工" in reason for reason in results[0]["reasons"]))
         self.assertIn("check_items", results[0])
+        self.assertTrue(any("出愿时间" in item for item in results[0]["check_items"]))
+        self.assertTrue(any("EJU" in item for item in results[0]["check_items"]))
+        self.assertTrue(any("英语" in item or "TOEFL" in item for item in results[0]["check_items"]))
         self.assertEqual(empty_profile.status_code, 200)
         self.assertIn("results", empty_profile.json())
 

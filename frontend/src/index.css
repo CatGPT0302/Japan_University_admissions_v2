@@ -4705,6 +4705,7 @@ a {
 
 .student-shell-ios .student-detail-title,
 .student-shell-ios .student-requirement,
+.student-shell-ios .student-prepare-panel,
 .student-shell-ios .student-source-panel,
 .student-shell-ios .student-booking-panel,
 .student-shell-ios .student-empty {
@@ -4860,6 +4861,45 @@ a {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+}
+
+.student-shell-ios .student-prepare-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.student-shell-ios .student-prepare-panel h4 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.student-shell-ios .student-prepare-panel ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-shell-ios .student-prepare-panel li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--student-muted);
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+}
+
+.student-shell-ios .student-prepare-panel li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ios-blue);
 }
 
 .student-shell-ios .student-source-panel p {
