@@ -171,6 +171,8 @@ export interface QualityOverviewResponse {
   overall_status: string;
   language_requirement_coverage: Record<string, { checked: number; passed: number }>;
   per_seed_thin_coverage: Array<{ seed: string; field: string; checked: number; minimum: number }>;
+  source_watchlist_summary?: SourceWatchlistResponse["summary"];
+  source_review_summary?: SourceReviewResponse["summary"];
   quality_todo: Array<{
     priority?: number;
     action?: string;

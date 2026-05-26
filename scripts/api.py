@@ -1180,10 +1180,14 @@ def quality_metrics(request: Request, doc_id: int | None = None) -> dict[str, An
 def quality_overview(request: Request) -> dict[str, Any]:
     _require_owner(request)
     overview = build_quality_overview(include_source_text_health=False)
+    source_watchlist = overview.get("source_watchlist") if isinstance(overview.get("source_watchlist"), dict) else {}
+    source_review_queue = overview.get("source_review_queue") if isinstance(overview.get("source_review_queue"), dict) else {}
     return {
         "overall_status": overview.get("overall_status", ""),
         "language_requirement_coverage": overview.get("language_requirement_coverage", {}),
         "per_seed_thin_coverage": overview.get("per_seed_thin_coverage", []),
+        "source_watchlist_summary": source_watchlist.get("summary", {}),
+        "source_review_summary": source_review_queue.get("summary", {}),
         "quality_todo": overview.get("quality_todo", []),
         "next_owner_action": overview.get("next_owner_action"),
     }

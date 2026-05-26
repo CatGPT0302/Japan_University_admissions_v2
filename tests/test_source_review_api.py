@@ -74,6 +74,21 @@ class SourceReviewApiTest(unittest.TestCase):
             "per_seed_thin_coverage": [
                 {"seed": "sample", "field": "screening_schedule", "checked": 2, "minimum": 3}
             ],
+            "source_watchlist": {
+                "summary": {
+                    "total": 18,
+                    "by_type": {"pdf": 17, "html": 1},
+                    "metadata_gaps": {"missing_hash": 0},
+                }
+            },
+            "source_review_queue": {
+                "summary": {
+                    "needs_review": 2,
+                    "changed": 1,
+                    "failed": 1,
+                    "open": 2,
+                }
+            },
             "quality_todo": [],
             "next_owner_action": None,
         }
@@ -90,6 +105,8 @@ class SourceReviewApiTest(unittest.TestCase):
         self.assertEqual(payload["overall_status"], "quality_gate_ready")
         self.assertEqual(payload["language_requirement_coverage"]["eju_japanese"]["checked"], 8)
         self.assertEqual(payload["per_seed_thin_coverage"][0]["field"], "screening_schedule")
+        self.assertEqual(payload["source_watchlist_summary"]["total"], 18)
+        self.assertEqual(payload["source_review_summary"]["needs_review"], 2)
 
     def test_source_watchlist_returns_registered_sources_for_owner(self) -> None:
         report = {
