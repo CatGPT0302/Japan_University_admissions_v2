@@ -233,6 +233,12 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /导出中心/ }).click();
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} export page`);
     await assertBodyIncludes(page, "批量合并取出", `${surface.name} export page`);
+    await assertBodyIncludes(page, "常用组合", `${surface.name} export presets`);
+    await page.getByLabel("学校", { exact: true }).fill("东京测试大学");
+    await page.getByLabel("年度", { exact: true }).fill("2027");
+    await page.getByLabel("组合名称").fill("浏览器测试组合");
+    await page.getByRole("button", { name: "保存当前组合" }).click();
+    await assertBodyIncludes(page, "浏览器测试组合", `${surface.name} saved export preset`);
 
     await page.getByRole("button", { name: /人工核对/ }).click();
     await assertBodyIncludes(page, "资料队列", `${surface.name} review page`);

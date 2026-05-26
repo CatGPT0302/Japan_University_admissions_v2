@@ -140,6 +140,50 @@ body,
   gap: 10px;
 }
 
+.export-preset-list {
+  display: grid;
+  gap: 10px;
+}
+
+.export-preset-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.76);
+}
+
+.export-preset-card > button:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.export-preset-card strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.export-preset-card span,
+.export-preset-empty {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.export-preset-empty {
+  margin: 0;
+}
+
 .export-quick-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

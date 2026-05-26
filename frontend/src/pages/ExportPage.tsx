@@ -14,12 +14,35 @@ const COLUMNS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "result_date", label: "结果公布" },
 ];
 
+const PRESET_STORAGE_KEY = "admissions-export-presets-v1";
+
+type ExportPreset = {
+  id: string;
+  name: string;
+  universities: string;
+  years: string;
+  faculties: string;
+};
+
 function splitItems(value: string) {
   return value
     .replace(/，/g, ",")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function loadPresets(): ExportPreset[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PRESET_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePresets(presets: ExportPreset[]) {
+  window.localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
 }
 
 function RowPreview({ row }: { row: ConfirmedRecord }) {
@@ -40,6 +63,8 @@ export default function ExportPage() {
   const [preview, setPreview] = useState<ExportPreviewResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [presetName, setPresetName] = useState("");
+  const [presets, setPresets] = useState<ExportPreset[]>(() => loadPresets());
 
   const params = useMemo(
     () => ({
@@ -76,6 +101,39 @@ export default function ExportPage() {
     if (!quickSchool.trim()) return;
     setUniversities(quickSchool.trim());
     void loadPreview(quickParams);
+  }
+
+  function savePreset() {
+    const name = presetName.trim();
+    if (!name || (!universities.trim() && !years.trim() && !faculties.trim())) return;
+    const nextPreset: ExportPreset = {
+      id: `${Date.now()}`,
+      name,
+      universities: universities.trim(),
+      years: years.trim(),
+      faculties: faculties.trim(),
+    };
+    const nextPresets = [nextPreset, ...presets.filter((preset) => preset.name !== name)].slice(0, 12);
+    setPresets(nextPresets);
+    savePresets(nextPresets);
+    setPresetName("");
+  }
+
+  function applyPreset(preset: ExportPreset) {
+    setUniversities(preset.universities);
+    setYears(preset.years);
+    setFaculties(preset.faculties);
+    void loadPreview({
+      universities: preset.universities || undefined,
+      years: preset.years || undefined,
+      faculties: preset.faculties || undefined,
+    });
+  }
+
+  function deletePreset(presetId: string) {
+    const nextPresets = presets.filter((preset) => preset.id !== presetId);
+    setPresets(nextPresets);
+    savePresets(nextPresets);
   }
 
   useEffect(() => {
@@ -176,6 +234,47 @@ export default function ExportPage() {
             <button className="btn btn-ghost" type="button" onClick={() => downloadCsv(params)} disabled={!rows.length}>
               导出 CSV
             </button>
+          </div>
+
+          <div className="export-divider" />
+
+          <div className="export-panel-header">
+            <h3>常用组合</h3>
+            <p>把常用学校、年度和学部保存起来，下次直接套用。</p>
+          </div>
+
+          <label className="field-wrap">
+            <span className="field-label">组合名称</span>
+            <input
+              className="field"
+              value={presetName}
+              onChange={(event) => setPresetName(event.target.value)}
+              placeholder="例：东京圈 2027"
+            />
+          </label>
+
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={savePreset}
+            disabled={!presetName.trim() || (!universities.trim() && !years.trim() && !faculties.trim())}
+          >
+            保存当前组合
+          </button>
+
+          <div className="export-preset-list" aria-label="常用导出组合">
+            {presets.map((preset) => (
+              <div className="export-preset-card" key={preset.id}>
+                <button type="button" onClick={() => applyPreset(preset)}>
+                  <strong>{preset.name}</strong>
+                  <span>{[preset.universities, preset.years, preset.faculties].filter(Boolean).join(" / ") || "全部资料"}</span>
+                </button>
+                <button className="btn btn-ghost btn-small" type="button" onClick={() => deletePreset(preset.id)}>
+                  删除
+                </button>
+              </div>
+            ))}
+            {!presets.length ? <p className="export-preset-empty">还没有保存组合。</p> : null}
           </div>
         </aside>
 
