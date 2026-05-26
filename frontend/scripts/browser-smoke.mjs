@@ -165,6 +165,7 @@ async function withApi(run) {
       PARTNER_PASSWORD: partnerCredentials.password,
       PARTNER_ORG_NAME: "合作方",
       CORS_ORIGINS: corsOrigins,
+      ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW: "1",
     },
     shell: false,
     stdio: "pipe",
@@ -240,6 +241,17 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /资料进度/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} queue`);
     await assertBodyIncludes(page, "开始整理", `${surface.name} queue`);
+    const startResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/submissions/") && response.url().endsWith("/start"), {
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: "开始整理" }).click();
+    const startResponse = await startResponsePromise;
+    if (!startResponse.ok()) {
+      throw new Error(`${surface.name} start processing failed with ${startResponse.status()}`);
+    }
+    await page.waitForLoadState("networkidle");
+    await assertBodyIncludes(page, "等你确认", `${surface.name} started queue`);
+    await assertBodyIncludes(page, "去确认资料", `${surface.name} started queue`);
   }
 }
 

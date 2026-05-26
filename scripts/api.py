@@ -27,6 +27,7 @@ from scripts.db import (  # noqa: E402
     create_consultation_booking,
     create_app_session,
     create_document_submission,
+    create_source_document,
     delete_app_session,
     delete_document,
     delete_staging_record,
@@ -789,6 +790,24 @@ def admin_start_submission(submission_id: int, request: Request) -> dict[str, An
         university=str(submission.get("university") or ""),
         year=str(submission.get("admission_year") or ""),
     )
+    if os.environ.get("ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW") == "1":
+        doc_id = create_source_document(
+            request.university,
+            "browser-smoke.pdf",
+            "",
+            request.pdf_url,
+            request.year,
+        )
+        updated = update_document_submission(
+            submission_id,
+            processing_status="needs_owner_review",
+            document_id=doc_id,
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="submission not found")
+        updated["workflow_status"] = "browser_smoke_completed"
+        updated["records"] = 0
+        return updated
     try:
         result = run_agent_workflow(request)
     except FileNotFoundError as exc:

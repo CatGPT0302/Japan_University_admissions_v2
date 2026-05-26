@@ -18,6 +18,7 @@ class PublicUserApiTest(unittest.TestCase):
         os.environ["OWNER_PASSWORD"] = "owner-admin"
         os.environ["PARTNER_EMAIL"] = "partner@example.com"
         os.environ["PARTNER_PASSWORD"] = "partner-demo"
+        os.environ.pop("ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW", None)
         for name in ("DATABASE_URL", "DATABASE_PUBLIC_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL_NON_POOLING"):
             os.environ.pop(name, None)
         for module_name in ["scripts.api", "scripts.db"]:
@@ -455,6 +456,33 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(captured["pdf_url"], "https://example.ac.jp/admission.pdf")
         self.assertEqual(detail.status_code, 200)
         self.assertEqual(detail.json()[0]["id"], submission_id)
+
+    def test_browser_smoke_fake_workflow_is_explicitly_gated(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            os.environ["ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW"] = "1"
+            api, _db = self._load_api(Path(tmp))
+            os.environ["ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW"] = "1"
+            client = TestClient(api.app)
+            self._login_partner(client)
+            created = client.post(
+                "/partner/submissions",
+                json={
+                    "university": "東京テスト大学",
+                    "admission_year": "2027",
+                    "pdf_url": "https://example.edu/browser-smoke.pdf",
+                    "notes": "browser smoke",
+                },
+            )
+            submission_id = created.json()["id"]
+            client.post("/auth/logout")
+            self._login_owner(client)
+            started = client.post(f"/admin/submissions/{submission_id}/start")
+
+        os.environ.pop("ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW", None)
+        self.assertEqual(started.status_code, 200)
+        self.assertEqual(started.json()["processing_status"], "needs_owner_review")
+        self.assertEqual(started.json()["workflow_status"], "browser_smoke_completed")
+        self.assertGreater(started.json()["document_id"], 0)
 
     def test_admin_api_center_shows_masked_key_metadata_not_secret(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
