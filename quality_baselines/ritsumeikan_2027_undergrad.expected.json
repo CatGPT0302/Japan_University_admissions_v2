@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ritsumeikan-2027-law",
+    "source_document": "https://admission.ritsumei.ac.jp/assets/file/2027/admission/international/ryugakusei-youkou.pdf",
+    "source_note": "Official Ritsumeikan University 2027 undergraduate foreign student admissions guideline. Checked against schedule, eligibility, EJU, English, documents, selection, results, and enrollment pages.",
+    "match": {"university": "立命館大学", "admission_year": "2027", "faculty": "法学部"},
+    "expect": {
+      "application_period": {"contains": ["前期実施", "2026年8月18日", "8月28日", "後期実施", "2026年11月9日", "11月16日"]},
+      "deadline_rule": {"contains": ["TAO", "出願期間", "23:00", "オンライン出願システム"]},
+      "eligibility": {"contains": ["外国籍", "2027年3月31日", "12年の課程", "通算3年以内", "個別の入学資格審査"]},
+      "required_documents": {"contains": ["高等学校卒業", "成績証明書", "志望理由書", "パスポート", "写真", "日本留学試験"]},
+      "eju_session": {"contains": ["2025年度第2回", "2026年度第1回", "2026年度第2回"]},
+      "eju_japanese": {"contains": ["日本語", "記述問題含む", "280点以上", "35点以上"]},
+      "eju_general": {"contains": ["総合科目", "数学", "コース1", "コース2", "いずれか1科目"]},
+      "screening_method": {"contains": ["第1次選考", "日本留学試験", "第2次選考", "個人面接", "総合評価"]},
+      "screening_schedule": {"contains": ["2026年10月3日", "2027年1月9日", "対面面接", "オンライン面接"]},
+      "result_date": {"contains": ["2026年9月25日", "2026年10月19日", "2026年12月25日", "2027年1月20日"]},
+      "enrollment_period": {"contains": ["2026年10月19日", "11月2日", "2027年1月20日", "2月3日", "2027年3月9日", "3月18日"]},
+      "evidence": {"contains": ["p.1-p.2", "p.6-p.8", "p.9-p.11", "p.13-p.14", "p.18-p.19"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "ritsumeikan-2027-business",
+    "source_document": "https://admission.ritsumei.ac.jp/assets/file/2027/admission/international/ryugakusei-youkou.pdf",
+    "source_note": "Official Ritsumeikan University 2027 undergraduate foreign student admissions guideline. Checked against schedule, eligibility, EJU, English, documents, selection, results, and enrollment pages.",
+    "match": {"university": "立命館大学", "admission_year": "2027", "faculty": "経営学部"},
+    "expect": {
+      "application_period": {"contains": ["前期実施", "2026年8月18日", "8月28日", "後期実施", "2026年11月9日", "11月16日"]},
+      "deadline_rule": {"contains": ["TAO", "出願期間", "23:00", "オンライン出願システム"]},
+      "eligibility": {"contains": ["外国籍", "2027年3月31日", "12年の課程", "通算3年以内", "英語外部資格試験"]},
+      "required_documents": {"contains": ["高等学校卒業", "成績証明書", "志望理由書", "パスポート", "写真", "日本留学試験", "英語外部資格試験"]},
+      "eju_session": {"contains": ["2025年度第2回", "2026年度第1回", "2026年度第2回"]},
+      "eju_japanese": {"contains": ["日本語", "記述問題含む", "280点以上", "35点以上"]},
+      "eju_general": {"contains": ["総合科目", "数学", "コース1", "コース2", "いずれか1科目"]},
+      "english_requirement": {"contains": ["実用英語技能検定", "TOEFL iBT", "TOEIC", "IELTS", "TEAP", "Duolingo", "TOEIC IP", "対象としません"]},
+      "screening_method": {"contains": ["1段階選抜", "日本留学試験", "出願書類", "総合評価", "第2次選考は行いません"]},
+      "screening_schedule": {"contains": ["面接試験を実施しない", "試験日の設定はありません"]},
+      "result_date": {"contains": ["2026年10月19日", "2027年1月20日"]},
+      "enrollment_period": {"contains": ["2026年10月19日", "11月2日", "2027年1月20日", "2月3日", "2027年3月9日", "3月18日"]},
+      "evidence": {"contains": ["p.1-p.2", "p.6-p.8", "p.9-p.11", "p.13-p.14", "p.18-p.19"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "ritsumeikan-2027-science-engineering",
+    "source_document": "https://admission.ritsumei.ac.jp/assets/file/2027/admission/international/ryugakusei-youkou.pdf",
+    "source_note": "Official Ritsumeikan University 2027 undergraduate foreign student admissions guideline. Checked against schedule, eligibility, EJU, English, documents, selection, results, and enrollment pages.",
+    "match": {"university": "立命館大学", "admission_year": "2027", "faculty": "理工学部"},
+    "expect": {
+      "application_period": {"contains": ["前期実施", "2026年8月18日", "8月28日", "後期実施", "2026年11月9日", "11月16日"]},
+      "deadline_rule": {"contains": ["TAO", "出願期間", "23:00", "オンライン出願システム"]},
+      "eligibility": {"contains": ["外国籍", "2027年3月31日", "12年の課程", "通算3年以内"]},
+      "required_documents": {"contains": ["高等学校卒業", "成績証明書", "志望理由書", "パスポート", "写真", "日本留学試験"]},
+      "eju_session": {"contains": ["2025年度第2回", "2026年度第1回", "2026年度第2回"]},
+      "eju_japanese": {"contains": ["日本語", "記述問題含む", "250点以上", "30点以上"]},
+      "eju_math": {"contains": ["数学", "コース2"]},
+      "eju_physics": {"contains": ["理科", "物理", "化学", "2科目"]},
+      "eju_chemistry": {"contains": ["理科", "物理", "化学", "2科目"]},
+      "screening_method": {"contains": ["第1次選考", "日本留学試験", "第2次選考", "個人面接", "口頭試問", "理系の素養"]},
+      "screening_schedule": {"contains": ["2026年10月4日", "2027年1月10日", "びわこ・くさつキャンパス", "オンライン面接"]},
+      "result_date": {"contains": ["2026年9月25日", "2026年10月19日", "2026年12月25日", "2027年1月20日"]},
+      "enrollment_period": {"contains": ["2026年10月19日", "11月2日", "2027年1月20日", "2月3日", "2027年3月9日", "3月18日"]},
+      "evidence": {"contains": ["p.1-p.2", "p.6-p.8", "p.9-p.11", "p.13-p.14", "p.18-p.19"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

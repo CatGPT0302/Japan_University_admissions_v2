@@ -6,6 +6,7 @@ from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_reco
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
 from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
+from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
 
@@ -77,6 +78,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["2027", "外国人留学生入学試験要項", "近畿大学"],
         "text_markers": ["近畿大学", "2027年度", "外国人留学生入学試験要項"],
         "extractor": extract_kindai_2027_undergrad_records,
+    },
+    "ritsumeikan_2027_undergrad": {
+        "stem": "ritsumeikan_2027_undergrad",
+        "id": "ritsumeikan-2027-undergrad",
+        "university": "立命館大学",
+        "admission_year": "2027",
+        "script": "scripts/ritsumeikan_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/ritsumeikan_2027_undergrad.expected.json",
+        "source_url": "https://admission.ritsumei.ac.jp/assets/file/2027/admission/international/ryugakusei-youkou.pdf",
+        "source_candidates": ["data/uploads/ritsumeikan_2027_undergrad.pdf"],
+        "source_markers": ["立命館大学", "2027", "外国人留学生入学試験"],
+        "text_markers": ["立命館大学", "2027", "外国人留学生入学試験"],
+        "extractor": extract_ritsumeikan_2027_undergrad_records,
     },
 }
 

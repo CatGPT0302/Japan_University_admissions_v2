@@ -1,0 +1,14 @@
+{
+  "status": "cached",
+  "stem": "ritsumeikan_2027_undergrad",
+  "source_url": "https://admission.ritsumei.ac.jp/assets/file/2027/admission/international/ryugakusei-youkou.pdf",
+  "cached_path": "data/uploads/ritsumeikan_2027_undergrad.pdf",
+  "sha256": "8b9e80278b4a0ff41e60d88ce19c16079986a5f3c671c5f053daf32f29dbd5b5",
+  "size_bytes": 1105840,
+  "markers": [
+    "立命館大学",
+    "2027",
+    "外国人留学生入学試験"
+  ],
+  "checked_at": "2026-05-26T01:39:10+00:00"
+}
