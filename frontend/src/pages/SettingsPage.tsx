@@ -121,7 +121,7 @@ export default function SettingsPage() {
   return (
     <div className="settings-shell-ios settings-page partner-console">
       <header className="settings-topbar partner-topbar">
-        <a className="settings-brand" href="#/settings" aria-label="合作方服务中心">
+        <a className="settings-brand" href="/" aria-label="合作方服务中心">
           <span>
             <strong>服务中心</strong>
             <small>{center?.organization.name || "资料提交入口"}</small>

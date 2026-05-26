@@ -408,7 +408,7 @@ export default function StudentApp() {
   return (
     <div className="student-shell student-shell-ios">
       <header className="student-topbar">
-        <a className="student-brand" href="#/student" aria-label="学生入口首页">
+        <a className="student-brand" href="/" aria-label="学生入口首页">
           <span>
             <strong>学生・家长入口</strong>
             <small>日本大学申请</small>
