@@ -112,6 +112,38 @@ class CheckSourceUpdatesTest(unittest.TestCase):
         self.assertEqual(report["items"][0]["last_checked_at"], "2026-05-26T10:00:00+00:00")
         self.assertEqual(report["items"][0]["check_status"], "recent")
 
+    def test_successful_check_clears_stale_receipt_error(self) -> None:
+        from scripts.check_source_updates import check_watchlist_sources, content_sha256
+
+        content = b"%PDF-1.4\nSample University 2027 admissions"
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "quality_sources").mkdir(parents=True)
+            receipt = root / "quality_sources" / "sample_2027_undergrad.source.json"
+            receipt.write_text(
+                json.dumps(
+                    {
+                        "source_url": "https://example.test/sample.pdf",
+                        "sha256": content_sha256(content),
+                        "checked_at": "2026-04-01T00:00:00+00:00",
+                        "last_check_status": "failed",
+                        "last_check_error": "old network failure",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            check_watchlist_sources(
+                watchlist=[self._watch_item(old_hash=content_sha256(content))],
+                root=root,
+                fetcher=lambda _url: {"status_code": 200, "content": content, "content_type": "application/pdf"},
+                now="2026-05-26T10:00:00+00:00",
+            )
+            stored_receipt = json.loads(receipt.read_text(encoding="utf-8"))
+
+        self.assertEqual(stored_receipt["last_check_status"], "unchanged")
+        self.assertNotIn("last_check_error", stored_receipt)
+
     def test_failed_check_is_reported_but_does_not_create_data_change(self) -> None:
         from scripts.check_source_updates import check_watchlist_sources
 

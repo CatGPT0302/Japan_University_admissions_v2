@@ -177,6 +177,8 @@ def _refresh_receipt_check_metadata(root: Path, item: dict[str, Any]) -> None:
         payload["last_check_final_url"] = item.get("final_url")
     if item.get("error"):
         payload["last_check_error"] = item.get("error")
+    else:
+        payload.pop("last_check_error", None)
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
