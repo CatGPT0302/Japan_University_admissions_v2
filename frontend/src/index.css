@@ -2140,6 +2140,31 @@ a {
   color: var(--warning);
 }
 
+.review-focus-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 16px;
+  background: rgba(239, 246, 255, 0.72);
+}
+
+.review-focus-banner strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.review-focus-banner span {
+  display: block;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .review-priority-strip {
   display: grid;
   gap: 10px;

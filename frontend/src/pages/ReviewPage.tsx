@@ -236,6 +236,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("pending");
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [focusedEvidencePage, setFocusedEvidencePage] = useState<number | null>(null);
+  const [focusNotice, setFocusNotice] = useState<ReviewFocus | null>(null);
   const [pageInput, setPageInput] = useState("1");
   const editorPanelRef = useRef<HTMLElement | null>(null);
   const pendingFocusRef = useRef<ReviewFocus | null>(null);
@@ -314,6 +315,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
     const nextRows = sortRows(stagingRows);
     const focusedRow = findFocusedRow(nextRows, focus);
     pendingFocusRef.current = focus ?? null;
+    setFocusNotice(focus?.field ? focus : null);
     setSelectedDocId(docId);
     setSummary(docSummary);
     setRows(stagingRows);
@@ -335,6 +337,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
       setRows(nextRows);
       if (moveNext) {
         const next = nextVisible.find((row) => !isReviewed(row)) ?? nextOrdered.find((row) => !isReviewed(row));
+        setFocusNotice(null);
         setSelectedRowId(next?.id ?? updated.id);
       } else {
         setSelectedRowId(updated.id);
@@ -376,6 +379,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   function selectRow(rowId: number | null) {
     if (rowId === selectedRowId) return;
     if (hasUnsavedChanges && !window.confirm("当前修改还没有保存。要先切换到其他词条吗？")) return;
+    setFocusNotice(null);
     setSelectedRowId(rowId);
   }
 
@@ -647,6 +651,17 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
                     </div>
                   ) : null}
                 </div>
+                {focusNotice?.field && selectedRow ? (
+                  <div className="review-focus-banner">
+                    <div>
+                      <strong>从导出缺口进入</strong>
+                      <span>先补齐：{reviewFieldLabel(focusNotice.field)}</span>
+                    </div>
+                    <button className="btn btn-primary btn-small" type="button" onClick={() => focusReviewField(focusNotice.field as keyof StagingRecord)}>
+                      定位到这一项
+                    </button>
+                  </div>
+                ) : null}
                 {currentHints.length ? (
                   <div className="review-priority-strip">
                     <div>
