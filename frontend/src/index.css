@@ -491,7 +491,8 @@ body,
   .export-hero,
   .export-layout,
   .export-check-grid,
-  .export-quick-actions {
+  .export-quick-actions,
+  .workflow-status-grid {
     grid-template-columns: 1fr;
   }
 
@@ -805,6 +806,89 @@ a {
 
 .progress-card.is-error .progress-fill {
   background: linear-gradient(90deg, #991b1b, #ef4444);
+}
+
+.owner-work-queue {
+  display: grid;
+  gap: 14px;
+}
+
+.workflow-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workflow-status-card,
+.queue-item {
+  position: relative;
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.68);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.workflow-status-card {
+  display: grid;
+  gap: 5px;
+  padding: 13px;
+}
+
+.workflow-status-card:disabled,
+.queue-item:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.workflow-status-card:not(:disabled):hover,
+.workflow-status-card:not(:disabled):focus-visible,
+.queue-item:not(:disabled):hover,
+.queue-item:not(:disabled):focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.workflow-status-card span,
+.workflow-status-card em,
+.queue-item p {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+  font-style: normal;
+}
+
+.workflow-status-card strong {
+  color: var(--text);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.owner-queue-list {
+  display: grid;
+  gap: 9px;
+}
+
+.queue-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 13px;
+}
+
+.queue-item strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.queue-item p {
+  margin: 4px 0 0;
 }
 
 @keyframes progress-shimmer {

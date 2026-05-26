@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
-import { runAgentWorkflow, toErrorMessage, uploadPdf } from "../api/client";
-import type { AgentRunResponse, FetchPdfCandidate } from "../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getDocuments, getSourceReviewQueue, runAgentWorkflow, toErrorMessage, uploadPdf } from "../api/client";
+import type { AgentRunResponse, DocumentListItem, FetchPdfCandidate, SourceReviewResponse } from "../types";
 
 interface Props {
   onDone: (docId: number) => void;
+  onOpenExports?: () => void;
+  onOpenQuality?: () => void;
 }
 
 type Step = "idle" | "uploading" | "running" | "needs_source" | "done" | "error";
@@ -34,7 +36,22 @@ function isConfirmation(result: AgentRunResponse): result is Extract<AgentRunRes
   return result.status === "needs_source_confirmation";
 }
 
-export default function RunPage({ onDone }: Props) {
+function queueStatusText(doc: DocumentListItem) {
+  const reviewCount = Number(doc.review_count || 0);
+  if (reviewCount > 0) return `${reviewCount} 条待复审`;
+  if (Number(doc.confirmed_count || 0) > 0) return "可导出";
+  if (Number(doc.staging_count || 0) > 0) return "待确认入库";
+  return "等待整理";
+}
+
+function queueStatusClass(doc: DocumentListItem) {
+  if (Number(doc.review_count || 0) > 0) return "badge badge-amber";
+  if (Number(doc.confirmed_count || 0) > 0) return "badge badge-green";
+  if (Number(doc.staging_count || 0) > 0) return "badge badge-blue";
+  return "badge badge-gray";
+}
+
+export default function RunPage({ onDone, onOpenExports, onOpenQuality }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [year, setYear] = useState("2027");
   const [university, setUniversity] = useState("");
@@ -46,10 +63,32 @@ export default function RunPage({ onDone }: Props) {
   const [error, setError] = useState("");
   const [docId, setDocId] = useState<number | null>(null);
   const [candidates, setCandidates] = useState<FetchPdfCandidate[]>([]);
+  const [documents, setDocuments] = useState<DocumentListItem[]>([]);
+  const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
+  const [queueError, setQueueError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const canRun = Boolean(file || pdfUrl.trim() || pageUrl.trim() || university.trim());
   const isBusy = step === "uploading" || step === "running";
+  const pendingDocs = useMemo(() => documents.filter((doc) => Number(doc.review_count || 0) > 0), [documents]);
+  const exportableDocs = useMemo(() => documents.filter((doc) => Number(doc.confirmed_count || 0) > 0), [documents]);
+  const queueDocs = pendingDocs.length ? pendingDocs : documents.filter((doc) => Number(doc.staging_count || 0) > 0).slice(0, 3);
+  const sourceOpenCount = sourceQueue?.summary.open ?? sourceQueue?.summary.needs_review ?? 0;
+
+  async function loadOwnerQueue() {
+    setQueueError("");
+    try {
+      const [docs, queue] = await Promise.all([getDocuments({ limit: 40 }), getSourceReviewQueue()]);
+      setDocuments(docs);
+      setSourceQueue(queue);
+    } catch (nextError) {
+      setQueueError(toErrorMessage(nextError));
+    }
+  }
+
+  useEffect(() => {
+    void loadOwnerQueue();
+  }, []);
 
   function resetResult() {
     setStep("idle");
@@ -79,6 +118,7 @@ export default function RunPage({ onDone }: Props) {
     setWarnings(result.warnings || []);
     setCandidates([]);
     setStep("done");
+    void loadOwnerQueue();
   }
 
   async function run(selected?: FetchPdfCandidate) {
@@ -190,6 +230,56 @@ export default function RunPage({ onDone }: Props) {
         </aside>
 
         <div className="item-detail">
+          <div className="summary-box owner-work-queue">
+            <div className="split-row split-row-start">
+              <div>
+                <div className="card-kicker">今日工作队列</div>
+                <h3 className="panel-title">先处理会影响入库和导出的资料</h3>
+                <p className="panel-copy">这里只给 owner 看：先复审草稿，再导出正式资料；官方来源变化单独检查，不会自动覆盖正式资料。</p>
+              </div>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => void loadOwnerQueue()}>
+                刷新队列
+              </button>
+            </div>
+
+            <div className="workflow-status-grid">
+              <button className="workflow-status-card" type="button" disabled={!pendingDocs[0]} onClick={() => pendingDocs[0] && onDone(pendingDocs[0].doc_id)}>
+                <span>待复审</span>
+                <strong>{pendingDocs.length}</strong>
+                <em>{pendingDocs[0]?.university_name || "暂无需要复审的资料"}</em>
+              </button>
+              <button className="workflow-status-card" type="button" disabled={!exportableDocs.length || !onOpenExports} onClick={onOpenExports}>
+                <span>可导出</span>
+                <strong>{exportableDocs.length}</strong>
+                <em>{exportableDocs[0]?.university_name || "确认入库后会出现在这里"}</em>
+              </button>
+              <button className="workflow-status-card" type="button" disabled={!sourceOpenCount || !onOpenQuality} onClick={onOpenQuality}>
+                <span>来源变化</span>
+                <strong>{sourceOpenCount}</strong>
+                <em>{sourceOpenCount ? "需要查看官方来源" : "暂无待查看来源"}</em>
+              </button>
+            </div>
+
+            {queueDocs.length ? (
+              <div className="owner-queue-list" aria-label="需要处理的资料">
+                {queueDocs.slice(0, 3).map((doc) => (
+                  <button className="queue-item" key={doc.doc_id} type="button" onClick={() => onDone(doc.doc_id)}>
+                    <div>
+                      <strong>{doc.university_name || "未命名学校"}</strong>
+                      <p>
+                        {doc.admission_year || "未标年度"} / {doc.staging_count} 条草稿 / {doc.confirmed_count} 条正式资料
+                      </p>
+                    </div>
+                    <span className={queueStatusClass(doc)}>{queueStatusText(doc)}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="panel-copy">当前没有等待处理的草稿。可以上传新的招生资料，或去质量页检查官方来源。</p>
+            )}
+            {queueError ? <div className="message-box error">{queueError}</div> : null}
+          </div>
+
           <div className={`progress-card${isBusy ? " is-running" : ""}${step === "error" ? " is-error" : ""}`}>
             <div className="split-row">
               <div>

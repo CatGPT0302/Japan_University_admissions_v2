@@ -272,6 +272,15 @@ export default function App() {
               onDone={(docId) => {
                 setActiveDocId(docId);
                 setPage("review");
+                window.location.hash = "#/review";
+              }}
+              onOpenExports={() => {
+                setPage("exports");
+                window.location.hash = "#/exports";
+              }}
+              onOpenQuality={() => {
+                setPage("quality");
+                window.location.hash = "#/quality";
               }}
             />
           ) : page === "review" ? (

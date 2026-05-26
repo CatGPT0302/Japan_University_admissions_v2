@@ -247,6 +247,10 @@ async function assertBodyIncludes(page, expected, label) {
 
 async function runSurfaceAction(page, surface) {
   if (surface.action === "owner-core-pages") {
+    await assertBodyIncludes(page, "今日工作队列", `${surface.name} owner work queue`);
+    await assertBodyIncludes(page, "待复审", `${surface.name} owner work queue`);
+    await assertBodyIncludes(page, "可导出", `${surface.name} owner work queue`);
+    await assertBodyIncludes(page, "来源变化", `${surface.name} owner work queue`);
     await page.getByRole("button", { name: /导出中心/ }).click();
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} export page`);
     await assertBodyIncludes(page, "批量合并取出", `${surface.name} export page`);
