@@ -306,9 +306,9 @@ export default function App() {
           ) : page === "exports" ? (
             <ExportPage
               initialFilters={exportSeed}
-              onOpenReview={(docId) => {
+              onOpenReview={(docId, focus) => {
                 setActiveDocId(docId);
-                setReviewFocus(null);
+                setReviewFocus(focus ?? null);
                 setPage("review");
                 window.location.hash = "#/review";
               }}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { downloadCsv, downloadExcel, getDocuments, getExportOptions, getExportPreview, toErrorMessage } from "../api/client";
-import type { ConfirmedRecord, ExportOptionItem, ExportOptionsResponse, ExportPreviewResponse } from "../types";
+import type { ConfirmedRecord, ExportOptionItem, ExportOptionsResponse, ExportPreviewResponse, ReviewFocus } from "../types";
 
 const COLUMNS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "university", label: "学校" },
@@ -35,7 +35,7 @@ type ExportPreset = {
 };
 
 interface Props {
-  onOpenReview?: (docId: number) => void;
+  onOpenReview?: (docId: number, focus?: ReviewFocus) => void;
   initialFilters?: {
     university?: string;
     year?: string;
@@ -133,6 +133,23 @@ function missingCount(rows: ConfirmedRecord[], key: keyof ConfirmedRecord) {
   return rows.filter((row) => !String(row[key] || "").trim()).length;
 }
 
+function firstMissingField(row?: ConfirmedRecord | null): string | undefined {
+  return row?.export_missing?.[0];
+}
+
+function reviewFocusForRow(docId: number, row?: ConfirmedRecord | null, field?: string): ReviewFocus | undefined {
+  if (!row || !field) return undefined;
+  return {
+    token: Date.now(),
+    docId,
+    field,
+    university: row.university,
+    admission_year: yearText(row.admission_year),
+    faculty: row.faculty,
+    department: row.department,
+  };
+}
+
 function OptionChips({
   items,
   emptyText,
@@ -218,13 +235,13 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
     void loadPreview(quickParams);
   }
 
-  async function openReviewForSchool(university: string, year?: string) {
+  async function openReviewForSchool(university: string, year?: string, focusRow?: ConfirmedRecord | null, focusField?: string) {
     if (!university.trim() || !onOpenReview) return;
     const target = (preview?.review_targets || []).find(
       (item) => item.university === university.trim() && sameYear(item.admission_year, year),
     );
     if (target?.doc_id) {
-      onOpenReview(target.doc_id);
+      onOpenReview(target.doc_id, reviewFocusForRow(target.doc_id, focusRow, focusField));
       return;
     }
     setOpeningSource(true);
@@ -240,7 +257,7 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
         setSourceLookupError("没有找到这所学校的来源资料。");
         return;
       }
-      onOpenReview(doc.doc_id);
+      onOpenReview(doc.doc_id, reviewFocusForRow(doc.doc_id, focusRow, focusField));
     } catch (nextError) {
       setSourceLookupError(toErrorMessage(nextError));
     } finally {
@@ -355,6 +372,9 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
       ready: preview?.summary.ready_for_export ?? (Boolean(rows.length) && gaps.length === 0),
     };
   }, [preview?.summary.missing_required, preview?.summary.ready_for_export, rows]);
+  const firstGapRow = rows.find((row) => (row.export_missing || []).length);
+  const reviewGapRow = selectedRow?.export_missing?.length ? selectedRow : firstGapRow ?? selectedRow;
+  const reviewGapField = firstMissingField(reviewGapRow) ?? exportCheck.gaps[0]?.key;
 
   return (
     <div className="page-shell export-page">
@@ -556,7 +576,9 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
                   <button
                     className="btn btn-ghost btn-small"
                     type="button"
-                    onClick={() => void openReviewForSchool(selectedRow.university, yearText(selectedRow.admission_year))}
+                    onClick={() =>
+                      void openReviewForSchool(selectedRow.university, yearText(selectedRow.admission_year), selectedRow, firstMissingField(selectedRow))
+                    }
                     disabled={openingSource}
                   >
                     {openingSource ? "正在打开" : "回到复审"}
@@ -632,7 +654,9 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
                 <button
                   className="btn btn-ghost btn-small"
                   type="button"
-                  onClick={() => void openReviewForSchool(selectedRow.university, yearText(selectedRow.admission_year))}
+                  onClick={() =>
+                    void openReviewForSchool(reviewGapRow?.university || selectedRow.university, yearText(reviewGapRow?.admission_year || selectedRow.admission_year), reviewGapRow, reviewGapField)
+                  }
                   disabled={openingSource}
                 >
                   {openingSource ? "正在打开" : "回到复审补齐"}
