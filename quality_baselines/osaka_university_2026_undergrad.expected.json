@@ -1,0 +1,95 @@
+[
+  {
+    "id": "osaka-university-2026-literature",
+    "source_document": "https://www.osaka-u.ac.jp/ja/admissions/faculty/expense/files/2026shihi_guideline-1.pdf/@@download/file",
+    "source_note": "Official Osaka University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL table, selection methods, and application procedure pages.",
+    "match": {"university": "大阪大学", "admission_year": "2026", "faculty": "文学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月15日", "2026年1月8日", "2026年1月5日", "1月9日", "17時必着"]},
+      "deadline_rule": {"contains": ["Web出願", "検定料", "郵送", "登録だけでは完了しない", "持参は不可"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程", "2026年3月31日"]},
+      "required_documents": {"contains": ["志願票", "提出物チェックリスト", "証明書", "日本留学試験", "TOEFL"]},
+      "eju_session": {"contains": ["2024年度6月", "2024年度", "2025年度6月", "2025年度"]},
+      "eju_japanese": {"contains": ["文学部", "日本語", "300点以上", "記述260点以上"]},
+      "eju_general": {"contains": ["文学部", "総合科目"]},
+      "eju_math": {"contains": ["数学コース1"]},
+      "english_requirement": {"contains": ["Test Date Scores", "MyBest", "Home Edition", "iBT 48点以上"]},
+      "screening_method": {"contains": ["小論文", "口頭試問", "日本語", "適性"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "小論文10:00-12:00", "口頭試問13:00"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "evidence": {"contains": ["p.1", "p.4", "p.5", "p.6-p.7", "p.8-p.10", "p.11-p.12", "p.13", "p.15"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "osaka-university-2026-science-biology",
+    "source_document": "https://www.osaka-u.ac.jp/ja/admissions/faculty/expense/files/2026shihi_guideline-1.pdf/@@download/file",
+    "source_note": "Official Osaka University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL table, selection methods, and application procedure pages.",
+    "match": {"university": "大阪大学", "admission_year": "2026", "faculty": "理学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月15日", "2026年1月8日", "1月9日", "17時必着"]},
+      "deadline_rule": {"contains": ["Web出願", "検定料", "郵送", "持参は不可"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程"]},
+      "required_documents": {"contains": ["志願票", "証明書", "日本留学試験", "TOEFL"]},
+      "eju_session": {"contains": ["2024年度", "2025年度"]},
+      "eju_japanese": {"contains": ["理学部", "日本語", "300点以上"]},
+      "eju_math": {"contains": ["数学コース2", "理系科目"]},
+      "eju_physics": {"contains": ["物理", "化学", "計2科目", "必須"]},
+      "eju_chemistry": {"contains": ["物理", "化学", "計2科目", "必須"]},
+      "english_requirement": {"contains": ["TOEFL", "iBT 61点以上", "MyBest", "Home Edition"]},
+      "screening_method": {"contains": ["数学", "理科", "物理基礎", "化学基礎", "口頭試問"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "数学9:00-11:30", "理科15:30-18:00", "2月26日"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "evidence": {"contains": ["p.4", "p.8-p.10", "p.11-p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "osaka-university-2026-medicine",
+    "source_document": "https://www.osaka-u.ac.jp/ja/admissions/faculty/expense/files/2026shihi_guideline-1.pdf/@@download/file",
+    "source_note": "Official Osaka University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL table, selection methods, and application procedure pages.",
+    "match": {"university": "大阪大学", "admission_year": "2026", "faculty": "医学部", "department": "医学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月15日", "2026年1月8日", "1月9日", "17時必着"]},
+      "deadline_rule": {"contains": ["Web出願", "検定料", "郵送", "登録だけでは完了しない"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程"]},
+      "required_documents": {"contains": ["志願票", "日本留学試験", "TOEFL"]},
+      "eju_session": {"contains": ["2024年度", "2025年度"]},
+      "eju_japanese": {"contains": ["医学部医学科", "日本語", "400点以上"]},
+      "eju_math": {"contains": ["数学コース2", "360点以上"]},
+      "eju_physics": {"contains": ["物理", "化学", "生物", "計2科目"]},
+      "eju_chemistry": {"contains": ["物理", "化学", "生物", "計2科目"]},
+      "eju_biology": {"contains": ["物理", "化学", "生物", "計2科目"]},
+      "english_requirement": {"contains": ["出願基準点なし", "TOEFL未受験", "スコア未提出", "出願資格なし"]},
+      "screening_method": {"contains": ["小論文", "科学論文", "個人面接", "30分程度", "2回"]},
+      "screening_schedule": {"contains": ["2026年2月7日", "小論文9:00-12:00", "2月8日", "面接9:30-18:00"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "evidence": {"contains": ["p.4", "p.8-p.10", "p.11-p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "osaka-university-2026-engineering",
+    "source_document": "https://www.osaka-u.ac.jp/ja/admissions/faculty/expense/files/2026shihi_guideline-1.pdf/@@download/file",
+    "source_note": "Official Osaka University 2026 privately financed international undergraduate admissions guide. Checked against schedule, eligibility, EJU/TOEFL table, selection methods, and application procedure pages.",
+    "match": {"university": "大阪大学", "admission_year": "2026", "faculty": "工学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月15日", "2026年1月8日", "1月9日", "17時必着"]},
+      "deadline_rule": {"contains": ["Web出願", "検定料", "郵送", "持参は不可"]},
+      "eligibility": {"contains": ["日本国籍を有しない", "永住許可", "12年の課程"]},
+      "required_documents": {"contains": ["志願票", "日本留学試験", "TOEFL"]},
+      "eju_session": {"contains": ["2024年度", "2025年度"]},
+      "eju_japanese": {"contains": ["工学部", "200点以上", "25点以上"]},
+      "eju_math": {"contains": ["数学コース2", "240点以上"]},
+      "eju_physics": {"contains": ["物理が必須", "化学", "生物", "計2科目"]},
+      "eju_chemistry": {"contains": ["物理", "化学", "生物", "1科目"]},
+      "eju_biology": {"contains": ["物理", "化学", "生物", "1科目"]},
+      "english_requirement": {"contains": ["出願基準点なし", "TOEFL未受験", "スコア未提出", "出願資格なし"]},
+      "screening_method": {"contains": ["数学", "理科", "物理必須", "口頭試問"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "数学9:00-11:30", "理科15:30-18:00", "2月26日", "口頭試問10:00"]},
+      "result_date": {"contains": ["2026年3月9日"]},
+      "evidence": {"contains": ["p.4", "p.8-p.10", "p.11-p.12", "p.13"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

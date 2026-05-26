@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "osaka_university_2026_undergrad",
+  "source_url": "https://www.osaka-u.ac.jp/ja/admissions/faculty/expense/files/2026shihi_guideline-1.pdf/@@download/file",
+  "cached_path": "data/uploads/osaka_university_2026_undergrad.pdf",
+  "sha256": "e55bc9e00ae8bd53146bc2832e8020ed4186a507f6001dc8d4d6dd86f630058e",
+  "size_bytes": 5273568,
+  "markers": [
+    "大阪大学",
+    "私費外国人留学生特別入試",
+    "日本留学試験",
+    "TOEFL"
+  ],
+  "checked_at": "2026-05-26T03:09:24+00:00"
+}
