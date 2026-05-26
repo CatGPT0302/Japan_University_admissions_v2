@@ -232,7 +232,9 @@ export default function QualityPage({ onOpenReview }: Props) {
     setMessage("");
     try {
       const result = await runSourceChecks();
+      const watchlist = await getSourceWatchlist();
       setSourceQueue(result.review_queue);
+      setSourceWatchlist(watchlist);
       setMessage("官方来源检查完成。正式资料没有被自动改动。");
     } catch (nextError) {
       setError(toErrorMessage(nextError));

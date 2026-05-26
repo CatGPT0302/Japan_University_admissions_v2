@@ -67,6 +67,50 @@ class CheckSourceUpdatesTest(unittest.TestCase):
         self.assertEqual(queue["items"][0]["status"], "changed")
         self.assertEqual(queue["items"][0]["stem"], "sample_2027_undergrad")
         self.assertEqual(stored_receipt["sha256"], "0" * 64)
+        self.assertEqual(stored_receipt["checked_at"], "2026-05-26T10:00:00+00:00")
+        self.assertEqual(stored_receipt["last_check_status"], "changed")
+        self.assertNotEqual(stored_receipt["last_check_sha256"], stored_receipt["sha256"])
+
+    def test_successful_check_refreshes_watchlist_maintenance_time(self) -> None:
+        from scripts.check_source_updates import check_watchlist_sources, content_sha256
+        from scripts.source_watchlist import build_watchlist_report
+
+        content = b"%PDF-1.4\nSample University 2027 admissions"
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "quality_sources").mkdir(parents=True)
+            receipt = root / "quality_sources" / "sample_2027_undergrad.source.json"
+            receipt.write_text(
+                json.dumps(
+                    {
+                        "source_url": "https://example.test/sample.pdf",
+                        "sha256": content_sha256(content),
+                        "checked_at": "2026-04-01T00:00:00+00:00",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            check_watchlist_sources(
+                watchlist=[self._watch_item(old_hash=content_sha256(content))],
+                root=root,
+                fetcher=lambda _url: {"status_code": 200, "content": content, "content_type": "application/pdf"},
+                now="2026-05-26T10:00:00+00:00",
+            )
+            report = build_watchlist_report(
+                root=root,
+                seeds={
+                    "sample_2027_undergrad": {
+                        "stem": "sample_2027_undergrad",
+                        "id": "sample-2027-undergrad",
+                        "university": "Sample University",
+                        "admission_year": "2027",
+                        "source_url": "https://example.test/sample.pdf",
+                    }
+                },
+            )
+
+        self.assertEqual(report["items"][0]["last_checked_at"], "2026-05-26T10:00:00+00:00")
+        self.assertEqual(report["items"][0]["check_status"], "recent")
 
     def test_failed_check_is_reported_but_does_not_create_data_change(self) -> None:
         from scripts.check_source_updates import check_watchlist_sources

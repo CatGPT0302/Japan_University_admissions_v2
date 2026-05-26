@@ -157,6 +157,35 @@ def _write_jsonl(path: Path, items: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _refresh_receipt_check_metadata(root: Path, item: dict[str, Any]) -> None:
+    stem = str(item.get("stem") or "").strip()
+    if not stem:
+        return
+    receipt_path = root / "quality_sources" / f"{stem}.source.json"
+    try:
+        payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else {}
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    payload["checked_at"] = item.get("checked_at", "")
+    payload["last_check_status"] = item.get("status", "")
+    payload["last_check_sha256"] = item.get("new_sha256", "")
+    if item.get("http_status"):
+        payload["last_check_http_status"] = item.get("http_status")
+    if item.get("final_url"):
+        payload["last_check_final_url"] = item.get("final_url")
+    if item.get("error"):
+        payload["last_check_error"] = item.get("error")
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _refresh_receipt_check_metadata_many(root: Path, items: list[dict[str, Any]]) -> None:
+    for item in items:
+        _refresh_receipt_check_metadata(root, item)
+
+
 def _review_queue(items: list[dict[str, Any]], *, checked_at: str) -> dict[str, Any]:
     review_items = [item for item in items if item.get("needs_review")]
     return {
@@ -200,6 +229,7 @@ def check_watchlist_sources(
     checks_path = output_path or root / "data" / "source_checks.jsonl"
     queue_path = review_queue_path or root / "data" / "source_review_queue.json"
     _write_jsonl(checks_path, items)
+    _refresh_receipt_check_metadata_many(root, items)
     queue = _review_queue(items, checked_at=checked_at)
     queue_path.parent.mkdir(parents=True, exist_ok=True)
     queue_path.write_text(json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
