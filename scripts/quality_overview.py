@@ -16,6 +16,7 @@ except Exception:
 
 from scripts.quality_baseline_suite import run_seed_baseline_suite  # noqa: E402
 from scripts.quality_gap_report import build_quality_gap_report  # noqa: E402
+from scripts.source_text_health import audit_seed_source_text_layers  # noqa: E402
 
 
 CRITICAL_FIELD_MINIMUMS = {
@@ -56,13 +57,13 @@ def _overall_status(seed_suite: dict[str, Any], gap_report: dict[str, Any]) -> s
     return "quality_gate_ready"
 
 
-def build_quality_overview() -> dict[str, Any]:
+def build_quality_overview(*, include_source_text_health: bool = False) -> dict[str, Any]:
     seed_suite = run_seed_baseline_suite()
     gap_report = build_quality_gap_report()
     gap_todo = gap_report.get("owner_todo") if isinstance(gap_report.get("owner_todo"), list) else []
     quality_todo = _seed_record_todos(seed_suite) + _critical_field_todos(seed_suite) + _weak_field_todos(seed_suite)
     owner_todo = gap_todo + quality_todo
-    return {
+    overview = {
         "overall_status": "seed_suite_failed" if not seed_suite.get("passed") else ("needs_owner_action" if owner_todo else "quality_gate_ready"),
         "seed_suite": seed_suite,
         "gap_report": gap_report,
@@ -70,6 +71,9 @@ def build_quality_overview() -> dict[str, Any]:
         "owner_todo": owner_todo,
         "next_owner_action": owner_todo[0] if owner_todo else None,
     }
+    if include_source_text_health:
+        overview["source_text_health"] = audit_seed_source_text_layers()
+    return overview
 
 
 def _field_coverage_totals(seed_suite: dict[str, Any]) -> dict[str, int]:
@@ -175,6 +179,10 @@ def format_owner_summary(overview: dict[str, Any]) -> str:
         f"missing local sources: {gap_summary.get('missing_local_sources', 0)}",
         f"missing seed extractors: {gap_summary.get('missing_seed_extractors', 0)}",
     ]
+    source_health = overview.get("source_text_health") if isinstance(overview.get("source_text_health"), dict) else {}
+    source_summary = source_health.get("summary") if isinstance(source_health.get("summary"), dict) else {}
+    if source_summary:
+        lines.append(f"source text checks: {source_summary.get('manual_text_check_needed', 0)} need manual/vision review")
     weak_fields = _weak_field_coverage(overview.get("seed_suite", {}))
     if weak_fields:
         lines.append("weak field coverage: " + "; ".join(weak_fields))
@@ -192,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--summary", action="store_true", help="Print a compact owner-readable summary instead of JSON.")
     args = parser.parse_args(argv)
 
-    overview = build_quality_overview()
+    overview = build_quality_overview(include_source_text_health=args.summary)
     payload = format_owner_summary(overview) if args.summary else json.dumps(overview, ensure_ascii=False, indent=2)
     if args.output:
         Path(args.output).write_text(payload, encoding="utf-8")

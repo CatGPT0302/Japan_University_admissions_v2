@@ -5,6 +5,79 @@ from unittest.mock import patch
 
 
 class QualityOverviewTest(unittest.TestCase):
+    def test_can_include_non_blocking_source_text_health(self) -> None:
+        from scripts.quality_overview import build_quality_overview, format_owner_summary
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "meiji-2027-schedule",
+                            "baseline": {
+                                "expected_count": 12,
+                                "field_coverage": {
+                                    "application_period": {"checked": 5},
+                                    "deadline_rule": {"checked": 5},
+                                    "enrollment_period": {"checked": 5},
+                                    "required_documents": {"checked": 5},
+                                    "eligibility": {"checked": 5},
+                                    "evidence": {"checked": 5},
+                                    "eju_session": {"checked": 5},
+                                    "eju_japanese": {"checked": 5},
+                                    "eju_general": {"checked": 5},
+                                    "eju_math": {"checked": 2},
+                                    "eju_physics": {"checked": 1},
+                                    "eju_chemistry": {"checked": 1},
+                                    "english_requirement": {"checked": 5},
+                                    "result_date": {"checked": 5},
+                                    "screening_schedule": {"checked": 5},
+                                },
+                            },
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.audit_seed_source_text_layers",
+                return_value={
+                    "passed": True,
+                    "summary": {
+                        "total": 1,
+                        "readable": 0,
+                        "manual_text_check_needed": 1,
+                        "missing_source": 0,
+                    },
+                    "items": [
+                        {
+                            "id": "osaka_metropolitan_2027_undergrad",
+                            "text_health": {"status": "garbled_text_layer", "requires_manual_text_check": True},
+                        }
+                    ],
+                },
+            ),
+        ):
+            overview = build_quality_overview(include_source_text_health=True)
+
+        self.assertEqual(overview["overall_status"], "quality_gate_ready")
+        self.assertEqual(overview["source_text_health"]["summary"]["manual_text_check_needed"], 1)
+        self.assertIn("source text checks: 1 need manual/vision review", format_owner_summary(overview))
+
     def test_combines_seed_suite_gap_report_and_owner_next_action(self) -> None:
         from scripts.quality_overview import build_quality_overview
 
