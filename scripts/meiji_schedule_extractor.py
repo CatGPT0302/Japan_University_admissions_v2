@@ -193,6 +193,24 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if _has_all(compact, ["総合数理学部", "現象数理統計学科", "先端メディアサイエンス学科", "ネットワークデザイン学科", "数学(コース2)", "理科(1科目を選択)", "数学・小論文", "口頭試問", "12月14日"]):
+        record = _base_record(
+            faculty="総合数理学部",
+            department="現象数理統計学科 / 先端メディアサイエンス学科 / ネットワークデザイン学科",
+        )
+        record.update(
+            {
+                "eju_subjects": "日本語 / 数学(コース2) / 理科(1科目を選択)",
+                "eju_japanese": "日本語",
+                "eju_math": "数学(コース2)",
+                "english_requirement": "TOEFL iBT / TOEIC L&R / IELTS / 出願基準点なし",
+                "screening_method": "書類選考 / 数学・小論文 / 口頭試問",
+                "screening_schedule": "2026年12月5日（土） 10:00～11:00",
+                "result_date": "2026年12月14日（月）",
+            }
+        )
+        records.append(record)
+
     if _has_all(compact, ["商学部", "国外在住者", "商学科", "2026年10月20日", "10月27日", "2026年度第2回", "TOEIC L&R 600以上", "2027年", "1月14日"]):
         record = _base_record(faculty="商学部", department="商学科", selection_type="Ⅱ")
         record.update(

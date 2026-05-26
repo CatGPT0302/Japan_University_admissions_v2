@@ -86,6 +86,21 @@ IELTS ４．０以上
 合計２科目
 TOEFL iBT TOEIC L&R ６００以上 IELTS ４．０以上
 ２０２６年１２月２４日（木）
+総合数理学部 現象数理統計学科 先端メディアサイエンス学科 ネットワークデザイン学科 Ⅰ
+①日本語
+②数学(コース２）
+③理科(１科目を選択）
+合計３科目
+TOEFL iBT
+TOEIC L&R
+IELTS
+出願基準点なし
+書類選考 ２０２６年１０月２６日（月）
+２０２６年１２月５日（土）
+１０：００～１１：００
+数学・小論文
+口頭試問
+２０２６年１２月１４日（月）
 商学部（国外在住者） 商学科 Ⅱ
 ３０名（Ⅰ型含む）
 ２０２６年１０月２０日（火）～１０月２７日（火）
@@ -114,7 +129,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 10)
+        self.assertEqual(len(records), 11)
         self.assertIn("eju_japanese", records[0])
         self.assertIn("eju_general", records[0])
         self.assertIn("eju_math", records[0])
@@ -129,7 +144,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 10)
+        self.assertEqual(len(records), 11)
         self.assertTrue(report["passed"], report)
 
     def test_returns_no_records_for_unrelated_text(self) -> None:
@@ -158,7 +173,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
             )
 
             payload = json.loads(output_path.read_text(encoding="utf-8"))
-            self.assertEqual(len(payload["records"]), 10)
+            self.assertEqual(len(payload["records"]), 11)
             self.assertEqual(payload["records"][0]["university"], "明治大学")
 
     def test_text_path_uses_meiji_seed_without_llm_call(self) -> None:
@@ -167,14 +182,14 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         university = self._seed_university()
         with (
             patch("scripts.extract_direct._read_pdf_text", return_value=(MEIJI_TEXT, {1: MEIJI_TEXT})),
-            patch("scripts.extract_direct._insert_result", return_value=10) as insert_result,
+            patch("scripts.extract_direct._insert_result", return_value=11) as insert_result,
             patch("scripts.extract_direct._call_openai", side_effect=AssertionError("LLM should not be called")),
         ):
             result = _run_text_path(1, Path("dummy.pdf"), university, "2027")
 
         self.assertEqual(result["mode"], "deterministic_text")
-        self.assertEqual(result["records"], 10)
-        self.assertEqual(result["inserted"], 10)
+        self.assertEqual(result["records"], 11)
+        self.assertEqual(result["inserted"], 11)
         insert_result.assert_called_once()
 
     def _seed_university(self) -> str:

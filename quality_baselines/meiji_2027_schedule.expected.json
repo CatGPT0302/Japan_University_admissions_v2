@@ -436,5 +436,48 @@
       }
     },
     "review_status": "human_checked_seed"
+  },
+  {
+    "id": "meiji-2027-mathematical-sciences",
+    "source_document": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p000001f23y-att/2027intexam.pdf",
+    "source_note": "Official Meiji 2027 foreign student admissions exam subjects and schedule PDF. Checked against page 1 extracted text.",
+    "match": {
+      "university": "明治大学",
+      "admission_year": "2027",
+      "faculty": "総合数理学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年8月25日", "9月1日"]
+      },
+      "deadline_rule": {
+        "contains": ["日本国内", "消印有効", "日本国外", "必着"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第1回", "2025年度第2回", "2026年度第1回"]
+      },
+      "eju_subjects": {
+        "contains": ["日本語", "数学", "コース2", "理科", "1科目"]
+      },
+      "eju_japanese": {
+        "contains": ["日本語"]
+      },
+      "eju_math": {
+        "contains": ["数学", "コース2"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL iBT", "TOEIC L&R", "IELTS", "出願基準点なし"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "数学", "小論文", "口頭試問"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年12月5日", "10:00", "11:00"]
+      },
+      "result_date": {
+        "contains": ["2026年12月14日"]
+      }
+    },
+    "review_status": "human_checked_seed"
   }
 ]
