@@ -20,13 +20,18 @@ const SECTIONS: Array<{ key: PartnerSection; label: string; hint: string }> = [
 const SERVICE_LABELS: Record<string, string> = {
   "programs:read": "查询已整理好的招生要求",
   "recommendations:create": "按学生情况辅助筛选学校",
-  "bookings:create": "提交学生咨询预约",
   "documents:submit": "提交新的招生资料",
   "documents:read_status": "查看资料整理进度",
 };
 
+const HIDDEN_SERVICE_SCOPES = new Set(["bookings:create"]);
+
 function serviceLabel(scope: string): string {
   return SERVICE_LABELS[scope] || "其他可用服务";
+}
+
+function visibleScopes(scopes?: string[]): string[] {
+  return (scopes || []).filter((scope) => !HIDDEN_SERVICE_SCOPES.has(scope));
 }
 
 function statusText(status?: string): string {
@@ -43,7 +48,7 @@ function statusHint(status?: string): string {
   if (status === "submitted") return "资料已经收到，会安排整理。";
   if (status === "processing") return "正在整理，请稍后再看。";
   if (status === "needs_owner_review") return "内容已经整理出来，正在做最后确认。";
-  if (status === "confirmed") return "资料已经整理好，可以用于查询和咨询。";
+  if (status === "confirmed") return "资料已经整理好，可以用于查询和筛选。";
   if (status === "needs_more_info") return "请补一个更完整的 PDF 或官网页面。";
   if (status === "failed") return "这次没有整理成功，可以重新提交资料。";
   return "我们会根据资料状态继续处理。";
@@ -53,7 +58,7 @@ function usageText(item: ApiUsageLog): string {
   if (item.scope) return serviceLabel(item.scope);
   if (item.path.includes("documents")) return "查看或提交资料";
   if (item.path.includes("programs")) return "查看招生要求";
-  if (item.path.includes("bookings")) return "提交咨询预约";
+  if (item.path.includes("bookings")) return "一次旧接口使用";
   return "一次使用";
 }
 
@@ -281,7 +286,7 @@ export default function SettingsPage() {
                 <p className="section-kicker">可用服务</p>
                 <h3>这套服务能帮你做什么</h3>
                 <div className="settings-ability-list partner-service-list">
-                  {(center?.allowed_scopes || []).map((scope) => (
+                  {visibleScopes(center?.allowed_scopes).map((scope) => (
                     <div className="settings-ability-row" key={scope}>
                       <span />
                       <strong>{serviceLabel(scope)}</strong>

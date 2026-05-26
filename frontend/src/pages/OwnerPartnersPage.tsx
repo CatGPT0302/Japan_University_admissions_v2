@@ -36,13 +36,18 @@ const SECTIONS: Array<{ key: SettingsSection; label: string; hint: string }> = [
 const ABILITY_LABELS: Record<string, string> = {
   "programs:read": "查看招生要求",
   "recommendations:create": "按学生情况推荐学校",
-  "bookings:create": "提交咨询预约",
   "documents:submit": "上传招生资料",
   "documents:read_status": "查看资料处理进度",
 };
 
+const HIDDEN_ABILITY_SCOPES = new Set(["bookings:create"]);
+
 function abilityLabel(scope: string): string {
   return ABILITY_LABELS[scope] || "其他服务";
+}
+
+function visibleScopes(scopes?: string[]): string[] {
+  return (scopes || []).filter((scope) => !HIDDEN_ABILITY_SCOPES.has(scope));
 }
 
 function statusLabel(status: string): string {
@@ -55,7 +60,7 @@ function usageTitle(item: ApiUsageLog): string {
   if (item.scope) return abilityLabel(item.scope);
   if (item.path.includes("programs")) return "查看学校与招生要求";
   if (item.path.includes("recommendations")) return "生成推荐";
-  if (item.path.includes("bookings")) return "提交咨询预约";
+  if (item.path.includes("bookings")) return "一次旧接口使用";
   if (item.path.includes("documents")) return "提交或查看资料";
   return "一次使用记录";
 }
@@ -169,11 +174,10 @@ export default function SettingsPage({ onOpenReview }: Props) {
     `专用密码：${displayKey}`,
     "",
     "可以做的事：",
-    ...(center?.allowed_scopes || []).map((scope) => `- ${abilityLabel(scope)}`),
+    ...visibleScopes(center?.allowed_scopes).map((scope) => `- ${abilityLabel(scope)}`),
     "",
     "常用地址：",
     `- 查看招生信息：${baseUrl}/programs`,
-    `- 提交学生咨询：${baseUrl}/bookings`,
     `- 提交招生资料：${baseUrl}/documents/submissions`,
   ].join("\n");
 
@@ -597,7 +601,7 @@ export default function SettingsPage({ onOpenReview }: Props) {
               </div>
               {!canCopyGuide ? <p className="settings-soft-note">先开通合作方，页面才会生成可复制的完整说明。</p> : null}
               <div className="settings-ability-list">
-                {(center?.allowed_scopes || []).map((scope) => (
+                {visibleScopes(center?.allowed_scopes).map((scope) => (
                   <div className="settings-ability-row" key={scope}>
                     <span />
                     <strong>{abilityLabel(scope)}</strong>
