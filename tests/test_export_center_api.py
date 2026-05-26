@@ -45,8 +45,9 @@ class ExportCenterApiTest(unittest.TestCase):
                 admission_period, faculty, department, application_period, deadline_rule,
                 eju_session, eju_japanese, eju_general, eju_math, eju_physics,
                 eju_chemistry, eju_biology, english_requirement, screening_method,
-                screening_schedule, result_date, enrollment_period, prefecture, campus
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                screening_schedule, result_date, enrollment_period, prefecture, campus,
+                eligibility, required_documents, evidence
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 None,
@@ -73,6 +74,9 @@ class ExportCenterApiTest(unittest.TestCase):
                 "2026-03-18",
                 "Tokyo",
                 "Main",
+                "Completed 12 years of school education outside Japan",
+                "Graduation certificate / Transcript / Statement of purpose",
+                "Guideline p.3-p.7",
             ),
         )
         conn.commit()
@@ -94,8 +98,9 @@ class ExportCenterApiTest(unittest.TestCase):
                 admission_period, faculty, department, application_period, deadline_rule,
                 eju_session, eju_japanese, eju_general, eju_math, eju_physics,
                 eju_chemistry, eju_biology, english_requirement, screening_method,
-                screening_schedule, result_date, enrollment_period, prefecture, campus
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                screening_schedule, result_date, enrollment_period, prefecture, campus,
+                eligibility, required_documents, evidence
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 None,
@@ -122,6 +127,9 @@ class ExportCenterApiTest(unittest.TestCase):
                 "2026-03-18",
                 "Tokyo",
                 "Main",
+                "",
+                "",
+                "",
             ),
         )
         conn.commit()
@@ -173,11 +181,13 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(payload["summary"]["missing_required"]["english_requirement"], 1)
         self.assertEqual(payload["summary"]["missing_required"]["screening_schedule"], 1)
         self.assertEqual(payload["summary"]["missing_required"]["result_date"], 1)
+        self.assertEqual(payload["summary"]["missing_required"]["eligibility"], 1)
+        self.assertEqual(payload["summary"]["missing_required"]["required_documents"], 1)
         self.assertEqual(len(payload["review_targets"]), 2)
         gap_row = next(row for row in payload["rows"] if row["university"] == "Gap University")
         self.assertEqual(
             set(gap_row["export_missing"]),
-            {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date"},
+            {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date", "eligibility", "required_documents"},
         )
         for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
             self.assertNotIn(hidden_key, str(payload))
@@ -207,7 +217,7 @@ class ExportCenterApiTest(unittest.TestCase):
         issue = next(item for item in payload["issues"] if item["kind"] == "export_gap")
         self.assertEqual(issue["university"], "Gap University")
         self.assertEqual(issue["admission_year"], "2027")
-        self.assertIn(issue["field"], {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date"})
+        self.assertIn(issue["field"], {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date", "eligibility", "required_documents"})
         self.assertEqual(issue["source_document"], "Gap University.pdf")
         self.assertTrue(issue["doc_id"])
         self.assertIn("复审页", issue["suggested_action"])

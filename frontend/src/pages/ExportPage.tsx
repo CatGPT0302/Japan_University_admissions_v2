@@ -20,6 +20,8 @@ const EXPORT_MISSING_LABELS: Record<string, string> = {
   english_requirement: "英语要求",
   screening_schedule: "考试日程",
   result_date: "结果公布",
+  eligibility: "出愿资格",
+  required_documents: "所需材料",
 };
 
 const PRESET_STORAGE_KEY = "admissions-export-presets-v1";
@@ -338,6 +340,8 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
       { key: "english_requirement" as const, label: "英语要求" },
       { key: "screening_schedule" as const, label: "考试日程" },
       { key: "result_date" as const, label: "结果公布" },
+      { key: "eligibility" as const, label: "出愿资格" },
+      { key: "required_documents" as const, label: "所需材料" },
     ];
     const serverMissing = preview?.summary.missing_required || {};
     const gaps = requiredChecks
@@ -619,7 +623,7 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
                   </span>
                 ))
               ) : (
-                <span>出愿、EJU、英语、考试日程和结果公布都有内容</span>
+                <span>出愿、EJU、英语、考试日程、结果公布、资格和材料都有内容</span>
               )}
             </div>
             {rows.length && exportCheck.gaps.length && selectedRow && onOpenReview ? (

@@ -82,6 +82,8 @@ EXPORT_REQUIRED_COLUMNS = {
     "english_requirement": "english_requirement",
     "screening_schedule": "screening_schedule",
     "result_date": "result_date",
+    "eligibility": "eligibility",
+    "required_documents": "required_documents",
 }
 
 OWNER_ISSUE_FIELD_LABELS = {
