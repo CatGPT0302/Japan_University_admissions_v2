@@ -114,6 +114,23 @@ export default function BookingsPage() {
   }, [items]);
   const overdueCount = groupedItems.find((group) => group.bucket === "overdue")?.items.length ?? 0;
   const todayCount = groupedItems.find((group) => group.bucket === "today")?.items.length ?? 0;
+  const summaryCards = (["overdue", "today", "later", "unscheduled"] as FollowUpBucket[]).map((bucket) => {
+    const group = groupedItems.find((item) => item.bucket === bucket);
+    return {
+      bucket,
+      label: FOLLOW_UP_BUCKET_LABELS[bucket],
+      count: group?.items.length ?? 0,
+      firstId: group?.items[0]?.id ?? null,
+      note:
+        bucket === "overdue"
+          ? "先处理这些"
+          : bucket === "today"
+            ? "今天要联系"
+            : bucket === "later"
+              ? "已有安排"
+              : "需要定下一步",
+    };
+  });
 
   useEffect(() => {
     setOwnerNote(selected?.owner_note || "");
@@ -220,6 +237,33 @@ export default function BookingsPage() {
         <div className="item-detail">
           {error ? <div className="message-box error">{error}</div> : null}
           {message ? <div className="message-box info">{message}</div> : null}
+
+          <div className="detail-shell">
+            <div className="detail-header">
+              <div>
+                <div className="card-kicker">今日摘要</div>
+                <h3 className="panel-title">先处理最需要跟进的请求</h3>
+              </div>
+              <span className="badge badge-gray">{items.length} 条</span>
+            </div>
+            <div className="booking-daily-summary" aria-label="每日咨询摘要">
+              {summaryCards.map((item) => (
+                <button
+                  className={`booking-summary-card is-${item.bucket}`}
+                  disabled={!item.firstId}
+                  key={item.bucket}
+                  type="button"
+                  onClick={() => {
+                    if (item.firstId) setSelectedId(item.firstId);
+                  }}
+                >
+                  <span>{item.label}</span>
+                  <strong>{item.count}</strong>
+                  <small>{item.note}</small>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="detail-shell">
             <div className="detail-header">

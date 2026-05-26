@@ -13,7 +13,7 @@
 - Add an owner-facing submission detail view with clearer links into the review page.
 - Add lightweight access protection before any external deployment of the owner/admin workspace.
 - Improve student result ranking with more real confirmed records.
-- Add a compact daily consultation summary view.
+- Add owner-side consultation search across student name, contact, school, and notes.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

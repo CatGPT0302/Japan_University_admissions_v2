@@ -1055,6 +1055,51 @@ a {
   font-weight: 680;
 }
 
+.booking-daily-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.booking-summary-card {
+  display: grid;
+  gap: 6px;
+  min-height: 108px;
+  padding: 16px;
+  text-align: left;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.32));
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.booking-summary-card:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
+  border-color: rgba(147, 197, 253, 0.74);
+}
+
+.booking-summary-card:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
+.booking-summary-card span,
+.booking-summary-card small {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.booking-summary-card strong {
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
 .dropzone {
   min-height: 420px;
   display: grid;
@@ -4179,7 +4224,8 @@ a {
   .quality-grid,
   .quality-row,
   .quality-correction p,
-  .source-review-summary {
+  .source-review-summary,
+  .booking-daily-summary {
     grid-template-columns: 1fr;
   }
 

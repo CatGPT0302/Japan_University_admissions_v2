@@ -400,6 +400,8 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} inbox`);
     await assertBodyIncludes(page, "student-smoke@example.com", `${surface.name} inbox`);
     await assertBodyIncludes(page, "导出当前咨询", `${surface.name} export action`);
+    await assertBodyIncludes(page, "今日摘要", `${surface.name} daily summary`);
+    await assertBodyIncludes(page, "先处理最需要跟进的请求", `${surface.name} daily summary`);
 
     await page.getByRole("button", { name: /浏览器测试学生/ }).click();
     await page.getByPlaceholder("例如：先确认 EJU 分数，再约一次家长沟通").fill("先确认 EJU 日本语，再约家长沟通。");
@@ -414,6 +416,7 @@ async function runSurfaceAction(page, surface) {
     }
     await assertBodyIncludes(page, "跟进安排已保存。", `${surface.name} booking follow-up saved`);
     await assertBodyIncludes(page, "逾期跟进", `${surface.name} overdue follow-up group`);
+    await assertBodyIncludes(page, "先处理这些", `${surface.name} overdue summary card`);
     await assertBodyIncludes(page, "下次跟进：2000-01-01 14:00", `${surface.name} overdue follow-up date`);
 
     const bookingCsvResponse = await page.request.get(`${apiBaseUrl}/admin/bookings/export.csv?status=new`);
