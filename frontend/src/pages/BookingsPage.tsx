@@ -76,14 +76,15 @@ export default function BookingsPage() {
   const [workingId, setWorkingId] = useState<number | null>(null);
   const [ownerNote, setOwnerNote] = useState("");
   const [nextActionAt, setNextActionAt] = useState("");
+  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  async function load(nextStatus = status) {
+  async function load(nextStatus = status, nextQuery = query) {
     setLoading(true);
     setError("");
     try {
-      const rows = await getAdminBookings({ status: nextStatus || undefined, limit: 100 });
+      const rows = await getAdminBookings({ status: nextStatus || undefined, q: nextQuery.trim() || undefined, limit: 100 });
       setItems(rows);
       setSelectedId((current) => (current && rows.some((item) => item.id === current) ? current : rows[0]?.id ?? null));
     } catch (nextError) {
@@ -225,10 +226,37 @@ export default function BookingsPage() {
                 </button>
               ))}
             </div>
+            <label className="booking-search field-wrap">
+              <span className="detail-label">快速查找</span>
+              <input
+                className="field"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void load(status, query);
+                }}
+                placeholder="姓名、电话、学校或备注"
+              />
+            </label>
+            <div className="inline-actions inline-actions-tight">
+              <button className="btn btn-primary" type="button" onClick={() => void load(status, query)}>
+                查找
+              </button>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  void load(status, "");
+                }}
+              >
+                清空
+              </button>
+            </div>
             <button className="btn btn-ghost" type="button" onClick={() => void load()}>
               {loading ? "刷新中" : "刷新"}
             </button>
-            <button className="btn btn-primary" type="button" onClick={() => downloadAdminBookingsCsv(status)}>
+            <button className="btn btn-primary" type="button" onClick={() => downloadAdminBookingsCsv(status, query)}>
               导出当前咨询
             </button>
           </div>

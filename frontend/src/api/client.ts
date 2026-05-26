@@ -230,6 +230,7 @@ export async function createConsultationBooking(
 
 export async function getAdminBookings(params?: {
   status?: ConsultationBookingStatus | "";
+  q?: string;
   limit?: number;
   offset?: number;
 }): Promise<AdminConsultationBooking[]> {
@@ -245,9 +246,10 @@ export async function updateAdminBooking(
   return data;
 }
 
-export function downloadAdminBookingsCsv(status?: ConsultationBookingStatus | ""): void {
+export function downloadAdminBookingsCsv(status?: ConsultationBookingStatus | "", q?: string): void {
   const search = new URLSearchParams();
   if (status) search.set("status", status);
+  if (q?.trim()) search.set("q", q.trim());
   const qs = search.toString();
   window.open(`${BASE_URL}/admin/bookings/export.csv${qs ? `?${qs}` : ""}`, "_blank");
 }

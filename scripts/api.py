@@ -736,20 +736,22 @@ def public_booking(payload: ConsultationBookingRequest) -> dict[str, Any]:
 def admin_bookings(
     request: Request,
     status: str | None = None,
+    q: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     _require_owner(request)
-    return list_consultation_bookings(status=status, limit=limit, offset=offset)
+    return list_consultation_bookings(status=status, q=q, limit=limit, offset=offset)
 
 
 @app.get("/admin/bookings/export.csv")
 def admin_bookings_export_csv(
     request: Request,
     status: str | None = None,
+    q: str | None = None,
 ) -> StreamingResponse:
     _require_owner(request)
-    rows = list_consultation_bookings(status=status, limit=10000, offset=0)
+    rows = list_consultation_bookings(status=status, q=q, limit=10000, offset=0)
     buffer = io.StringIO()
     fieldnames = [
         "状态",

@@ -402,6 +402,9 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "导出当前咨询", `${surface.name} export action`);
     await assertBodyIncludes(page, "今日摘要", `${surface.name} daily summary`);
     await assertBodyIncludes(page, "先处理最需要跟进的请求", `${surface.name} daily summary`);
+    await page.getByLabel("快速查找").fill("东京测试大学");
+    await page.getByRole("button", { name: "查找" }).click();
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} booking search`);
 
     await page.getByRole("button", { name: /浏览器测试学生/ }).click();
     await page.getByPlaceholder("例如：先确认 EJU 分数，再约一次家长沟通").fill("先确认 EJU 日本语，再约家长沟通。");

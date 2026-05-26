@@ -237,7 +237,9 @@ class PublicUserApiTest(unittest.TestCase):
                 },
             )
             filtered = client.get("/admin/bookings", params={"status": "contacted"})
-            exported = client.get("/admin/bookings/export.csv", params={"status": "contacted"})
+            searched = client.get("/admin/bookings", params={"status": "contacted", "q": "明治"})
+            no_match = client.get("/admin/bookings", params={"status": "contacted", "q": "不存在的学生"})
+            exported = client.get("/admin/bookings/export.csv", params={"status": "contacted", "q": "明治"})
 
         self.assertEqual(created.status_code, 200)
         self.assertEqual(unauth.status_code, 401)
@@ -253,6 +255,10 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(filtered.status_code, 200)
         self.assertEqual(filtered.json()[0]["status"], "contacted")
         self.assertEqual(filtered.json()[0]["owner_note"], "先确认EJU成绩，再约家长面谈。")
+        self.assertEqual(searched.status_code, 200)
+        self.assertEqual(searched.json()[0]["student_name"], "王小明")
+        self.assertEqual(no_match.status_code, 200)
+        self.assertEqual(no_match.json(), [])
         self.assertEqual(exported.status_code, 200)
         self.assertIn("text/csv", exported.headers["content-type"])
         self.assertIn("王小明", exported.text)

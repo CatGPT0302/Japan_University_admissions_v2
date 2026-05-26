@@ -2117,6 +2117,7 @@ def create_consultation_booking(payload: dict[str, Any]) -> int:
 def list_consultation_bookings(
     *,
     status: str | None = None,
+    q: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
@@ -2125,6 +2126,26 @@ def list_consultation_bookings(
     if status:
         clauses.append(f"cb.status={_ph()}")
         params.append(status)
+    query = str(q or "").strip()
+    if query:
+        like = f"%{query.lower()}%"
+        searchable = [
+            "cb.student_name",
+            "cb.contact_email",
+            "cb.contact_phone",
+            "cb.role",
+            "cb.target_year",
+            "cb.preferred_times",
+            "cb.question",
+            "cb.owner_note",
+            "cb.next_action_at",
+            "ar.university",
+            "ar.faculty",
+            "ar.department",
+            "ar.admission_year",
+        ]
+        clauses.append("(" + " OR ".join(f"LOWER(COALESCE({column}, '')) LIKE {_ph()}" for column in searchable) + ")")
+        params.extend([like] * len(searchable))
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     params.extend([int(limit), int(offset)])
     sql = f"""
