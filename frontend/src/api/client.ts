@@ -22,6 +22,8 @@ import type {
   QualityMetricsResponse,
   QualityOverviewResponse,
   RecommendationResponse,
+  SeedPackageBuildResponse,
+  SeedPackageImportResponse,
   SourceReviewAcceptResponse,
   SourceCheckRunResponse,
   SourceReviewReextractResponse,
@@ -341,6 +343,21 @@ export function sourceReviewReportUrl(): string {
 
 export async function getSourceWatchlist(): Promise<SourceWatchlistResponse> {
   const { data } = await client.get<SourceWatchlistResponse>("/admin/source-watchlist");
+  return data;
+}
+
+export async function buildSeedPackage(): Promise<SeedPackageBuildResponse> {
+  const { data } = await client.post<SeedPackageBuildResponse>("/admin/seed-package/build");
+  return data;
+}
+
+export async function previewSeedPackageImport(): Promise<SeedPackageImportResponse> {
+  const { data } = await client.get<SeedPackageImportResponse>("/admin/seed-package/import-preview");
+  return data;
+}
+
+export async function importSeedPackageToStaging(apply = false): Promise<SeedPackageImportResponse> {
+  const { data } = await client.post<SeedPackageImportResponse>("/admin/seed-package/import", { apply });
   return data;
 }
 

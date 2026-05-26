@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   acceptSourceReviewItem,
+  buildSeedPackage,
   getCorrectionEvents,
   getDocuments,
   getOwnerIssues,
@@ -9,6 +10,8 @@ import {
   getSourceReviewQueue,
   getSourceWatchlist,
   ownerIssuesCsvUrl,
+  importSeedPackageToStaging,
+  previewSeedPackageImport,
   reextractSourceReviewItem,
   runSourceChecks,
   sourceReviewReportUrl,
@@ -23,6 +26,8 @@ import type {
   QualityMetricsResponse,
   QualityOverviewResponse,
   ReviewFocus,
+  SeedPackageBuildResponse,
+  SeedPackageImportResponse,
   SourceReviewItem,
   SourceReviewResponse,
   SourceWatchlistResponse,
@@ -231,8 +236,11 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [corrections, setCorrections] = useState<CorrectionEvent[]>([]);
   const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
   const [sourceWatchlist, setSourceWatchlist] = useState<SourceWatchlistResponse | null>(null);
+  const [seedPackage, setSeedPackage] = useState<SeedPackageBuildResponse | null>(null);
+  const [seedImportPreview, setSeedImportPreview] = useState<SeedPackageImportResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingSources, setCheckingSources] = useState(false);
+  const [seedPackageBusy, setSeedPackageBusy] = useState(false);
   const [updatingSourceId, setUpdatingSourceId] = useState("");
   const [reextractingSourceId, setReextractingSourceId] = useState("");
   const [acceptingSourceId, setAcceptingSourceId] = useState("");
@@ -349,6 +357,53 @@ export default function QualityPage({ onOpenReview }: Props) {
       setError(toErrorMessage(nextError));
     } finally {
       setAcceptingSourceId("");
+    }
+  }
+
+  async function buildSeedDataPackage() {
+    setSeedPackageBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await buildSeedPackage();
+      setSeedPackage(result);
+      setSeedImportPreview(null);
+      setMessage(`已生成可审阅资料包：${result.summary.documents} 份资料，${result.summary.records} 条内容。尚未写入正式资料库。`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setSeedPackageBusy(false);
+    }
+  }
+
+  async function previewSeedImport() {
+    setSeedPackageBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await previewSeedPackageImport();
+      setSeedImportPreview(result);
+      setMessage(`导入预览完成：${result.summary.documents} 份资料，${result.summary.records} 条内容。未写入数据库。`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setSeedPackageBusy(false);
+    }
+  }
+
+  async function importSeedImportPreview() {
+    setSeedPackageBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await importSeedPackageToStaging(true);
+      setSeedImportPreview(result);
+      await load(selectedDocId);
+      setMessage(`已导入待复审：${result.summary.created_documents || 0} 份资料，${result.summary.created_staging_records || 0} 条内容。正式资料库没有被自动改动。`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setSeedPackageBusy(false);
     }
   }
 
@@ -555,6 +610,54 @@ export default function QualityPage({ onOpenReview }: Props) {
                 ))}
                 {!topOwnerIssues.length ? <div className="empty-state empty-state-quiet">当前没有需要优先处理的问题。</div> : null}
               </div>
+            </section>
+
+            <section className="quality-section owner-issue-panel">
+              <div className="split-row split-row-start">
+                <div>
+                  <h3 className="panel-title">已核对样本资料包</h3>
+                  <p className="panel-copy">把人工核对过的样本整理成可审阅资料包。先生成和预览，确认后才导入待复审，不会直接进入正式资料。</p>
+                </div>
+                <span className="badge badge-gray">
+                  {seedImportPreview?.summary.database_status === "staging_imported"
+                    ? "已进待复审"
+                    : seedPackage?.summary.database_status || seedImportPreview?.summary.database_status || "未写入"}
+                </span>
+              </div>
+              <div className="metric-grid metric-grid-compact">
+                <div className="metric-card">
+                  <span>资料</span>
+                  <strong className="metric-value">{seedPackage?.summary.documents ?? seedImportPreview?.summary.documents ?? "-"}</strong>
+                </div>
+                <div className="metric-card">
+                  <span>内容</span>
+                  <strong className="metric-value">{seedPackage?.summary.records ?? seedImportPreview?.summary.records ?? "-"}</strong>
+                </div>
+                <div className="metric-card">
+                  <span>待复审</span>
+                  <strong className="metric-value">{seedImportPreview?.summary.created_staging_records ?? 0}</strong>
+                </div>
+              </div>
+              <div className="inline-actions inline-actions-tight">
+                <button className="btn btn-ghost btn-small" type="button" disabled={seedPackageBusy} onClick={() => void buildSeedDataPackage()}>
+                  {seedPackageBusy ? "处理中" : "生成资料包"}
+                </button>
+                <button className="btn btn-ghost btn-small" type="button" disabled={seedPackageBusy} onClick={() => void previewSeedImport()}>
+                  预览导入
+                </button>
+                <button className="btn btn-primary btn-small" type="button" disabled={seedPackageBusy} onClick={() => void importSeedImportPreview()}>
+                  导入待复审
+                </button>
+              </div>
+              {seedImportPreview?.items?.length ? (
+                <div className="owner-issue-meta">
+                  {seedImportPreview.items.slice(0, 4).map((item) => (
+                    <span key={`${item.seed_id}-${item.university}`}>
+                      {item.university || item.seed_id} / {item.records ?? 0} 条
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </section>
 
             <section className="quality-section source-review-panel">

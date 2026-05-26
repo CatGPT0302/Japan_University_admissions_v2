@@ -238,6 +238,44 @@ export interface OwnerIssuesResponse {
   issues: OwnerIssue[];
 }
 
+export interface SeedPackageSummary {
+  mode?: "dry_run" | "apply" | string;
+  documents: number;
+  passed_documents?: number;
+  failed_documents?: number;
+  records: number;
+  review_items?: number;
+  created_documents?: number;
+  created_staging_records?: number;
+  database_status: "not_imported" | "staging_imported" | string;
+}
+
+export interface SeedPackageDocument {
+  seed_id?: string;
+  university?: string;
+  admission_year?: string;
+  record_count?: number;
+  status?: string;
+  failures?: string[];
+}
+
+export interface SeedPackageBuildResponse {
+  summary: SeedPackageSummary;
+  documents: SeedPackageDocument[];
+}
+
+export interface SeedPackageImportResponse {
+  summary: SeedPackageSummary;
+  items: Array<{
+    seed_id?: string;
+    doc_id?: number;
+    university?: string;
+    admission_year?: string;
+    records?: number;
+    status?: string;
+  }>;
+}
+
 export interface CorrectionEvent {
   id: number;
   staging_id: number;

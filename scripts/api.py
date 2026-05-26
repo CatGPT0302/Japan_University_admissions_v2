@@ -67,6 +67,8 @@ from scripts.db import (  # noqa: E402
 from scripts.export_excel import CONFIRMED_EXPORT_COLUMNS, export_confirmed_excel_bytes_from_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.quality_overview import build_quality_overview  # noqa: E402
+from scripts.seed_data_package import build_seed_data_package  # noqa: E402
+from scripts.import_seed_package_to_staging import import_seed_package_to_staging  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.seed_registry import SEED_EXTRACTORS  # noqa: E402
 from scripts.source_change_report import build_change_report, format_markdown_report, load_review_queue  # noqa: E402
@@ -78,6 +80,7 @@ ensure_runtime_dirs()
 INPUT_DIR = uploads_dir()
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
 FRONTEND_DIST_DIR = frontend_dist_dir()
+DEFAULT_SEED_PACKAGE_DIR = ROOT / "data" / "exports" / "seed_data_package"
 
 EXPORT_REQUIRED_COLUMNS = {
     "application_period": "application_period",
@@ -252,6 +255,10 @@ class AdminBookingUpdateRequest(BaseModel):
 class SourceReviewStateRequest(BaseModel):
     review_status: str = Field(..., min_length=1)
     note: str = ""
+
+
+class SeedPackageImportRequest(BaseModel):
+    apply: bool = False
 
 
 class LoginRequest(BaseModel):
@@ -1639,6 +1646,38 @@ def source_review_report_markdown(request: Request) -> Response:
 def source_watchlist(request: Request) -> dict[str, Any]:
     _require_owner(request)
     return build_watchlist_report()
+
+
+@app.post("/admin/seed-package/build")
+def build_seed_package(request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    payload = build_seed_data_package(output_dir=DEFAULT_SEED_PACKAGE_DIR)
+    return {
+        "summary": payload.get("summary", {}),
+        "documents": [
+            {
+                "seed_id": item.get("seed_id"),
+                "university": item.get("university"),
+                "admission_year": item.get("admission_year"),
+                "record_count": item.get("record_count"),
+                "status": item.get("status"),
+                "failures": item.get("failures", []),
+            }
+            for item in payload.get("documents", [])
+        ],
+    }
+
+
+@app.get("/admin/seed-package/import-preview")
+def seed_package_import_preview(request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    return import_seed_package_to_staging(package_dir=DEFAULT_SEED_PACKAGE_DIR, apply=False)
+
+
+@app.post("/admin/seed-package/import")
+def seed_package_import(payload: SeedPackageImportRequest, request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    return import_seed_package_to_staging(package_dir=DEFAULT_SEED_PACKAGE_DIR, apply=bool(payload.apply))
 
 
 @app.patch("/admin/source-review-queue/{item_id}")
