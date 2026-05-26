@@ -66,6 +66,7 @@ from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
 from scripts.source_review_state import update_source_review_state  # noqa: E402
+from scripts.source_watchlist import build_watchlist_report  # noqa: E402
 from scripts.validator import validate  # noqa: E402
 
 ensure_runtime_dirs()
@@ -1136,6 +1137,12 @@ def correction_events(request: Request, doc_id: int | None = None, limit: int = 
 def source_review_queue(request: Request) -> dict[str, Any]:
     _require_owner(request)
     return build_change_report(load_review_queue())
+
+
+@app.get("/admin/source-watchlist")
+def source_watchlist(request: Request) -> dict[str, Any]:
+    _require_owner(request)
+    return build_watchlist_report()
 
 
 @app.patch("/admin/source-review-queue/{item_id}")

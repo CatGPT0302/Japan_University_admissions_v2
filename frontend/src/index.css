@@ -4326,6 +4326,66 @@ a {
   line-height: 1;
 }
 
+.source-watch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.source-watch-block {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.source-watch-block > span,
+.source-watch-row > span,
+.source-watch-row div span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.source-watch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.source-watch-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.source-watch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.source-watch-row div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.source-watch-row strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .source-review-card {
   display: grid;
   gap: 8px;
@@ -4473,6 +4533,8 @@ a {
   .quality-row,
   .quality-correction p,
   .source-review-summary,
+  .source-watch-grid,
+  .source-watch-row,
   .booking-daily-summary {
     grid-template-columns: 1fr;
   }

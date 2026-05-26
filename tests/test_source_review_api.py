@@ -35,6 +35,62 @@ class SourceReviewApiTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
+    def test_source_watchlist_requires_owner_login(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+
+            response = client.get("/admin/source-watchlist")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_source_watchlist_returns_registered_sources_for_owner(self) -> None:
+        report = {
+            "summary": {
+                "total": 1,
+                "by_type": {"pdf": 1},
+                "metadata_gaps": {
+                    "missing_source_url": 0,
+                    "missing_source_type": 0,
+                    "missing_hash": 1,
+                    "missing_last_checked_at": 1,
+                    "missing_source_note": 0,
+                },
+            },
+            "items": [
+                {
+                    "stem": "sample",
+                    "id": "sample",
+                    "university": "Sample University",
+                    "admission_year": "2027",
+                    "admission_type": "international_undergraduate",
+                    "source_type": "pdf",
+                    "source_url": "https://example.test/admissions.pdf",
+                    "cached_path": "",
+                    "source_candidates": [],
+                    "last_known_sha256": "",
+                    "last_checked_at": "",
+                    "source_note": "Official source",
+                    "markers": [],
+                    "receipt_status": "",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            with patch.object(api, "build_watchlist_report", return_value=report):
+                response = client.get("/admin/source-watchlist")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["summary"]["total"], 1)
+        self.assertEqual(payload["summary"]["by_type"]["pdf"], 1)
+        self.assertEqual(payload["summary"]["metadata_gaps"]["missing_hash"], 1)
+        self.assertEqual(payload["items"][0]["university"], "Sample University")
+
     def test_source_review_queue_returns_human_review_report(self) -> None:
         queue = {
             "generated_at": "2026-05-26T00:00:00+00:00",

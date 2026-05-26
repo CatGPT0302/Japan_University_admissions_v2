@@ -27,6 +27,7 @@ import type {
   SourceReviewReextractResponse,
   SourceReviewResponse,
   SourceReviewStateResponse,
+  SourceWatchlistResponse,
   StagingRecord,
   StatsResponse,
   StudentProfile,
@@ -330,6 +331,11 @@ export async function getCorrectionEvents(params?: {
 
 export async function getSourceReviewQueue(): Promise<SourceReviewResponse> {
   const { data } = await client.get<SourceReviewResponse>("/admin/source-review-queue");
+  return data;
+}
+
+export async function getSourceWatchlist(): Promise<SourceWatchlistResponse> {
+  const { data } = await client.get<SourceWatchlistResponse>("/admin/source-watchlist");
   return data;
 }
 

@@ -219,6 +219,32 @@ export interface SourceReviewResponse {
   confirmed_records_unchanged: boolean;
 }
 
+export interface SourceWatchlistItem {
+  stem: string;
+  id: string;
+  university: string;
+  admission_year: string;
+  admission_type: string;
+  source_type: string;
+  source_url: string;
+  cached_path: string;
+  source_candidates: string[];
+  last_known_sha256: string;
+  last_checked_at: string;
+  source_note: string;
+  markers: string[];
+  receipt_status: string;
+}
+
+export interface SourceWatchlistResponse {
+  summary: {
+    total: number;
+    by_type: Record<string, number>;
+    metadata_gaps: Record<string, number>;
+  };
+  items: SourceWatchlistItem[];
+}
+
 export interface SourceCheckRunResponse {
   checked_at: string;
   summary: Record<string, number>;

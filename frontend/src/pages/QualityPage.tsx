@@ -4,13 +4,21 @@ import {
   getDocuments,
   getQualityMetrics,
   getSourceReviewQueue,
+  getSourceWatchlist,
   reextractSourceReviewItem,
   runSourceChecks,
   toErrorMessage,
   updateSourceReviewItem,
 } from "../api/client";
 import { PieSummary, TreemapSummary } from "../components/DashboardCharts";
-import type { CorrectionEvent, DocumentListItem, QualityMetricsResponse, SourceReviewItem, SourceReviewResponse } from "../types";
+import type {
+  CorrectionEvent,
+  DocumentListItem,
+  QualityMetricsResponse,
+  SourceReviewItem,
+  SourceReviewResponse,
+  SourceWatchlistResponse,
+} from "../types";
 
 interface Props {
   onOpenReview?: (docId: number) => void;
@@ -78,6 +86,22 @@ function sourceActionText(value: string) {
   return "查看来源后决定是否需要复审。";
 }
 
+function sourceTypeText(value?: string) {
+  if (value === "pdf") return "PDF";
+  if (value === "html") return "官网页面";
+  if (value === "cached_text") return "已缓存文本";
+  return "待补充";
+}
+
+function watchlistGapText(value: string) {
+  if (value === "missing_source_url") return "缺官网链接";
+  if (value === "missing_source_type") return "缺来源类型";
+  if (value === "missing_hash") return "缺保存凭证";
+  if (value === "missing_last_checked_at") return "缺最近检查";
+  if (value === "missing_source_note") return "缺来源说明";
+  return value;
+}
+
 function normalized(value?: string | null) {
   return String(value || "")
     .trim()
@@ -108,6 +132,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [metrics, setMetrics] = useState<QualityMetricsResponse | null>(null);
   const [corrections, setCorrections] = useState<CorrectionEvent[]>([]);
   const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
+  const [sourceWatchlist, setSourceWatchlist] = useState<SourceWatchlistResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingSources, setCheckingSources] = useState(false);
   const [updatingSourceId, setUpdatingSourceId] = useState("");
@@ -119,16 +144,18 @@ export default function QualityPage({ onOpenReview }: Props) {
     setLoading(true);
     setError("");
     try {
-      const [docs, quality, correctionRows, queue] = await Promise.all([
+      const [docs, quality, correctionRows, queue, watchlist] = await Promise.all([
         getDocuments({ limit: 100 }),
         getQualityMetrics(docId || undefined),
         getCorrectionEvents({ doc_id: docId || undefined, limit: 80 }),
         getSourceReviewQueue(),
+        getSourceWatchlist(),
       ]);
       setDocuments(docs);
       setMetrics(quality);
       setCorrections(correctionRows);
       setSourceQueue(queue);
+      setSourceWatchlist(watchlist);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -214,6 +241,14 @@ export default function QualityPage({ onOpenReview }: Props) {
   const priority = metrics?.risk_distribution || { high: 0, medium: 0, low: 0 };
   const sourceSummary = sourceQueue?.summary || { needs_review: 0, changed: 0, failed: 0 };
   const sourceItems = sourceQueue?.items || [];
+  const watchSummary = sourceWatchlist?.summary || { total: 0, by_type: {}, metadata_gaps: {} };
+  const watchGaps = Object.entries(watchSummary.metadata_gaps)
+    .filter(([, count]) => Number(count) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  const watchedTypes = Object.entries(watchSummary.by_type).sort((a, b) => Number(b[1]) - Number(a[1]));
+  const recentWatchItems = (sourceWatchlist?.items || [])
+    .filter((item) => item.source_url || item.cached_path)
+    .slice(0, 4);
   const topCoverage = [...(metrics?.field_coverage || [])].sort((a, b) => a.fill_rate - b.fill_rate).slice(0, 8);
   const topModified = metrics?.top_modified_fields || [];
   const correctedTotal = topModified.reduce((sum, item) => sum + item.count, 0);
@@ -305,6 +340,59 @@ export default function QualityPage({ onOpenReview }: Props) {
                 刷新
               </button>
             </div>
+
+            <section className="quality-section source-review-panel">
+              <div className="split-row split-row-start">
+                <div>
+                  <h3 className="panel-title">来源登记</h3>
+                  <p className="panel-copy">这里看每所学校的官网资料是否已经登记完整。先把来源管住，后面的整理和导出才稳。</p>
+                </div>
+                <span className="badge badge-blue">{watchSummary.total || 0} 份来源</span>
+              </div>
+
+              <div className="source-watch-grid">
+                <div className="source-watch-block">
+                  <span>来源形式</span>
+                  <div className="source-watch-chips">
+                    {watchedTypes.length ? (
+                      watchedTypes.map(([type, count]) => (
+                        <span className="badge badge-gray" key={type}>
+                          {sourceTypeText(type)} · {count}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="badge badge-gray">暂无登记</span>
+                    )}
+                  </div>
+                </div>
+                <div className="source-watch-block">
+                  <span>需要补齐</span>
+                  <div className="source-watch-chips">
+                    {watchGaps.length ? (
+                      watchGaps.slice(0, 4).map(([gap, count]) => (
+                        <span className="badge badge-amber" key={gap}>
+                          {watchlistGapText(gap)} · {count}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="badge badge-green">来源登记完整</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="source-watch-list">
+                {recentWatchItems.map((item) => (
+                  <article className="source-watch-row" key={item.id || item.stem}>
+                    <div>
+                      <strong>{item.university || item.stem}</strong>
+                      <span>{item.admission_year || "未标年度"} · {sourceTypeText(item.source_type)}</span>
+                    </div>
+                    {item.last_checked_at ? <span>{item.last_checked_at}</span> : <span>还未检查</span>}
+                  </article>
+                ))}
+              </div>
+            </section>
 
             <section className="quality-section source-review-panel">
               <div className="split-row split-row-start">

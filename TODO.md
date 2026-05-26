@@ -11,7 +11,6 @@
 ## Next
 
 - Improve student result ranking with more real confirmed records.
-- Add owner-side source watchlist checks to the regular admin workflow.
 - Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
 
 ## Later

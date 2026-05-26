@@ -250,6 +250,10 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /人工核对/ }).click();
     await assertBodyIncludes(page, "资料队列", `${surface.name} review page`);
     await assertBodyIncludes(page, "请选择一份资料", `${surface.name} review page`);
+
+    await page.getByRole("button", { name: /质量与更新/ }).click();
+    await assertBodyIncludes(page, "来源登记", `${surface.name} source watchlist`);
+    await assertBodyIncludes(page, "官方来源变化", `${surface.name} source review`);
     return;
   }
 
