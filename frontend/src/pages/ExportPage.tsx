@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { downloadCsv, downloadExcel, getExportOptions, getExportPreview, toErrorMessage } from "../api/client";
+import { downloadCsv, downloadExcel, getDocuments, getExportOptions, getExportPreview, toErrorMessage } from "../api/client";
 import type { ConfirmedRecord, ExportOptionItem, ExportOptionsResponse, ExportPreviewResponse } from "../types";
 
 const COLUMNS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
@@ -23,6 +23,10 @@ type ExportPreset = {
   years: string;
   faculties: string;
 };
+
+interface Props {
+  onOpenReview?: (docId: number) => void;
+}
 
 function splitItems(value: string) {
   return value
@@ -83,7 +87,7 @@ function OptionChips({
   );
 }
 
-export default function ExportPage() {
+export default function ExportPage({ onOpenReview }: Props) {
   const [quickSchool, setQuickSchool] = useState("");
   const [universities, setUniversities] = useState("");
   const [years, setYears] = useState("");
@@ -91,6 +95,8 @@ export default function ExportPage() {
   const [preview, setPreview] = useState<ExportPreviewResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sourceLookupError, setSourceLookupError] = useState("");
+  const [openingSource, setOpeningSource] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<ExportPreset[]>(() => loadPresets());
   const [options, setOptions] = useState<ExportOptionsResponse | null>(null);
@@ -138,6 +144,29 @@ export default function ExportPage() {
     if (!quickSchool.trim()) return;
     setUniversities(quickSchool.trim());
     void loadPreview(quickParams);
+  }
+
+  async function openQuickSchoolReview() {
+    if (!quickSchool.trim() || !onOpenReview) return;
+    setOpeningSource(true);
+    setSourceLookupError("");
+    try {
+      const docs = await getDocuments({
+        q: quickSchool.trim(),
+        year: years.trim() || undefined,
+        limit: 20,
+      });
+      const doc = docs.find((item) => item.confirmed_count > 0 || item.staging_count > 0) ?? docs[0];
+      if (!doc) {
+        setSourceLookupError("没有找到这所学校的来源资料。");
+        return;
+      }
+      onOpenReview(doc.doc_id);
+    } catch (nextError) {
+      setSourceLookupError(toErrorMessage(nextError));
+    } finally {
+      setOpeningSource(false);
+    }
   }
 
   function savePreset() {
@@ -231,7 +260,14 @@ export default function ExportPage() {
             <button className="btn btn-green" type="button" onClick={() => downloadExcel(quickParams)} disabled={!quickSchool.trim()}>
               导出这所学校
             </button>
+            {onOpenReview ? (
+              <button className="btn btn-ghost" type="button" onClick={() => void openQuickSchoolReview()} disabled={!quickSchool.trim() || openingSource}>
+                {openingSource ? "正在打开" : "查看来源"}
+              </button>
+            ) : null}
           </div>
+
+          {sourceLookupError ? <div className="message-box error">{sourceLookupError}</div> : null}
 
           <div className="export-option-block">
             <span>当前可取学校</span>

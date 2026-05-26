@@ -285,7 +285,13 @@ export default function App() {
           ) : page === "records" ? (
             <RecordsPage />
           ) : page === "exports" ? (
-            <ExportPage />
+            <ExportPage
+              onOpenReview={(docId) => {
+                setActiveDocId(docId);
+                setPage("review");
+                window.location.hash = "#/review";
+              }}
+            />
           ) : page === "bookings" ? (
             <BookingsPage />
           ) : (
