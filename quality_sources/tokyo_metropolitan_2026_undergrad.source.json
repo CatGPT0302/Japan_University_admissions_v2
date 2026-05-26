@@ -1,0 +1,15 @@
+{
+  "status": "cached",
+  "stem": "tokyo_metropolitan_2026_undergrad",
+  "source_url": "https://www.tmu.ac.jp/extra/download.html?d=assets%2Ffiles%2Fdownload%2Fentrance%2F2026_tsg_bosyuuyoukou.pdf",
+  "cached_path": "data/uploads/tokyo_metropolitan_2026_undergrad.pdf",
+  "sha256": "984a5194af0cbcc2cf5879510f1d5c481c0df639a1fe28038bce0e8f8ed4c952",
+  "size_bytes": 662212,
+  "markers": [
+    "東京都立大学",
+    "私費外国人留学生入試",
+    "日本留学試験",
+    "TOEFL"
+  ],
+  "checked_at": "2026-05-26T03:15:46+00:00"
+}

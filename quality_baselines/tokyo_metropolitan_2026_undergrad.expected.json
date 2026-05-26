@@ -1,0 +1,97 @@
+[
+  {
+    "id": "tokyo-metropolitan-2026-humanities",
+    "source_document": "https://www.tmu.ac.jp/extra/download.html?d=assets%2Ffiles%2Fdownload%2Fentrance%2F2026_tsg_bosyuuyoukou.pdf",
+    "source_note": "Official Tokyo Metropolitan University 2026 privately financed international student admissions guide. Checked against schedule, eligibility, application documents, selection method, EJU appendix, and exam timetable.",
+    "match": {"university": "東京都立大学", "admission_year": "2026", "faculty": "人文社会学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月4日", "12月8日", "20時", "郵送必着"]},
+      "deadline_rule": {"contains": ["マイページ", "入学考査料", "登録及び支払だけでは", "書留速達", "EMS"]},
+      "eligibility": {"contains": ["外国人", "12年の課程", "2026年3月31日", "通算3年以内"]},
+      "required_documents": {"contains": ["志願票", "卒業証明書", "成績証明書", "日本語訳", "日本留学試験", "外部英語検定試験", "外国籍"]},
+      "eju_session": {"contains": ["2024年度", "2025年度", "出題言語は日本語", "記述を除く"]},
+      "eju_japanese": {"contains": ["人文社会学部", "日本語", "400点", "記述を除く"]},
+      "eju_general": {"contains": ["人文社会学部", "総合科目"]},
+      "eju_math": {"contains": ["数学", "コース指定なし"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "自宅受験版", "Test Date", "MyBest"]},
+      "screening_method": {"contains": ["第1次選抜", "日本留学試験", "TOEFL iBT", "小論文", "面接"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "15:00-16:30", "2026年3月3日", "13:00"]},
+      "result_date": {"contains": ["2026年2月11日", "2026年3月8日"]},
+      "enrollment_period": {"contains": ["2026年3月10日", "3月15日", "2026年4月"]},
+      "evidence": {"contains": ["p.1", "p.3-p.4", "p.4-p.8", "p.9-p.10", "p.10-p.11", "p.12-p.14", "p.15"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tokyo-metropolitan-2026-law",
+    "source_document": "https://www.tmu.ac.jp/extra/download.html?d=assets%2Ffiles%2Fdownload%2Fentrance%2F2026_tsg_bosyuuyoukou.pdf",
+    "source_note": "Official Tokyo Metropolitan University 2026 privately financed international student admissions guide. Checked against schedule, eligibility, application documents, selection method, EJU appendix, and exam timetable.",
+    "match": {"university": "東京都立大学", "admission_year": "2026", "faculty": "法学部"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月4日", "12月8日", "20時"]},
+      "deadline_rule": {"contains": ["登録及び支払だけでは", "書留速達", "EMS"]},
+      "eligibility": {"contains": ["外国人", "12年の課程", "2026年3月31日"]},
+      "required_documents": {"contains": ["志願票", "日本留学試験", "外部英語検定試験", "外国籍"]},
+      "eju_session": {"contains": ["2024年度", "2025年度", "出題言語は日本語"]},
+      "eju_japanese": {"contains": ["法学部", "日本語", "400点"]},
+      "eju_general": {"contains": ["法学部", "総合科目"]},
+      "eju_math": {"contains": ["数学", "コース指定なし"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "自宅受験版", "Test Date", "MyBest"]},
+      "screening_method": {"contains": ["第1次選抜", "日本留学試験", "地理歴史", "面接", "簡単な作文"]},
+      "screening_schedule": {"contains": ["2026年2月25日", "12:30-14:00", "2026年3月3日", "11:00"]},
+      "result_date": {"contains": ["2026年2月11日", "2026年3月8日"]},
+      "enrollment_period": {"contains": ["2026年3月10日", "3月15日", "2026年4月"]},
+      "evidence": {"contains": ["p.1", "p.3-p.4", "p.12-p.14", "p.15"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tokyo-metropolitan-2026-physics",
+    "source_document": "https://www.tmu.ac.jp/extra/download.html?d=assets%2Ffiles%2Fdownload%2Fentrance%2F2026_tsg_bosyuuyoukou.pdf",
+    "source_note": "Official Tokyo Metropolitan University 2026 privately financed international student admissions guide. Checked against schedule, eligibility, application documents, selection method, EJU appendix, and exam timetable.",
+    "match": {"university": "東京都立大学", "admission_year": "2026", "faculty": "理学部", "department": "物理学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月4日", "12月8日", "20時"]},
+      "deadline_rule": {"contains": ["マイページ", "書留速達", "EMS"]},
+      "eligibility": {"contains": ["外国人", "12年の課程"]},
+      "required_documents": {"contains": ["志願票", "日本留学試験", "外部英語検定試験"]},
+      "eju_session": {"contains": ["2024年度", "2025年度", "記述を除く"]},
+      "eju_japanese": {"contains": ["理学部物理学科", "日本語", "400点"]},
+      "eju_math": {"contains": ["数学", "コース2"]},
+      "eju_physics": {"contains": ["理学部物理学科", "物理", "化学", "2科目指定"]},
+      "eju_chemistry": {"contains": ["理学部物理学科", "物理", "化学", "2科目指定"]},
+      "english_requirement": {"contains": ["TOEFL iBT", "IELTS", "自宅受験版", "Test Date"]},
+      "screening_method": {"contains": ["第1次選抜", "数学", "理科", "面接", "口頭試問"]},
+      "screening_schedule": {"contains": ["2026年2月26日", "10:00-11:15", "14:45-16:00", "2026年3月3日"]},
+      "result_date": {"contains": ["2026年2月11日", "2026年3月8日"]},
+      "enrollment_period": {"contains": ["2026年3月10日", "3月15日", "2026年4月"]},
+      "evidence": {"contains": ["p.3-p.4", "p.12-p.14", "p.15"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "tokyo-metropolitan-2026-mechanical",
+    "source_document": "https://www.tmu.ac.jp/extra/download.html?d=assets%2Ffiles%2Fdownload%2Fentrance%2F2026_tsg_bosyuuyoukou.pdf",
+    "source_note": "Official Tokyo Metropolitan University 2026 privately financed international student admissions guide. Checked against schedule, eligibility, application documents, selection method, EJU appendix, and exam timetable.",
+    "match": {"university": "東京都立大学", "admission_year": "2026", "faculty": "システムデザイン学部", "department": "機械システム工学科"},
+    "expect": {
+      "application_period": {"contains": ["2025年12月4日", "12月8日", "20時"]},
+      "deadline_rule": {"contains": ["入学考査料", "登録及び支払だけでは", "書留速達"]},
+      "eligibility": {"contains": ["外国人", "12年の課程"]},
+      "required_documents": {"contains": ["志願票", "日本留学試験", "外部英語検定試験"]},
+      "eju_session": {"contains": ["2024年度", "2025年度", "出題言語は日本語"]},
+      "eju_japanese": {"contains": ["システムデザイン学部", "日本語", "400点"]},
+      "eju_math": {"contains": ["数学", "コース2"]},
+      "eju_physics": {"contains": ["機械システム工学科", "物理", "化学", "生物", "計2科目"]},
+      "eju_chemistry": {"contains": ["物理", "化学", "生物", "1科目"]},
+      "eju_biology": {"contains": ["物理", "化学", "生物", "1科目"]},
+      "english_requirement": {"contains": ["TOEIC L&R/S&W", "TOEFL iBT", "IELTS", "自宅受験版"]},
+      "screening_method": {"contains": ["第1次選抜", "数学", "理科", "面接", "口頭試問"]},
+      "screening_schedule": {"contains": ["2026年2月26日", "10:00-11:15", "14:45-16:00", "2026年3月3日"]},
+      "result_date": {"contains": ["2026年2月11日", "2026年3月8日"]},
+      "enrollment_period": {"contains": ["2026年3月10日", "3月15日", "2026年4月"]},
+      "evidence": {"contains": ["p.3-p.4", "p.12-p.14", "p.15"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

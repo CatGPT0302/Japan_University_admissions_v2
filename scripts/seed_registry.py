@@ -14,6 +14,7 @@ from scripts.osaka_metropolitan_2027_undergrad_extractor import extract_osaka_me
 from scripts.osaka_university_2026_undergrad_extractor import extract_osaka_university_2026_undergrad_records
 from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
 from scripts.tohoku_2026_undergrad_extractor import extract_tohoku_2026_undergrad_records
+from scripts.tokyo_metropolitan_2026_undergrad_extractor import extract_tokyo_metropolitan_2026_undergrad_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
 
@@ -189,6 +190,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["大阪大学", "私費外国人留学生特別入試", "日本留学試験", "TOEFL"],
         "text_markers": ["大阪大学", "私費外国人留学生特別入試", "日本留学試験", "TOEFL"],
         "extractor": extract_osaka_university_2026_undergrad_records,
+    },
+    "tokyo_metropolitan_2026_undergrad": {
+        "stem": "tokyo_metropolitan_2026_undergrad",
+        "id": "tokyo-metropolitan-2026-undergrad",
+        "university": "東京都立大学",
+        "admission_year": "2026",
+        "script": "scripts/tokyo_metropolitan_2026_undergrad_extractor.py",
+        "expected_path": "quality_baselines/tokyo_metropolitan_2026_undergrad.expected.json",
+        "source_url": "https://www.tmu.ac.jp/extra/download.html?d=assets%2Ffiles%2Fdownload%2Fentrance%2F2026_tsg_bosyuuyoukou.pdf",
+        "source_candidates": ["data/uploads/tokyo_metropolitan_2026_undergrad.pdf"],
+        "source_markers": ["東京都立大学", "私費外国人留学生入試", "日本留学試験", "TOEFL"],
+        "text_markers": ["東京都立大学", "私費外国人留学生入試", "日本留学試験", "TOEFL"],
+        "extractor": extract_tokyo_metropolitan_2026_undergrad_records,
     },
 }
 
