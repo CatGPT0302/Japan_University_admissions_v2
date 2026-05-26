@@ -18,6 +18,7 @@ frontend/.vercel/
 dist/
 build/
 frontend/dist/
+frontend/dist-*/
 *.tsbuildinfo
 .cache/
 .tmp/

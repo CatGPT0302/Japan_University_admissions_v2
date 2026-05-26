@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:owner": "node scripts/build-surface.mjs owner",
+    "build:owner-service": "node scripts/build-surface.mjs owner-service",
+    "build:partner": "node scripts/build-surface.mjs partner",
+    "build:student": "node scripts/build-surface.mjs student",
     "smoke:surfaces": "node scripts/smoke-surfaces.mjs",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "preview": "vite preview"

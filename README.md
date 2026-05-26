@@ -127,9 +127,15 @@ Owner data assets remain in the owner-hosted database. Partner users receive lim
 python -m pytest -q
 cd frontend
 npm run build
+npm run build:owner
+npm run build:owner-service
+npm run build:partner
+npm run build:student
 npm run smoke:surfaces
 npm run smoke:browser
 ```
+
+The four `build:*` commands create separate frontend bundles (`dist-owner`, `dist-owner-service`, `dist-partner`, `dist-student`) so the owner workspace, partner service center, and student-facing site can be deployed as separate sites instead of relying on guessed hash routes.
 
 `smoke:browser` uses the local Chrome or Edge installation, starts a temporary SQLite-backed API, signs into the owner and partner surfaces with throwaway accounts, checks export presets, submits one partner source, verifies the owner-side submission detail panel, runs the owner processing/review/confirmation path, checks the review page's unsaved-change summary, verifies the confirmed record detail can expose quick school/faculty export actions, verifies export preview/CSV output without internal quality-screening details, and checks that the student surface can search and open confirmed school details without exposing booking or internal review UI.
 Run the two frontend smoke commands one after another because both rebuild `frontend/dist`.
