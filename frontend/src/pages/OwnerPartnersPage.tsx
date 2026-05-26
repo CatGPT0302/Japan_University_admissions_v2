@@ -137,7 +137,10 @@ export default function SettingsPage({ onOpenReview }: Props) {
   const canConnect = Boolean(latestKey || newKey);
   const canCopyGuide = Boolean(newKey?.secret);
   const recentUsage = center?.recent_usage || [];
+  const usageSummary = center?.usage_summary;
   const waitingSubmissions = submissions.filter((item) => item.processing_status !== "confirmed");
+  const waitingForOwner = submissions.filter((item) => ["submitted", "needs_more_info", "failed"].includes(item.processing_status)).length;
+  const readyForReview = submissions.filter((item) => item.processing_status === "needs_owner_review").length;
   const selectedSubmission = useMemo(
     () => submissions.find((item) => item.id === selectedSubmissionId) || submissions[0] || null,
     [selectedSubmissionId, submissions],
@@ -282,6 +285,24 @@ export default function SettingsPage({ onOpenReview }: Props) {
             <span>现在进度</span>
             <strong>{waitingSubmissions.length ? `${waitingSubmissions.length} 件待处理` : canConnect ? "可以使用" : "还没开通"}</strong>
             <small>{organizationName(center?.organization.name)}</small>
+          </div>
+        </section>
+
+        <section className="settings-summary-grid" aria-label="合作方概览">
+          <div className="settings-summary-card">
+            <span>待你处理</span>
+            <strong>{waitingForOwner}</strong>
+            <small>可开始整理或需要补资料</small>
+          </div>
+          <div className="settings-summary-card">
+            <span>等你确认</span>
+            <strong>{readyForReview}</strong>
+            <small>整理完成后进资料中心</small>
+          </div>
+          <div className="settings-summary-card">
+            <span>对方使用</span>
+            <strong>{usageSummary?.total ?? 0}</strong>
+            <small>{usageSummary?.needs_check ? `${usageSummary.needs_check} 次需要检查` : "暂无异常"}</small>
           </div>
         </section>
 

@@ -1120,7 +1120,46 @@ def get_api_center(organization_id: int | None = None) -> dict[str, Any]:
         f"WHERE organization_id={_ph()} ORDER BY id DESC LIMIT 20",
         (int(org["id"]),),
     )
+    if organization_id:
+        usage_summary = _fetchone(
+            conn,
+            "SELECT COUNT(*) AS total, "
+            "SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) AS success, "
+            "SUM(CASE WHEN status_code < 200 OR status_code >= 300 THEN 1 ELSE 0 END) AS needs_check "
+            "FROM api_usage_logs "
+            f"WHERE organization_id={_ph()}",
+            (int(org["id"]),),
+        ) or {"total": 0, "success": 0, "needs_check": 0}
+        submission_summary_rows = _fetchall(
+            conn,
+            "SELECT processing_status AS status, COUNT(*) AS count "
+            "FROM document_submissions "
+            f"WHERE organization_id={_ph()} "
+            "GROUP BY processing_status",
+            (int(org["id"]),),
+        )
+    else:
+        usage_summary = _fetchone(
+            conn,
+            "SELECT COUNT(*) AS total, "
+            "SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) AS success, "
+            "SUM(CASE WHEN status_code < 200 OR status_code >= 300 THEN 1 ELSE 0 END) AS needs_check "
+            "FROM api_usage_logs",
+            (),
+        ) or {"total": 0, "success": 0, "needs_check": 0}
+        submission_summary_rows = _fetchall(
+            conn,
+            "SELECT processing_status AS status, COUNT(*) AS count "
+            "FROM document_submissions "
+            "GROUP BY processing_status",
+            (),
+        )
     conn.close()
+    submissions_by_status = {
+        str(row.get("status") or "submitted"): int(row.get("count") or 0)
+        for row in submission_summary_rows
+    }
+    submission_total = sum(submissions_by_status.values())
     return {
         "organization": {
             "id": int(org["id"]),
@@ -1142,6 +1181,13 @@ def get_api_center(organization_id: int | None = None) -> dict[str, Any]:
             for row in keys
         ],
         "recent_usage": usage,
+        "usage_summary": {
+            "total": int(usage_summary.get("total") or 0),
+            "success": int(usage_summary.get("success") or 0),
+            "needs_check": int(usage_summary.get("needs_check") or 0),
+            "submission_total": submission_total,
+            "submissions_by_status": submissions_by_status,
+        },
         "allowed_scopes": DEFAULT_API_SCOPES,
     }
 

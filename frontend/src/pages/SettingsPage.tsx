@@ -72,6 +72,9 @@ export default function SettingsPage() {
   });
 
   const baseUrl = useMemo(() => `${API_BASE_URL}/v1`, []);
+  const usageSummary = center?.usage_summary;
+  const waitingCount = submissions.filter((item) => ["submitted", "needs_more_info", "failed"].includes(item.processing_status)).length;
+  const inProgressCount = submissions.filter((item) => ["processing", "needs_owner_review"].includes(item.processing_status)).length;
 
   async function load() {
     setLoading(true);
@@ -130,6 +133,24 @@ export default function SettingsPage() {
             <span>当前资料</span>
             <strong>{submissions.length ? `${submissions.length} 份` : "暂无提交"}</strong>
             <small>{loading ? "正在刷新" : "可以使用"}</small>
+          </div>
+        </section>
+
+        <section className="settings-summary-grid partner-summary-grid" aria-label="服务概览">
+          <div className="settings-summary-card">
+            <span>等待整理</span>
+            <strong>{waitingCount}</strong>
+            <small>需要我们处理的资料</small>
+          </div>
+          <div className="settings-summary-card">
+            <span>正在确认</span>
+            <strong>{inProgressCount}</strong>
+            <small>整理中或等最后确认</small>
+          </div>
+          <div className="settings-summary-card">
+            <span>服务使用</span>
+            <strong>{usageSummary?.total ?? 0}</strong>
+            <small>{usageSummary?.needs_check ? `${usageSummary.needs_check} 次需要检查` : "最近使用正常"}</small>
           </div>
         </section>
 
@@ -284,6 +305,10 @@ export default function SettingsPage() {
                   <div className="settings-copy-row">
                     <span>最近使用</span>
                     <strong>{center?.recent_usage?.[0]?.created_at || "暂无记录"}</strong>
+                  </div>
+                  <div className="settings-copy-row">
+                    <span>成功使用</span>
+                    <strong>{usageSummary?.success ?? 0} 次</strong>
                   </div>
                 </div>
                 <div className="settings-usage-list">

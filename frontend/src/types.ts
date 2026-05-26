@@ -525,6 +525,13 @@ export interface ApiCenterResponse {
   };
   api_keys: ApiCenterKey[];
   recent_usage: ApiUsageLog[];
+  usage_summary: {
+    total: number;
+    success: number;
+    needs_check: number;
+    submission_total: number;
+    submissions_by_status: Record<string, number>;
+  };
   allowed_scopes: string[];
 }
 

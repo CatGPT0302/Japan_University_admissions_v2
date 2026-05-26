@@ -285,11 +285,15 @@ async function runSurfaceAction(page, surface) {
     }
     await page.waitForLoadState("networkidle");
     await assertBodyIncludes(page, "资料已提交", `${surface.name} submission`);
+    await assertBodyIncludes(page, "等待整理", `${surface.name} summary`);
+    await assertBodyIncludes(page, "服务使用", `${surface.name} summary`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} progress`);
     return;
   }
 
   if (surface.action === "owner-service-queue") {
+    await assertBodyIncludes(page, "待你处理", `${surface.name} summary`);
+    await assertBodyIncludes(page, "对方使用", `${surface.name} summary`);
     await page.getByRole("button", { name: /资料进度/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} queue`);
     await assertBodyIncludes(page, "资料详情", `${surface.name} submission detail`);

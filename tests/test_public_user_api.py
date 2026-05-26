@@ -554,9 +554,19 @@ class PublicUserApiTest(unittest.TestCase):
             key = db.issue_api_key(
                 organization_name="Tokyo Cram School",
                 client_name="Main integration",
-                scopes=["programs:read", "bookings:create"],
+                scopes=["programs:read", "bookings:create", "documents:submit"],
             )
             client = TestClient(api.app)
+            client.get("/v1/programs", headers={"Authorization": f"Bearer {key['secret']}"})
+            client.post(
+                "/v1/documents/submissions",
+                headers={"Authorization": f"Bearer {key['secret']}"},
+                json={
+                    "university": "Waseda University",
+                    "admission_year": "2027",
+                    "pdf_url": "https://example.ac.jp/admission.pdf",
+                },
+            )
             self._login_owner(client)
 
             center = client.get("/settings/api-center")
@@ -571,6 +581,10 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertIn("programs:read", created.json()["scopes"])
         self.assertGreaterEqual(len(refreshed.json()["api_keys"]), 1)
         self.assertTrue(refreshed.json()["api_keys"][0]["masked_key"].startswith("ak_"))
+        self.assertGreaterEqual(center.json()["usage_summary"]["total"], 2)
+        self.assertGreaterEqual(center.json()["usage_summary"]["success"], 2)
+        self.assertGreaterEqual(center.json()["usage_summary"]["submission_total"], 1)
+        self.assertEqual(center.json()["usage_summary"]["submissions_by_status"]["submitted"], 1)
 
 
 if __name__ == "__main__":

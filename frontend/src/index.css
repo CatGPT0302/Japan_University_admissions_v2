@@ -2721,6 +2721,33 @@ a {
   font-weight: 650;
 }
 
+.settings-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-summary-card {
+  display: grid;
+  gap: 6px;
+  padding: 15px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.settings-summary-card span,
+.settings-summary-card small {
+  color: var(--student-muted);
+  font-size: 12px;
+}
+
+.settings-summary-card strong {
+  color: var(--student-ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
 .settings-progress-list {
   display: grid;
   gap: 10px;
@@ -2928,6 +2955,7 @@ a {
 
   .settings-action-grid,
   .settings-summary-row,
+  .settings-summary-grid,
   .settings-mini-steps {
     grid-template-columns: 1fr;
   }
