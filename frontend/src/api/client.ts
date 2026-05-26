@@ -21,6 +21,7 @@ import type {
   FetchPdfSearchResponse,
   FetchPdfProbeResponse,
   FetchPdfTarget,
+  OwnerIssuesResponse,
   PublicProgram,
   QualityMetricsResponse,
   QualityOverviewResponse,
@@ -344,6 +345,11 @@ export async function getQualityMetrics(docId?: number): Promise<QualityMetricsR
 
 export async function getQualityOverview(): Promise<QualityOverviewResponse> {
   const { data } = await client.get<QualityOverviewResponse>("/metrics/quality-overview");
+  return data;
+}
+
+export async function getOwnerIssues(limit = 20): Promise<OwnerIssuesResponse> {
+  const { data } = await client.get<OwnerIssuesResponse>("/metrics/owner-issues", { params: { limit } });
   return data;
 }
 

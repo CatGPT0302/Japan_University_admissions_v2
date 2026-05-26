@@ -185,6 +185,39 @@ export interface QualityOverviewResponse {
   next_owner_action?: Record<string, unknown> | null;
 }
 
+export interface OwnerIssue {
+  kind: "export_gap" | "source_change" | "baseline_gap" | "manual_correction" | string;
+  priority: number;
+  title: string;
+  university?: string;
+  admission_year?: string;
+  faculty?: string;
+  department?: string;
+  field?: string;
+  field_label?: string;
+  record_id?: number | null;
+  doc_id?: number | null;
+  document_id?: number | null;
+  review_item_id?: string;
+  source_document?: string;
+  source_url?: string;
+  count?: number;
+  checked?: number;
+  minimum?: number;
+  latest_at?: string;
+  suggested_action: string;
+}
+
+export interface OwnerIssuesResponse {
+  summary: {
+    total: number;
+    by_kind: Record<string, number>;
+    export_ready: boolean;
+    quality_status: string;
+  };
+  issues: OwnerIssue[];
+}
+
 export interface CorrectionEvent {
   id: number;
   staging_id: number;

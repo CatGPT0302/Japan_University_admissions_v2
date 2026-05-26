@@ -3,6 +3,7 @@ import {
   acceptSourceReviewItem,
   getCorrectionEvents,
   getDocuments,
+  getOwnerIssues,
   getQualityMetrics,
   getQualityOverview,
   getSourceReviewQueue,
@@ -17,6 +18,7 @@ import { PieSummary, TreemapSummary } from "../components/DashboardCharts";
 import type {
   CorrectionEvent,
   DocumentListItem,
+  OwnerIssuesResponse,
   QualityMetricsResponse,
   QualityOverviewResponse,
   SourceReviewItem,
@@ -164,6 +166,22 @@ function checkStatusClass(value?: string) {
   return "badge badge-gray";
 }
 
+function ownerIssueKindText(value?: string) {
+  if (value === "export_gap") return "导出前补齐";
+  if (value === "source_change") return "来源变化";
+  if (value === "baseline_gap") return "基准补看";
+  if (value === "manual_correction") return "反复手修";
+  return "待处理";
+}
+
+function ownerIssueKindClass(value?: string) {
+  if (value === "export_gap") return "badge badge-red";
+  if (value === "source_change") return "badge badge-amber";
+  if (value === "baseline_gap") return "badge badge-blue";
+  if (value === "manual_correction") return "badge badge-gray";
+  return "badge badge-gray";
+}
+
 function normalized(value?: string | null) {
   return String(value || "")
     .trim()
@@ -193,6 +211,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<QualityMetricsResponse | null>(null);
   const [overview, setOverview] = useState<QualityOverviewResponse | null>(null);
+  const [ownerIssues, setOwnerIssues] = useState<OwnerIssuesResponse | null>(null);
   const [corrections, setCorrections] = useState<CorrectionEvent[]>([]);
   const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
   const [sourceWatchlist, setSourceWatchlist] = useState<SourceWatchlistResponse | null>(null);
@@ -209,12 +228,13 @@ export default function QualityPage({ onOpenReview }: Props) {
     setLoading(true);
     setError("");
     try {
-      const [docs, quality, correctionRows, queue, watchlist] = await Promise.all([
+      const [docs, quality, correctionRows, queue, watchlist, issues] = await Promise.all([
         getDocuments({ limit: 100 }),
         getQualityMetrics(docId || undefined),
         getCorrectionEvents({ doc_id: docId || undefined, limit: 80 }),
         getSourceReviewQueue(),
         getSourceWatchlist(),
+        getOwnerIssues(12),
       ]);
       const nextOverview = docId ? overview : await getQualityOverview();
       setDocuments(docs);
@@ -223,6 +243,7 @@ export default function QualityPage({ onOpenReview }: Props) {
       setCorrections(correctionRows);
       setSourceQueue(queue);
       setSourceWatchlist(watchlist);
+      setOwnerIssues(issues);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -343,6 +364,7 @@ export default function QualityPage({ onOpenReview }: Props) {
   const correctedTotal = topModified.reduce((sum, item) => sum + item.count, 0);
   const languageCoverage = Object.entries(overview?.language_requirement_coverage || {});
   const thinCoverageRows = overview?.per_seed_thin_coverage || [];
+  const topOwnerIssues = ownerIssues?.issues || [];
 
   return (
     <div className="page-shell quality-page">
@@ -431,6 +453,48 @@ export default function QualityPage({ onOpenReview }: Props) {
                 刷新
               </button>
             </div>
+
+            <section className="quality-section owner-issue-panel">
+              <div className="split-row split-row-start">
+                <div>
+                  <h3 className="panel-title">今天先处理这些</h3>
+                  <p className="panel-copy">把导出空白、官网变化、基准薄弱和最近手修集中到一张清单里，按顺序处理即可。</p>
+                </div>
+                <span className="badge badge-blue">{ownerIssues?.summary.total ?? 0} 项</span>
+              </div>
+
+              <div className="owner-issue-list">
+                {topOwnerIssues.slice(0, 8).map((item, index) => (
+                  <article className="owner-issue-row" key={`${item.kind}-${item.university}-${item.admission_year}-${item.field}-${index}`}>
+                    <div className="item-card-topline">
+                      <span className={ownerIssueKindClass(item.kind)}>{ownerIssueKindText(item.kind)}</span>
+                      {item.admission_year ? <span className="badge badge-gray">{item.admission_year}</span> : null}
+                      {item.field_label ? <span className="badge badge-blue">{item.field_label}</span> : null}
+                    </div>
+                    <h4 className="item-title">{item.title}</h4>
+                    <p className="item-subtitle">{item.suggested_action}</p>
+                    <div className="owner-issue-meta">
+                      <span>{item.university || item.source_document || "整体质量"}</span>
+                      {item.faculty ? <span>{item.faculty}</span> : null}
+                      {item.source_document ? <span>{item.source_document}</span> : null}
+                    </div>
+                    <div className="inline-actions inline-actions-tight">
+                      {item.doc_id && onOpenReview ? (
+                        <button className="btn btn-primary btn-small" type="button" onClick={() => onOpenReview(Number(item.doc_id))}>
+                          进入复审
+                        </button>
+                      ) : null}
+                      {item.source_url ? (
+                        <a className="btn btn-ghost btn-small" href={item.source_url} target="_blank" rel="noreferrer">
+                          打开来源
+                        </a>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+                {!topOwnerIssues.length ? <div className="empty-state empty-state-quiet">当前没有需要优先处理的问题。</div> : null}
+              </div>
+            </section>
 
             <section className="quality-section source-review-panel">
               <div className="split-row split-row-start">

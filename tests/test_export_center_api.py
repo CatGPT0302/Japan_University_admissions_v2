@@ -182,6 +182,36 @@ class ExportCenterApiTest(unittest.TestCase):
         for hidden_key in ("confidence", "risk_level", "field_evidence", "raw_llm_json", "warnings_json"):
             self.assertNotIn(hidden_key, str(payload))
 
+    def test_owner_issues_requires_owner_login(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, _db = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+
+            response = client.get("/metrics/owner-issues")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_owner_issues_points_export_gaps_to_review_source(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed_with_gaps(db, "Gap University", "2027", "Letters")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/metrics/owner-issues")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertFalse(payload["summary"]["export_ready"])
+        self.assertGreaterEqual(payload["summary"]["by_kind"]["export_gap"], 1)
+        issue = next(item for item in payload["issues"] if item["kind"] == "export_gap")
+        self.assertEqual(issue["university"], "Gap University")
+        self.assertEqual(issue["admission_year"], "2027")
+        self.assertIn(issue["field"], {"application_period", "eju_japanese", "english_requirement", "screening_schedule", "result_date"})
+        self.assertEqual(issue["source_document"], "Gap University.pdf")
+        self.assertTrue(issue["doc_id"])
+        self.assertIn("复审页", issue["suggested_action"])
+
     def test_export_csv_uses_same_filters(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

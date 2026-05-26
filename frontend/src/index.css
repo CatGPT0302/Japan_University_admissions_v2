@@ -5062,6 +5062,35 @@ a {
   margin-top: 14px;
 }
 
+.owner-issue-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.owner-issue-row {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.owner-issue-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.owner-issue-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+}
+
 .source-review-panel {
   padding: 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);

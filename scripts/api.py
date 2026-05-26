@@ -84,6 +84,27 @@ EXPORT_REQUIRED_COLUMNS = {
     "result_date": "result_date",
 }
 
+OWNER_ISSUE_FIELD_LABELS = {
+    "application_period": "申请时间",
+    "deadline_rule": "截止规则",
+    "eju_session": "EJU 可用考试",
+    "eju_japanese": "EJU 日本语",
+    "eju_general": "EJU 综合科目",
+    "eju_math": "EJU 数学",
+    "eju_physics": "EJU 物理",
+    "eju_chemistry": "EJU 化学",
+    "eju_biology": "EJU 生物",
+    "jlpt_requirement": "JLPT",
+    "english_requirement": "英语要求",
+    "screening_method": "选考方式",
+    "screening_schedule": "考试时间",
+    "result_date": "结果公布",
+    "enrollment_period": "入学手续",
+    "required_documents": "所需材料",
+    "eligibility": "出愿资格",
+    "evidence": "来源依据",
+}
+
 
 def _cors_origins() -> list[str]:
     raw = os.environ.get("CORS_ORIGINS", "")
@@ -410,6 +431,179 @@ def _export_review_targets(rows: list[dict[str, Any]], *, limit: int = 50) -> li
         if len(targets) >= limit:
             break
     return targets
+
+
+def _owner_issue_field_label(field: str) -> str:
+    return OWNER_ISSUE_FIELD_LABELS.get(field, field)
+
+
+def _owner_review_target_map(rows: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, Any]]:
+    targets = _export_review_targets(rows, limit=500)
+    return {
+        (str(item.get("university") or ""), str(item.get("admission_year") or "")): item
+        for item in targets
+    }
+
+
+def _export_gap_owner_issues(rows: list[dict[str, Any]], *, limit: int = 30) -> list[dict[str, Any]]:
+    target_map = _owner_review_target_map(rows)
+    issues: list[dict[str, Any]] = []
+    for row in rows:
+        missing = _export_missing_required(row)
+        if not missing:
+            continue
+        university = str(row.get("university") or "").strip()
+        year = str(row.get("admission_year") or "").strip()
+        target = target_map.get((university, year), {})
+        for field in missing:
+            issues.append(
+                {
+                    "kind": "export_gap",
+                    "priority": 95,
+                    "title": f"{university or '未命名学校'}缺少{_owner_issue_field_label(field)}",
+                    "university": university,
+                    "admission_year": year,
+                    "faculty": str(row.get("faculty") or ""),
+                    "department": str(row.get("department") or ""),
+                    "field": field,
+                    "field_label": _owner_issue_field_label(field),
+                    "record_id": row.get("id"),
+                    "doc_id": target.get("doc_id"),
+                    "source_document": target.get("filename") or "",
+                    "source_url": target.get("source_url") or row.get("pdf_url") or "",
+                    "suggested_action": "进入复审页，对照源 PDF 补齐这项内容后再导出。",
+                }
+            )
+            if len(issues) >= limit:
+                return issues
+    return issues
+
+
+def _source_review_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
+    report = build_change_report(load_review_queue())
+    issues: list[dict[str, Any]] = []
+    for item in report.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        review_status = str(item.get("review_status") or "open")
+        if review_status in {"reviewed", "deferred"}:
+            continue
+        status = str(item.get("status") or "")
+        priority = 90 if status == "changed" else 85 if status in {"failed", "marker_mismatch"} else 75
+        issues.append(
+            {
+                "kind": "source_change",
+                "priority": priority,
+                "title": item.get("owner_summary") or item.get("status_label") or "官方来源需要查看",
+                "university": str(item.get("university") or ""),
+                "admission_year": str(item.get("admission_year") or ""),
+                "field": "",
+                "field_label": "",
+                "source_document": str(item.get("stem") or ""),
+                "source_url": str(item.get("source_url") or ""),
+                "review_item_id": str(item.get("item_id") or ""),
+                "suggested_action": item.get("recommended_action") or "先确认官方来源变化，再决定是否重新整理。",
+            }
+        )
+        if len(issues) >= limit:
+            break
+    return issues
+
+
+def _baseline_owner_issues(overview: dict[str, Any], *, limit: int = 20) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    for todo in overview.get("quality_todo") or []:
+        if not isinstance(todo, dict):
+            continue
+        field = str(todo.get("field") or "")
+        seed = str(todo.get("seed") or "")
+        issues.append(
+            {
+                "kind": "baseline_gap",
+                "priority": int(todo.get("priority") or 40),
+                "title": f"基准覆盖还需要补看：{_owner_issue_field_label(field) if field else seed}",
+                "university": "",
+                "admission_year": "",
+                "field": field,
+                "field_label": _owner_issue_field_label(field) if field else "",
+                "source_document": seed,
+                "source_url": "",
+                "checked": todo.get("checked"),
+                "minimum": todo.get("minimum"),
+                "suggested_action": str(todo.get("details") or "补充人工确认过的基准样本。"),
+            }
+        )
+        if len(issues) >= limit:
+            break
+    return issues
+
+
+def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
+    corrections = db_get_correction_events(limit=200)
+    grouped: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for item in corrections:
+        key = (
+            str(item.get("university") or ""),
+            str(item.get("admission_year") or ""),
+            str(item.get("field_name") or ""),
+        )
+        current = grouped.setdefault(
+            key,
+            {
+                "kind": "manual_correction",
+                "priority": 60,
+                "title": "",
+                "university": key[0],
+                "admission_year": key[1],
+                "field": key[2],
+                "field_label": _owner_issue_field_label(key[2]),
+                "source_document": "",
+                "source_url": "",
+                "count": 0,
+                "latest_at": "",
+                "suggested_action": "这项最近被人工改过，优先回看抽取规则或基准样本，避免同类资料反复手修。",
+            },
+        )
+        current["count"] = int(current.get("count") or 0) + 1
+        current["latest_at"] = max(str(current.get("latest_at") or ""), str(item.get("created_at") or ""))
+        current["document_id"] = item.get("document_id")
+    issues = list(grouped.values())
+    for issue in issues:
+        issue["title"] = f"{issue.get('university') or '未命名学校'}的{issue.get('field_label') or issue.get('field')}被人工修改 {issue.get('count')} 次"
+    return sorted(issues, key=lambda item: (-int(item.get("count") or 0), str(item.get("university") or "")))[:limit]
+
+
+def _owner_top_issues(*, limit: int = 20) -> dict[str, Any]:
+    export_rows = _export_rows(limit=10000, offset=0)
+    overview = build_quality_overview(include_source_text_health=False)
+    issues = (
+        _export_gap_owner_issues(export_rows)
+        + _source_review_owner_issues()
+        + _baseline_owner_issues(overview)
+        + _manual_correction_owner_issues()
+    )
+    issues = sorted(
+        issues,
+        key=lambda item: (
+            -int(item.get("priority") or 0),
+            str(item.get("university") or ""),
+            str(item.get("admission_year") or ""),
+            str(item.get("field") or ""),
+        ),
+    )[: max(1, min(int(limit or 20), 100))]
+    summary: dict[str, int] = {}
+    for item in issues:
+        kind = str(item.get("kind") or "other")
+        summary[kind] = summary.get(kind, 0) + 1
+    return {
+        "summary": {
+            "total": len(issues),
+            "by_kind": summary,
+            "export_ready": _export_summary(export_rows)["ready_for_export"],
+            "quality_status": overview.get("overall_status", ""),
+        },
+        "issues": issues,
+    }
 
 
 def _run_extract_direct(file_name: str, university: str, year: str, url: str = "") -> dict[str, Any]:
@@ -1248,6 +1442,12 @@ def quality_overview(request: Request) -> dict[str, Any]:
         "quality_todo": overview.get("quality_todo", []),
         "next_owner_action": overview.get("next_owner_action"),
     }
+
+
+@app.get("/metrics/owner-issues")
+def owner_top_issues(request: Request, limit: int = 20) -> dict[str, Any]:
+    _require_owner(request)
+    return _owner_top_issues(limit=limit)
 
 
 @app.get("/metrics/corrections")
