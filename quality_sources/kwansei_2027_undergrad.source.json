@@ -1,0 +1,14 @@
+{
+  "status": "cached",
+  "stem": "kwansei_2027_undergrad",
+  "source_url": "https://ciec.kwansei.ac.jp/upload/ac1aedfe5e5ec128838c7e4a4cb47ea569d24597.pdf",
+  "cached_path": "data/uploads/kwansei_2027_undergrad.pdf",
+  "sha256": "95d823602396eff32097f4ae52d5aeaaba2eed44718ec77168a6e8217856c3a1",
+  "size_bytes": 4092864,
+  "markers": [
+    "関西学院大学",
+    "2027年度",
+    "外国人留学生入学試験要項"
+  ],
+  "checked_at": "2026-05-26T01:27:22+00:00"
+}

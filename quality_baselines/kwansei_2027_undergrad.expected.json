@@ -1,0 +1,161 @@
+[
+  {
+    "id": "kwansei-2027-literature",
+    "source_document": "https://ciec.kwansei.ac.jp/upload/ac1aedfe5e5ec128838c7e4a4cb47ea569d24597.pdf",
+    "source_note": "Official Kwansei Gakuin University 2027 undergraduate admissions guide for international students. Checked against cover, schedules, eligibility, EJU, documents, and results pages.",
+    "match": {
+      "university": "関西学院大学",
+      "admission_year": "2027",
+      "faculty": "文学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["第Ⅰ期試験", "2026年8月24日", "8月31日", "23:00"]
+      },
+      "deadline_rule": {
+        "contains": ["郵送書類", "8月31日", "必着", "日本国外", "追跡確認"]
+      },
+      "eligibility": {
+        "contains": ["外国籍", "通算4年以内", "12年の課程", "2027年3月31日", "個別の入学資格審査"]
+      },
+      "required_documents": {
+        "contains": ["出願資格確認用紙", "入学志願調書", "卒業", "成績証明書", "日本留学試験", "パスポート", "志望理由書", "提出書類チェックシート"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第2回", "2026年度第1回"]
+      },
+      "eju_japanese": {
+        "contains": ["読解", "聴解・聴読解", "260点以上", "記述", "30点以上", "目安", "必須ではありません"]
+      },
+      "eju_general": {
+        "contains": ["日本語", "総合科目"]
+      },
+      "screening_method": {
+        "contains": ["第一次審査", "提出書類", "第二次審査", "面接"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年10月10日", "西宮上ケ原キャンパス"]
+      },
+      "result_date": {
+        "contains": ["第一次審査合格者発表", "2026年9月25日", "合格発表", "2026年11月13日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年11月13日", "11月27日", "2027年2月15日", "3月11日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.3-p.4", "p.5-p.6", "p.7-p.9", "p.17-p.19"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kwansei-2027-law",
+    "source_document": "https://ciec.kwansei.ac.jp/upload/ac1aedfe5e5ec128838c7e4a4cb47ea569d24597.pdf",
+    "source_note": "Official Kwansei Gakuin University 2027 undergraduate admissions guide for international students. Checked against cover, schedules, eligibility, EJU, documents, and results pages.",
+    "match": {
+      "university": "関西学院大学",
+      "admission_year": "2027",
+      "faculty": "法学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["第Ⅰ期試験", "2026年8月24日", "8月31日", "第Ⅱ期試験", "2026年11月16日", "11月24日"]
+      },
+      "deadline_rule": {
+        "contains": ["郵送書類", "8月31日", "11月24日", "必着", "日本国外", "追跡確認"]
+      },
+      "eligibility": {
+        "contains": ["外国籍", "通算4年以内", "12年の課程", "2027年3月31日", "個別の入学資格審査"]
+      },
+      "required_documents": {
+        "contains": ["出願資格確認用紙", "入学志願調書", "卒業", "成績証明書", "日本留学試験", "パスポート", "志望理由書", "オンライン面接に関する同意書"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第2回", "2026年度第1回", "2026年度第2回"]
+      },
+      "eju_japanese": {
+        "contains": ["260点以上", "30点以上", "265点以上", "35点以上", "目安", "必須ではありません"]
+      },
+      "eju_general": {
+        "contains": ["日本語", "総合科目"]
+      },
+      "english_requirement": {
+        "contains": ["英語能力試験"]
+      },
+      "screening_method": {
+        "contains": ["第一次審査", "提出書類", "第二次審査", "オンライン面接"]
+      },
+      "screening_schedule": {
+        "contains": ["2026年10月10日", "2027年1月16日", "オンライン面接"]
+      },
+      "result_date": {
+        "contains": ["2026年9月25日", "2027年1月8日", "2026年11月13日", "2027年1月22日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年11月13日", "11月27日", "2027年1月22日", "1月29日", "2027年2月15日", "3月11日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.3-p.4", "p.5-p.6", "p.7-p.9", "p.17-p.19"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "kwansei-2027-science",
+    "source_document": "https://ciec.kwansei.ac.jp/upload/ac1aedfe5e5ec128838c7e4a4cb47ea569d24597.pdf",
+    "source_note": "Official Kwansei Gakuin University 2027 undergraduate admissions guide for international students. Checked against cover, schedules, eligibility, EJU, documents, and results pages.",
+    "match": {
+      "university": "関西学院大学",
+      "admission_year": "2027",
+      "faculty": "理学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["第Ⅰ期試験", "2026年8月24日", "8月31日", "第Ⅱ期試験", "2026年11月16日", "11月24日"]
+      },
+      "deadline_rule": {
+        "contains": ["郵送書類", "8月31日", "11月24日", "必着", "日本国外", "追跡確認"]
+      },
+      "eligibility": {
+        "contains": ["外国籍", "通算4年以内", "12年の課程", "2027年3月31日", "個別の入学資格審査"]
+      },
+      "required_documents": {
+        "contains": ["出願資格確認用紙", "入学志願調書", "卒業", "成績証明書", "日本留学試験", "英語能力を証明する書類", "パスポート", "志望理由書"]
+      },
+      "eju_session": {
+        "contains": ["2025年度第2回", "2026年度第1回", "2026年度第2回"]
+      },
+      "eju_japanese": {
+        "contains": ["260点以上", "30点以上", "265点以上", "35点以上", "目安", "必須ではありません"]
+      },
+      "eju_math": {
+        "contains": ["数学", "コース2", "日本語", "英語"]
+      },
+      "eju_physics": {
+        "contains": ["物理", "いずれか2科目", "物理・宇宙学科", "物理・化学"]
+      },
+      "eju_chemistry": {
+        "contains": ["化学", "いずれか2科目", "物理・宇宙学科", "物理・化学"]
+      },
+      "english_requirement": {
+        "contains": ["TOEIC", "TOEFL", "IELTS", "2024年8月24日", "2024年11月16日", "自宅受験型", "対象としません"]
+      },
+      "screening_method": {
+        "contains": ["提出書類", "書類審査", "試験場での選考はありません"]
+      },
+      "screening_schedule": {
+        "contains": ["試験場での選考はありません"]
+      },
+      "result_date": {
+        "contains": ["2026年11月13日", "2027年1月22日"]
+      },
+      "enrollment_period": {
+        "contains": ["2026年11月13日", "11月27日", "2027年1月22日", "1月29日", "2027年2月15日", "3月11日"]
+      },
+      "evidence": {
+        "contains": ["p.1", "p.3-p.4", "p.5-p.6", "p.7-p.9", "p.17-p.19"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  }
+]

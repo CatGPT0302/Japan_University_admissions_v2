@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
+from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
 from scripts.meiji_schedule_extractor import extract_meiji_2027_schedule_records
 from scripts.waseda_2027_extractor import extract_waseda_2027_records
 
@@ -49,6 +50,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["慶應義塾大学", "2027年度", "医学部外国人留学生対象"],
         "text_markers": ["慶應義塾大学", "2027年度", "医学部外国人留学生対象", "入学試験募集要項"],
         "extractor": extract_keio_2027_medicine_records,
+    },
+    "kwansei_2027_undergrad": {
+        "stem": "kwansei_2027_undergrad",
+        "id": "kwansei-2027-undergrad",
+        "university": "関西学院大学",
+        "admission_year": "2027",
+        "script": "scripts/kwansei_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/kwansei_2027_undergrad.expected.json",
+        "source_url": "https://ciec.kwansei.ac.jp/upload/ac1aedfe5e5ec128838c7e4a4cb47ea569d24597.pdf",
+        "source_candidates": ["data/uploads/kwansei_2027_undergrad.pdf"],
+        "source_markers": ["関西学院大学", "2027年度", "外国人留学生入学試験要項"],
+        "text_markers": ["関西学院大学", "2027年度", "外国人留学生入学試験要項"],
+        "extractor": extract_kwansei_2027_undergrad_records,
     },
 }
 
