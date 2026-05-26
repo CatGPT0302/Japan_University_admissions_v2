@@ -347,6 +347,9 @@ class ExportCenterApiTest(unittest.TestCase):
         headers = [ws.cell(row=3, column=index + 1).value for index in range(ws.max_column)]
         self.assertIn("学校", headers)
         self.assertIn("英语要求", headers)
+        self.assertIn("出愿资格", headers)
+        self.assertIn("所需材料", headers)
+        self.assertIn("来源依据", headers)
         for hidden_label in ("置信度", "是否需要复核", "风险等级", "警告/备注", "信頼度", "要確認", "リスク"):
             self.assertNotIn(hidden_label, headers)
         self.assertEqual(ws.cell(row=4, column=1).value, "Meiji University")

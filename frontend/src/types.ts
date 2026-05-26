@@ -405,6 +405,9 @@ export interface StagingRecord {
   enrollment_period?: string;
   prefecture?: string;
   campus?: string;
+  required_documents?: string;
+  eligibility?: string;
+  evidence?: string;
   confidence?: number;
   needs_review?: number | boolean;
   is_confirmed?: number | boolean;
@@ -441,6 +444,9 @@ export interface ConfirmedRecord {
   enrollment_period?: string;
   prefecture?: string;
   campus?: string;
+  required_documents?: string;
+  eligibility?: string;
+  evidence?: string;
   export_missing?: string[];
 }
 

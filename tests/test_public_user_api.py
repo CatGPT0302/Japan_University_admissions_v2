@@ -385,6 +385,9 @@ class PublicUserApiTest(unittest.TestCase):
                     "application_period": "2026年8月25日 - 2026年9月1日",
                     "screening_method": "書類選考",
                     "result_date": "2026年12月3日",
+                    "required_documents": "卒業証明書 / 成績証明書 / 志望理由書",
+                    "eligibility": "外国で12年の学校教育を修了した者",
+                    "evidence": "出願資格 p.3 / 出願書類 p.7",
                     "confidence": 0.82,
                     "risk_level": "medium",
                     "field_evidence": {
@@ -405,6 +408,9 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(program["confidence"], 0.82)
         self.assertEqual(program["risk_level"], "medium")
         self.assertEqual(program["risk"]["level"], "medium")
+        self.assertEqual(program["requirements"]["eligibility"], "外国で12年の学校教育を修了した者")
+        self.assertEqual(program["requirements"]["required_documents"], ["卒業証明書", "成績証明書", "志望理由書"])
+        self.assertEqual(program["evidence"]["summary"]["text"], "出願資格 p.3 / 出願書類 p.7")
         self.assertEqual(program["evidence"]["application_period"]["page"], 3)
         for admin_key in ("raw_llm_json", "warnings_json", "manual_modified_fields", "confirmed_by"):
             self.assertNotIn(admin_key, program)

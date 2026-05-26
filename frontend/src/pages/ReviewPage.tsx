@@ -63,6 +63,14 @@ const FIELD_GROUPS: Array<{ title: string; fields: ReviewField[] }> = [
       { key: "screening_method", label: "选考方式", rows: 3 },
     ],
   },
+  {
+    title: "材料与资格",
+    fields: [
+      { key: "eligibility", label: "出愿资格", rows: 4 },
+      { key: "required_documents", label: "所需材料", rows: 4 },
+      { key: "evidence", label: "来源依据", rows: 3 },
+    ],
+  },
 ];
 
 const REVIEW_KEYS = FIELD_GROUPS.flatMap((group) => group.fields.map((field) => field.key));

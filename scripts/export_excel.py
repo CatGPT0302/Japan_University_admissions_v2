@@ -39,6 +39,9 @@ CONFIRMED_EXPORT_COLUMNS = [
     ("screening_schedule", "考试日程"),
     ("result_date", "结果公布"),
     ("enrollment_period", "入学手续"),
+    ("eligibility", "出愿资格"),
+    ("required_documents", "所需材料"),
+    ("evidence", "来源依据"),
     ("prefecture", "地区"),
     ("campus", "校区"),
 ]
@@ -246,7 +249,7 @@ def export_confirmed_excel_bytes_from_records(records: list[dict[str, Any]]) -> 
         ws.row_dimensions[row[0].row].height = 42
 
     for col_idx, (_key, label) in enumerate(CONFIRMED_EXPORT_COLUMNS, start=1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = 34 if label in {"出愿时间", "截止规则", "英语要求", "选考方式", "考试日程"} else 16
+        ws.column_dimensions[get_column_letter(col_idx)].width = 34 if label in {"出愿时间", "截止规则", "英语要求", "选考方式", "考试日程", "出愿资格", "所需材料", "来源依据"} else 16
 
     ws.freeze_panes = "E4"
     ws.auto_filter.ref = f"A3:{ws.cell(row=ws.max_row, column=len(CONFIRMED_EXPORT_COLUMNS)).coordinate}"

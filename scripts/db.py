@@ -42,6 +42,9 @@ TRACKABLE_FIELDS = {
     "department",
     "campus",
     "prefecture",
+    "required_documents",
+    "eligibility",
+    "evidence",
 }
 QUALITY_FIELDS = [
     "application_period",
@@ -58,6 +61,9 @@ QUALITY_FIELDS = [
     "screening_schedule",
     "result_date",
     "enrollment_period",
+    "required_documents",
+    "eligibility",
+    "evidence",
 ]
 
 
@@ -383,6 +389,9 @@ CREATE TABLE IF NOT EXISTS admission_records_staging (
     enrollment_period TEXT,
     prefecture TEXT,
     campus TEXT,
+    required_documents TEXT,
+    eligibility TEXT,
+    evidence TEXT,
     confidence REAL DEFAULT 0.0,
     needs_review INTEGER DEFAULT 1,
     warnings_json TEXT DEFAULT '[]',
@@ -417,6 +426,9 @@ CREATE TABLE IF NOT EXISTS admission_records (
     enrollment_period TEXT,
     prefecture TEXT,
     campus TEXT,
+    required_documents TEXT,
+    eligibility TEXT,
+    evidence TEXT,
     confirmed_by TEXT DEFAULT 'human',
     confirmed_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
     created_at TEXT DEFAULT to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS'),
@@ -594,6 +606,9 @@ CREATE TABLE IF NOT EXISTS admission_records_staging (
     enrollment_period TEXT,
     prefecture TEXT,
     campus TEXT,
+    required_documents TEXT,
+    eligibility TEXT,
+    evidence TEXT,
     confidence REAL DEFAULT 0.0,
     needs_review INTEGER DEFAULT 1,
     warnings_json TEXT DEFAULT '[]',
@@ -628,6 +643,9 @@ CREATE TABLE IF NOT EXISTS admission_records (
     enrollment_period TEXT,
     prefecture TEXT,
     campus TEXT,
+    required_documents TEXT,
+    eligibility TEXT,
+    evidence TEXT,
     confirmed_by TEXT DEFAULT 'human',
     confirmed_at TEXT DEFAULT (datetime('now','localtime')),
     created_at TEXT DEFAULT (datetime('now','localtime')),
@@ -677,12 +695,21 @@ CREATE INDEX IF NOT EXISTS idx_submission_org ON document_submissions(organizati
 """
 
 _STAGING_MIGRATION_COLUMNS = {
+    "required_documents": "TEXT",
+    "eligibility": "TEXT",
+    "evidence": "TEXT",
     "field_confidence": "TEXT DEFAULT '{}'",
     "field_evidence": "TEXT DEFAULT '{}'",
     "risk_level": "TEXT DEFAULT 'medium'",
     "manual_modified_fields": "TEXT DEFAULT '[]'",
     "is_reviewed": "INTEGER DEFAULT 0",
     "reviewed_at": "TEXT",
+}
+
+_RECORD_MIGRATION_COLUMNS = {
+    "required_documents": "TEXT",
+    "eligibility": "TEXT",
+    "evidence": "TEXT",
 }
 
 _BOOKING_MIGRATION_COLUMNS = {
@@ -707,6 +734,24 @@ def _ensure_staging_columns(conn) -> None:
     for column, definition in _STAGING_MIGRATION_COLUMNS.items():
         if column not in existing:
             _execute(conn, f"ALTER TABLE admission_records_staging ADD COLUMN {column} {definition}")
+
+
+def _ensure_record_columns(conn) -> None:
+    if _pg():
+        for column, definition in _RECORD_MIGRATION_COLUMNS.items():
+            _execute(
+                conn,
+                f"ALTER TABLE admission_records ADD COLUMN IF NOT EXISTS {column} {definition}",
+            )
+        return
+
+    existing = {
+        row["name"]
+        for row in _fetchall(conn, "PRAGMA table_info(admission_records)")
+    }
+    for column, definition in _RECORD_MIGRATION_COLUMNS.items():
+        if column not in existing:
+            _execute(conn, f"ALTER TABLE admission_records ADD COLUMN {column} {definition}")
 
 
 def _ensure_booking_columns(conn) -> None:
@@ -760,6 +805,7 @@ def init_db() -> None:
     else:
         conn.executescript(_SCHEMA_SQLITE)
     _ensure_staging_columns(conn)
+    _ensure_record_columns(conn)
     _ensure_booking_columns(conn)
     conn.commit()
     conn.close()
@@ -1428,6 +1474,9 @@ def insert_staging_record(doc_id, page_number, record) -> int:
         "enrollment_period",
         "prefecture",
         "campus",
+        "required_documents",
+        "eligibility",
+        "evidence",
         "confidence",
         "needs_review",
         "warnings_json",
@@ -1545,6 +1594,9 @@ def update_staging_record(staging_id, data) -> dict | None:
         "enrollment_period",
         "prefecture",
         "campus",
+        "required_documents",
+        "eligibility",
+        "evidence",
         "confidence",
         "needs_review",
         "warnings_json",
@@ -1725,8 +1777,8 @@ def _confirm_row(conn, row: dict, pdf_url="") -> int:
         "faculty,department,application_period,deadline_rule,"
         "eju_session,eju_japanese,eju_general,eju_math,eju_physics,eju_chemistry,eju_biology,"
         "english_requirement,screening_method,screening_schedule,"
-        "result_date,enrollment_period,prefecture,campus"
-        f") VALUES ({_phn(24)})"
+        "result_date,enrollment_period,prefecture,campus,required_documents,eligibility,evidence"
+        f") VALUES ({_phn(27)})"
     )
     if _pg():
         sql += " RETURNING id"
@@ -1758,6 +1810,9 @@ def _confirm_row(conn, row: dict, pdf_url="") -> int:
             row["enrollment_period"],
             row["prefecture"],
             row["campus"],
+            row.get("required_documents", ""),
+            row.get("eligibility", ""),
+            row.get("evidence", ""),
         ),
     )
     return _lastrowid(cur)
@@ -1856,7 +1911,8 @@ RECORD_SELECT_COLUMNS = (
     "id,university,admission_year,faculty,department,"
     "admission_period,application_period,deadline_rule,eju_session,eju_japanese,eju_general,"
     "eju_math,eju_physics,eju_chemistry,eju_biology,english_requirement,"
-    "screening_method,screening_schedule,result_date,enrollment_period,prefecture,campus"
+    "screening_method,screening_schedule,result_date,enrollment_period,prefecture,campus,"
+    "required_documents,eligibility,evidence"
 )
 
 
@@ -1990,6 +2046,16 @@ def _public_risk(row: dict[str, Any]) -> dict[str, Any]:
     return {"level": "low", "reasons": ["已确认记录，核心字段较完整"]}
 
 
+def _public_document_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item or "").strip()]
+    text = str(value or "").strip()
+    if not text:
+        return []
+    parts = re.split(r"\s*/\s*|\n|、|；|;", text)
+    return [part.strip() for part in parts if part.strip()]
+
+
 def _public_program_from_row(row: dict[str, Any]) -> dict[str, Any]:
     risk = _public_risk(row)
     stored_risk_level = str(row.get("staging_risk_level") or "").strip()
@@ -2028,13 +2094,13 @@ def _public_program_from_row(row: dict[str, Any]) -> dict[str, Any]:
             },
             "english": {"raw_text": row.get("english_requirement") or ""},
             "jlpt": {"raw_text": ""},
-            "eligibility": "",
-            "required_documents": [],
+            "eligibility": row.get("eligibility") or "",
+            "required_documents": _public_document_list(row.get("required_documents")),
         },
         "risk": risk,
         "risk_level": risk.get("level"),
         "confidence": confidence,
-        "evidence": field_evidence,
+        "evidence": {**field_evidence, **({"summary": {"text": row.get("evidence"), "page": None}} if str(row.get("evidence") or "").strip() else {})},
         "source_document": {
             "id": row.get("document_id"),
             "file_name": row.get("source_file_name") or "",
@@ -2070,6 +2136,7 @@ def get_public_programs(
         "ar.eju_session, ar.eju_japanese, ar.eju_general, ar.eju_math, ar.eju_physics, "
         "ar.eju_chemistry, ar.eju_biology, ar.english_requirement, ar.screening_method, "
         "ar.screening_schedule, ar.result_date, ar.enrollment_period, ar.prefecture, ar.campus, "
+        "ar.required_documents, ar.eligibility, ar.evidence, "
         "sd.file_name AS source_file_name, sd.pdf_url AS source_pdf_url, "
         "st.confidence AS staging_confidence, st.field_evidence, st.risk_level AS staging_risk_level "
         "FROM admission_records ar "
@@ -2090,6 +2157,7 @@ def get_public_program(program_id: int) -> dict[str, Any] | None:
         "ar.eju_session, ar.eju_japanese, ar.eju_general, ar.eju_math, ar.eju_physics, "
         "ar.eju_chemistry, ar.eju_biology, ar.english_requirement, ar.screening_method, "
         "ar.screening_schedule, ar.result_date, ar.enrollment_period, ar.prefecture, ar.campus, "
+        "ar.required_documents, ar.eligibility, ar.evidence, "
         "sd.file_name AS source_file_name, sd.pdf_url AS source_pdf_url, "
         "st.confidence AS staging_confidence, st.field_evidence, st.risk_level AS staging_risk_level "
         "FROM admission_records ar "

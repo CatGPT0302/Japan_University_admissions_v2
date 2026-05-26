@@ -186,6 +186,8 @@ function requirementRows(program: PublicProgram): Array<{ label: string; value: 
     { label: "EJU 数学", value: textOrPending(eju.math) },
     { label: "EJU 其他科目", value: textOrPending([eju.general, eju.physics, eju.chemistry, eju.biology].filter(Boolean).join(" / ")) },
     { label: "英语要求", value: textOrPending(program.requirements?.english?.raw_text) },
+    { label: "出愿资格", value: textOrPending(program.requirements?.eligibility) },
+    { label: "所需材料", value: textOrPending((program.requirements?.required_documents || []).join(" / ")) },
   ];
 }
 
@@ -197,6 +199,7 @@ function preparationItems(program: PublicProgram, recommendedItems?: string[]): 
   const ejuText = [eju.session, eju.japanese, eju.general, eju.math, eju.physics, eju.chemistry, eju.biology].filter(Boolean).join(" / ");
   if (ejuText) items.push(`准备 EJU：${ejuText}`);
   if (program.requirements?.english?.raw_text) items.push(`准备英语成绩：${program.requirements.english.raw_text}`);
+  if (program.requirements?.required_documents?.length) items.push(`准备材料：${program.requirements.required_documents.slice(0, 4).join(" / ")}`);
   if (program.exam_method) items.push(`确认校内考方式：${program.exam_method}`);
   if (program.exam_date) items.push(`确认考试时间：${program.exam_date}`);
   return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean))).slice(0, 6);
