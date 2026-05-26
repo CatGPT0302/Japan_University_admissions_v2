@@ -68,12 +68,40 @@ TOEFL iBT TOEIC L&R 出願基準点なし
 合計２科目
 TOEFL iBT TOEIC L&R IELTS 出願基準点なし
 書類選考 口頭試問
+国際日本学部 国際日本学科 Ⅰ ４０名
+①日本語
+②総合科目
+合計２科目
+TOEFL iBT ２０２６年１月２０日以前受験 ４４以上
+TOEIC L&R ５６５以上
+IELTS ４．０以上
+２０２６年１１月２４日（火）
+２０２６年１２月１９日（土）
+１０：００～
+口頭試問
+２０２６年１２月２４日（木）
 国際日本学部 （国外在住者） 国際日本学科 Ⅱ
 ①日本語
 ②総合科目
 合計２科目
 TOEFL iBT TOEIC L&R ６００以上 IELTS ４．０以上
 ２０２６年１２月２４日（木）
+商学部（国外在住者） 商学科 Ⅱ
+３０名（Ⅰ型含む）
+２０２６年１０月２０日（火）～１０月２７日（火）
+①日本語
+②総合科目
+③数学（コース１）
+合計３科目
+２０２５年度第１回
+２０２５年度第２回
+２０２６年度第１回
+２０２６年度第２回
+TOEFL iBT ２０２６年１月２０日以前受験 ４８以上
+TOEIC L&R ６００以上
+２０２４年１２月１日（日）～２０２６年９月３０日（水）
+書類選考のみ
+２０２７年１月１４日（木）
 """
 
 
@@ -86,7 +114,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 8)
+        self.assertEqual(len(records), 10)
         self.assertIn("eju_japanese", records[0])
         self.assertIn("eju_general", records[0])
         self.assertIn("eju_math", records[0])
@@ -101,7 +129,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "meiji_2027_schedule.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 8)
+        self.assertEqual(len(records), 10)
         self.assertTrue(report["passed"], report)
 
     def test_returns_no_records_for_unrelated_text(self) -> None:
@@ -130,7 +158,7 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
             )
 
             payload = json.loads(output_path.read_text(encoding="utf-8"))
-            self.assertEqual(len(payload["records"]), 8)
+            self.assertEqual(len(payload["records"]), 10)
             self.assertEqual(payload["records"][0]["university"], "明治大学")
 
     def test_text_path_uses_meiji_seed_without_llm_call(self) -> None:
@@ -139,14 +167,14 @@ class MeijiScheduleExtractorTest(unittest.TestCase):
         university = self._seed_university()
         with (
             patch("scripts.extract_direct._read_pdf_text", return_value=(MEIJI_TEXT, {1: MEIJI_TEXT})),
-            patch("scripts.extract_direct._insert_result", return_value=8) as insert_result,
+            patch("scripts.extract_direct._insert_result", return_value=10) as insert_result,
             patch("scripts.extract_direct._call_openai", side_effect=AssertionError("LLM should not be called")),
         ):
             result = _run_text_path(1, Path("dummy.pdf"), university, "2027")
 
         self.assertEqual(result["mode"], "deterministic_text")
-        self.assertEqual(result["records"], 8)
-        self.assertEqual(result["inserted"], 8)
+        self.assertEqual(result["records"], 10)
+        self.assertEqual(result["inserted"], 10)
         insert_result.assert_called_once()
 
     def _seed_university(self) -> str:

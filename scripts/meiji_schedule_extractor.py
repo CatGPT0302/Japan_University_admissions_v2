@@ -177,6 +177,39 @@ def extract_meiji_2027_schedule_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if _has_all(compact, ["国際日本学部", "国際日本学科", "TOEIC L&R 565以上", "IELTS 4.0以上", "11月24日", "12月19日", "10:00", "12月24日"]):
+        record = _base_record(faculty="国際日本学部", department="国際日本学科", selection_type="Ⅰ")
+        record.update(
+            {
+                "eju_subjects": "日本語 / 総合科目",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目",
+                "eju_math": "",
+                "english_requirement": "TOEFL iBT 44以上 / TOEIC L&R 565以上 / IELTS 4.0以上",
+                "screening_method": "書類選考 / 口頭試問",
+                "screening_schedule": "2026年12月19日（土） 10:00～",
+                "result_date": "2026年12月24日（木）",
+            }
+        )
+        records.append(record)
+
+    if _has_all(compact, ["商学部", "国外在住者", "商学科", "2026年10月20日", "10月27日", "2026年度第2回", "TOEIC L&R 600以上", "2027年", "1月14日"]):
+        record = _base_record(faculty="商学部", department="商学科", selection_type="Ⅱ")
+        record.update(
+            {
+                "application_period": "2026年10月20日（火）～10月27日（火）",
+                "eju_session": "2025年度第1回 / 2025年度第2回 / 2026年度第1回 / 2026年度第2回",
+                "eju_subjects": "日本語 / 総合科目 / 数学(コース1)",
+                "eju_japanese": "日本語",
+                "eju_general": "総合科目",
+                "eju_math": "数学(コース1)",
+                "english_requirement": "TOEFL iBT 48以上 / TOEIC L&R 600以上",
+                "screening_method": "書類選考のみ",
+                "result_date": "2027年1月14日（木）",
+            }
+        )
+        records.append(record)
+
     return records
 
 
