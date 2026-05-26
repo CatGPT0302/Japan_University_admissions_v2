@@ -1,0 +1,40 @@
+[
+  {
+    "id": "chukyo-gakuin-2027-business",
+    "source_document": "https://secondhome.chukyogakuin-u.ac.jp/media/youkou-foreign-2027.pdf",
+    "source_note": "Official Chukyo Gakuin University 2027 foreign student selection student application guideline. Checked against eligibility, selection schedule, documents, tuition reduction, and enrollment procedure pages.",
+    "match": {"university": "中京学院大学", "admission_year": "2027", "faculty": "経営学部"},
+    "expect": {
+      "application_period": {"contains": ["6/1", "7/8", "8/12", "9/9", "10/7", "11/11", "12/9"]},
+      "deadline_rule": {"contains": ["必着", "募集状況", "事前の相談"]},
+      "eligibility": {"contains": ["外国籍", "12年以上", "B2相当", "JLPT", "N2"]},
+      "required_documents": {"contains": ["入学志願票", "志望理由書", "経費支弁書", "卒業証明書", "成績証明書", "パスポート", "在留カード"]},
+      "jlpt_requirement": {"contains": ["B2相当", "JLPT", "N2"]},
+      "screening_method": {"contains": ["書類審査", "面接", "日本語テスト", "総合判定"]},
+      "screening_schedule": {"contains": ["7月16日", "8月20日", "9月17日", "10月15日", "11月19日", "12月17日"]},
+      "result_date": {"contains": ["7月24日", "8月28日", "9月25日", "10月23日", "11月27日", "12月24日"]},
+      "enrollment_period": {"contains": ["10月23日", "11月27日", "12月24日", "1月15日"]},
+      "evidence": {"contains": ["p.4", "p.5", "p.6", "p.7", "p.10"]}
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "chukyo-gakuin-2027-nursing",
+    "source_document": "https://secondhome.chukyogakuin-u.ac.jp/media/youkou-foreign-2027.pdf",
+    "source_note": "Official Chukyo Gakuin University 2027 foreign student selection student application guideline. Checked against eligibility, selection schedule, documents, tuition reduction, and enrollment procedure pages.",
+    "match": {"university": "中京学院大学", "admission_year": "2027", "faculty": "看護学部"},
+    "expect": {
+      "application_period": {"contains": ["6/1", "12/9"]},
+      "deadline_rule": {"contains": ["必着", "出願前", "相談"]},
+      "eligibility": {"contains": ["外国籍", "12年以上", "B2以上"]},
+      "required_documents": {"contains": ["日本語能力", "JLPT", "パスポート", "在留カード"]},
+      "jlpt_requirement": {"contains": ["B2以上", "日本語教育の参照枠"]},
+      "screening_method": {"contains": ["書類審査", "面接", "日本語テスト"]},
+      "screening_schedule": {"contains": ["13:00", "15:00"]},
+      "result_date": {"contains": ["発送"]},
+      "enrollment_period": {"contains": ["期日まで", "入学手続金", "入学許可書"]},
+      "evidence": {"contains": ["p.4", "p.5", "p.7", "p.10"]}
+    },
+    "review_status": "human_checked_seed"
+  }
+]

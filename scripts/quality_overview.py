@@ -44,6 +44,7 @@ SEED_RECORD_MINIMUMS = {
     "kindai-2027-undergrad": 3,
     "ritsumeikan-2027-undergrad": 3,
     "osaka-metropolitan-2027-undergrad": 3,
+    "chukyo-gakuin-2027-undergrad": 2,
 }
 
 
@@ -89,7 +90,7 @@ def _weak_field_rows(seed_suite: dict[str, Any], *, max_checked: int = 2) -> lis
     weak = [
         (field, checked)
         for field, checked in totals.items()
-        if checked <= max_checked and checked < int(CRITICAL_FIELD_MINIMUMS.get(field, max_checked + 1))
+        if field in CRITICAL_FIELD_MINIMUMS and checked <= max_checked and checked < int(CRITICAL_FIELD_MINIMUMS[field])
     ]
     return [{"field": field, "checked": checked} for field, checked in sorted(weak, key=lambda item: (item[1], item[0]))[:5]]
 

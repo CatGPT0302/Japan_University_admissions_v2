@@ -70,8 +70,7 @@ class QualityOverviewTest(unittest.TestCase):
                                     "eju_chemistry": {"checked": 1, "passed": 1},
                                     "english_requirement": {"checked": 6, "passed": 6},
                                     "result_date": {"checked": 5, "passed": 5},
-                                    "screening_schedule": {"checked": 5, "passed": 5},
-                                    "optional_notes": {"checked": 1, "passed": 1},
+                                    "screening_schedule": {"checked": 1, "passed": 1},
                                 }
                             },
                         }
@@ -93,10 +92,9 @@ class QualityOverviewTest(unittest.TestCase):
         ):
             overview = build_quality_overview()
 
+        weak_todos = [todo for todo in overview["quality_todo"] if todo["action"] == "expand_field_baseline"]
         self.assertEqual(overview["overall_status"], "needs_owner_action")
-        self.assertEqual(overview["next_owner_action"]["action"], "expand_field_baseline")
-        self.assertEqual(overview["next_owner_action"]["field"], "optional_notes")
-        self.assertEqual(overview["quality_todo"][0]["checked"], 1)
+        self.assertTrue(any(todo["field"] == "screening_schedule" for todo in weak_todos))
 
     def test_adds_owner_todo_when_critical_field_coverage_is_below_target(self) -> None:
         from scripts.quality_overview import build_quality_overview
@@ -681,6 +679,61 @@ class QualityOverviewTest(unittest.TestCase):
         weak_fields = [todo["field"] for todo in overview["quality_todo"] if todo["action"] == "expand_field_baseline"]
         self.assertEqual(overview["overall_status"], "quality_gate_ready")
         self.assertNotIn("eju_math", weak_fields)
+
+    def test_does_not_create_owner_todo_for_sparse_noncritical_field(self) -> None:
+        from scripts.quality_overview import build_quality_overview
+
+        full_critical_coverage = {
+            "application_period": {"checked": 5, "passed": 5},
+            "deadline_rule": {"checked": 5, "passed": 5},
+            "enrollment_period": {"checked": 5, "passed": 5},
+            "required_documents": {"checked": 5, "passed": 5},
+            "eligibility": {"checked": 5, "passed": 5},
+            "evidence": {"checked": 5, "passed": 5},
+            "eju_session": {"checked": 5, "passed": 5},
+            "eju_japanese": {"checked": 5, "passed": 5},
+            "eju_general": {"checked": 5, "passed": 5},
+            "eju_math": {"checked": 2, "passed": 2},
+            "eju_physics": {"checked": 1, "passed": 1},
+            "eju_chemistry": {"checked": 1, "passed": 1},
+            "english_requirement": {"checked": 5, "passed": 5},
+            "result_date": {"checked": 5, "passed": 5},
+            "screening_schedule": {"checked": 5, "passed": 5},
+            "jlpt_requirement": {"checked": 2, "passed": 2},
+        }
+
+        with (
+            patch(
+                "scripts.quality_overview.run_seed_baseline_suite",
+                return_value={
+                    "passed": True,
+                    "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                    "items": [
+                        {
+                            "id": "chukyo-gakuin-2027-undergrad",
+                            "baseline": {"expected_count": 2, "field_coverage": full_critical_coverage},
+                        }
+                    ],
+                },
+            ),
+            patch(
+                "scripts.quality_overview.build_quality_gap_report",
+                return_value={
+                    "summary": {
+                        "baseline_files": 1,
+                        "registered_seed_extractors": 1,
+                        "missing_local_sources": 0,
+                        "missing_seed_extractors": 0,
+                    },
+                    "owner_todo": [],
+                },
+            ),
+        ):
+            overview = build_quality_overview()
+
+        weak_fields = [todo["field"] for todo in overview["quality_todo"] if todo["action"] == "expand_field_baseline"]
+        self.assertEqual(overview["overall_status"], "quality_gate_ready")
+        self.assertNotIn("jlpt_requirement", weak_fields)
 
     def test_formats_compact_summary_for_owner(self) -> None:
         from scripts.quality_overview import format_owner_summary

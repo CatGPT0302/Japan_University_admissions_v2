@@ -1,0 +1,14 @@
+{
+  "status": "cached",
+  "stem": "chukyo_gakuin_2027_undergrad",
+  "source_url": "https://secondhome.chukyogakuin-u.ac.jp/media/youkou-foreign-2027.pdf",
+  "cached_path": "data/uploads/chukyo_gakuin_2027_undergrad.pdf",
+  "sha256": "e4d1baa522e6e06f165c7ac92137281fde6bc1eacc24004bb46c4db8283b7c1d",
+  "size_bytes": 2102561,
+  "markers": [
+    "2027",
+    "中京学院大学",
+    "外国人留学生選抜"
+  ],
+  "checked_at": "2026-05-26T01:53:37+00:00"
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from scripts.chukyo_gakuin_2027_undergrad_extractor import extract_chukyo_gakuin_2027_undergrad_records
 from scripts.keio_medicine_2027_extractor import extract_keio_2027_medicine_records
 from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
 from scripts.kwansei_2027_undergrad_extractor import extract_kwansei_2027_undergrad_records
@@ -105,6 +106,19 @@ SEED_EXTRACTORS: dict[str, dict[str, Any]] = {
         "source_markers": ["2027", "⚾㈝እᅜே␃Ꮫ"],
         "text_markers": ["2027", "␃Ꮫ", "ヨ㦂"],
         "extractor": extract_osaka_metropolitan_2027_undergrad_records,
+    },
+    "chukyo_gakuin_2027_undergrad": {
+        "stem": "chukyo_gakuin_2027_undergrad",
+        "id": "chukyo-gakuin-2027-undergrad",
+        "university": "中京学院大学",
+        "admission_year": "2027",
+        "script": "scripts/chukyo_gakuin_2027_undergrad_extractor.py",
+        "expected_path": "quality_baselines/chukyo_gakuin_2027_undergrad.expected.json",
+        "source_url": "https://secondhome.chukyogakuin-u.ac.jp/media/youkou-foreign-2027.pdf",
+        "source_candidates": ["data/uploads/chukyo_gakuin_2027_undergrad.pdf"],
+        "source_markers": ["2027", "中京学院大学", "外国人留学生選抜"],
+        "text_markers": ["中京学院大学", "2027", "外国人留学生選抜"],
+        "extractor": extract_chukyo_gakuin_2027_undergrad_records,
     },
 }
 
