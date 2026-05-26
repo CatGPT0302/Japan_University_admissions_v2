@@ -33,7 +33,7 @@ const QUICK_KEYWORDS = ["面试", "书类选考", "小论文", "私费外国人"
 
 function splitTerms(value: string): string[] {
   return value
-    .split(/[,，、\n]/)
+    .split(/[,;\n\u3001\uff0c\uff1b]+/)
     .map((item) => item.trim())
     .filter(Boolean);
 }

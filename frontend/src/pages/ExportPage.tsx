@@ -45,8 +45,7 @@ interface Props {
 
 function splitItems(value: string) {
   return value
-    .replace(/，/g, ",")
-    .split(",")
+    .split(/[,;\n\u3001\uff0c\uff1b]+/)
     .map((item) => item.trim())
     .filter(Boolean);
 }

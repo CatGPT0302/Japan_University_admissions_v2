@@ -376,6 +376,29 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
 
+    def test_export_filters_accept_common_spreadsheet_separators(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Meiji University", "2027", "Science")
+            self._insert_confirmed(db, "Kyushu University", "2026", "Engineering")
+            self._insert_confirmed(db, "Waseda University", "2027", "Commerce")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get(
+                "/exports/preview",
+                params={
+                    "universities": "Meiji University，Kyushu University、Missing University",
+                    "years": "2027；2026",
+                    "faculties": "Science;Engineering",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        rows = response.json()["rows"]
+        self.assertEqual({row["university"] for row in rows}, {"Meiji University", "Kyushu University"})
+        self.assertEqual(response.json()["summary"]["records"], 2)
+
     def test_export_preview_and_excel_can_use_selected_record_ids(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

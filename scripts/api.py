@@ -336,7 +336,7 @@ def _log_success(request: Request, context: dict[str, Any], scope: str) -> None:
 def _split_filter(value: str | None) -> list[str]:
     if not value:
         return []
-    return [part.strip() for part in str(value).replace("，", ",").split(",") if part.strip()]
+    return [part.strip() for part in re.split(r"[,;\n\u3001\uff0c\uff1b]+", str(value)) if part.strip()]
 
 
 def _split_int_filter(value: str | None) -> list[int]:
