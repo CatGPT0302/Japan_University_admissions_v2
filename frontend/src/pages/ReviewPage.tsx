@@ -250,6 +250,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   );
   const reviewedCount = rows.filter((row) => Number(row.is_reviewed) || Number(row.is_confirmed)).length;
   const remainingCount = Math.max(rows.length - reviewedCount, 0);
+  const pendingReviewCount = rows.filter((row) => Number(row.needs_review) && !isReviewed(row)).length;
   const priorityCount = rows.filter((row) => needsAttention(row)).length;
   const currentPage = focusedEvidencePage || selectedRow?.page_number || 1;
   const changedFields = useMemo(
@@ -503,11 +504,12 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
             </div>
             <button
               className="btn btn-green"
-              disabled={!selectedDocId || !rows.length}
+              disabled={!selectedDocId || !rows.length || pendingReviewCount > 0}
               onClick={() => void confirmCurrentDocument()}
               type="button"
+              title={pendingReviewCount > 0 ? "请先处理待复审内容" : undefined}
             >
-              确认整份入库
+              {pendingReviewCount > 0 ? `还有 ${pendingReviewCount} 条待复审` : "确认整份入库"}
             </button>
           </div>
         </header>

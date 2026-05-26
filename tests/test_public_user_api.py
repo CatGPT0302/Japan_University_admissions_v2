@@ -305,6 +305,7 @@ class PublicUserApiTest(unittest.TestCase):
                     "application_period": "2026年8月25日 - 2026年9月1日",
                     "screening_method": "書類選考",
                     "result_date": "2026年12月3日",
+                    "is_reviewed": 1,
                 },
             )
             client = TestClient(api.app)
@@ -320,6 +321,38 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(confirm.json()["confirmed"], 1)
         self.assertEqual(records.status_code, 200)
         self.assertEqual(len(records.json()), 1)
+
+    def test_admin_confirm_rejects_unreviewed_staging_records(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            doc_id = db.create_source_document(
+                "明治大学",
+                "meiji.pdf",
+                "/tmp/meiji.pdf",
+                "https://example.ac.jp/meiji.pdf",
+                "2027",
+            )
+            db.insert_staging_record(
+                doc_id,
+                None,
+                {
+                    "university": "明治大学",
+                    "admission_year": "2027",
+                    "faculty": "理工学部",
+                    "department": "機械工学科",
+                    "needs_review": True,
+                },
+            )
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            confirm = client.post(f"/confirm/{doc_id}")
+            records = client.get("/records", params={"university": "明治大学", "year": 2027})
+
+        self.assertEqual(confirm.status_code, 409)
+        self.assertIn("need review", confirm.json()["detail"])
+        self.assertEqual(records.status_code, 200)
+        self.assertEqual(records.json(), [])
 
     def test_owner_routes_require_owner_login_and_partner_has_own_console(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

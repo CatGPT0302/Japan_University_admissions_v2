@@ -1027,6 +1027,15 @@ def create_manual_staging(payload: ManualRecord, request: Request) -> dict[str, 
 @app.post("/confirm/{doc_id}")
 def confirm_doc(doc_id: int, request: Request) -> dict[str, int]:
     _require_owner(request)
+    pending_review = [
+        row for row in get_staging_records(doc_id)
+        if int(row.get("needs_review") or 0) and not int(row.get("is_reviewed") or 0) and not int(row.get("is_confirmed") or 0)
+    ]
+    if pending_review:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{len(pending_review)} staging records still need review before confirmation",
+        )
     stats = confirm_all_by_doc(doc_id)
     return {
         "confirmed": int(stats.get("written", 0)),
