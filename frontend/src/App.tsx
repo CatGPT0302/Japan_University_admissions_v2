@@ -121,6 +121,7 @@ export default function App() {
   const surface = appSurface();
   const [page, setPage] = useState<OwnerPage>(() => pageFromHash());
   const [activeDocId, setActiveDocId] = useState<number | null>(null);
+  const [exportSeed, setExportSeed] = useState<{ university?: string; year?: string; token: number } | null>(null);
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -290,11 +291,18 @@ export default function App() {
                 setActiveDocId(null);
                 setPage("records");
               }}
+              onOpenExports={(filters) => {
+                setActiveDocId(null);
+                setExportSeed({ ...filters, token: Date.now() });
+                setPage("exports");
+                window.location.hash = "#/exports";
+              }}
             />
           ) : page === "records" ? (
             <RecordsPage />
           ) : page === "exports" ? (
             <ExportPage
+              initialFilters={exportSeed}
               onOpenReview={(docId) => {
                 setActiveDocId(docId);
                 setPage("review");

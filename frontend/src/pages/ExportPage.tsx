@@ -26,6 +26,11 @@ type ExportPreset = {
 
 interface Props {
   onOpenReview?: (docId: number) => void;
+  initialFilters?: {
+    university?: string;
+    year?: string;
+    token?: number;
+  } | null;
 }
 
 function splitItems(value: string) {
@@ -128,7 +133,7 @@ function OptionChips({
   );
 }
 
-export default function ExportPage({ onOpenReview }: Props) {
+export default function ExportPage({ onOpenReview, initialFilters }: Props) {
   const [quickSchool, setQuickSchool] = useState("");
   const [universities, setUniversities] = useState("");
   const [years, setYears] = useState("");
@@ -265,6 +270,21 @@ export default function ExportPage({ onOpenReview }: Props) {
     void loadPreview();
     void loadOptions();
   }, []);
+
+  useEffect(() => {
+    if (!initialFilters) return;
+    const nextUniversities = initialFilters.university?.trim() || "";
+    const nextYears = yearText(initialFilters.year) || initialFilters.year?.trim() || "";
+    setQuickSchool(nextUniversities);
+    setUniversities(nextUniversities);
+    setYears(nextYears);
+    setFaculties("");
+    void loadPreview({
+      universities: nextUniversities || undefined,
+      years: nextYears || undefined,
+      faculties: undefined,
+    });
+  }, [initialFilters?.token]);
 
   const filterCount = splitItems(universities).length + splitItems(years).length + splitItems(faculties).length;
   const rows = preview?.rows ?? [];

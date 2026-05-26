@@ -14,6 +14,7 @@ import type { DocumentListItem, DocumentSummary, StagingRecord } from "../types"
 interface Props {
   defaultDocId?: number | null;
   onDone: () => void;
+  onOpenExports?: (filters: { university?: string; year?: string }) => void;
 }
 
 type ReviewField = {
@@ -184,7 +185,7 @@ function sortRows(rows: StagingRecord[]) {
   });
 }
 
-export default function ReviewPage({ defaultDocId, onDone }: Props) {
+export default function ReviewPage({ defaultDocId, onDone, onOpenExports }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
   const [rows, setRows] = useState<StagingRecord[]>([]);
@@ -293,7 +294,14 @@ export default function ReviewPage({ defaultDocId, onDone }: Props) {
     try {
       const result = await confirmDoc(selectedDocId);
       setMessage(`已写入确认数据 ${result.confirmed} 条，跳过 ${result.skipped} 条。`);
-      onDone();
+      if (onOpenExports) {
+        onOpenExports({
+          university: summary?.university_name || selectedRow?.university || "",
+          year: summary?.admission_year || selectedRow?.admission_year || "",
+        });
+      } else {
+        onDone();
+      }
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     }

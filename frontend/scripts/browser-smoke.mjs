@@ -371,6 +371,11 @@ async function runSurfaceAction(page, surface) {
     if (!confirmResponse.ok()) {
       throw new Error(`${surface.name} confirm failed with ${confirmResponse.status()}`);
     }
+    await assertBodyIncludes(page, "单校快速取出", `${surface.name} confirm export handoff`);
+    await assertBodyIncludes(page, "东京测试大学", `${surface.name} confirm export handoff`);
+    await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirm export preview`);
+
+    await page.getByRole("button", { name: /正式资料/ }).click();
     await assertBodyIncludes(page, "已确认的招生资料", `${surface.name} confirmed records`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirmed records`);
     await page.getByRole("button", { name: /东京测试大学/ }).click();
