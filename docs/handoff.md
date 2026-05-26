@@ -1,63 +1,91 @@
 # Current Handoff
 
 ## Project Positioning
-This project is an LLM-assisted information extraction and validation system for Japanese university admission guideline PDFs, especially 留学生募集要項.
 
-The goal is not to build a PDF OCR/vision engine from scratch. Instead, the system uses LLM/Agent-based reading to extract key admission information from PDFs and structure it into human-verifiable CSV/JSON/table fields.
+This is a personal, owner-hosted Japanese university admissions information system for international-student admissions.
 
-## Current Status
-- First version of trace_debug.json has been generated.
-- The overall direction is validated.
-- The main bottleneck is snippet quality.
-- We should not expand the sample size yet.
-- The next step is to improve snippet quality only.
+The core problem is scattered, year-sensitive official admissions information across university pages and PDFs. The project turns those sources into source-tracked, reviewable, searchable, exportable admissions data.
 
-## Current Priority
-Focus only on snippet improvement:
+Do not describe this as an official company, cram-school, or WeCom product. It can support advising workflows and partner usage, but ownership, data assets, extraction control, and final confirmation stay with the owner.
 
-1. Improve context window selection.
-2. Improve field-to-snippet matching.
-3. Improve snippet readability for human validation.
-4. Make sure each extracted field can be traced back to a useful source snippet.
-5. Avoid over-expanding context so that snippets remain concise and reviewable.
+## Current Product Shape
 
-## Do Not Do Yet
-- Do not expand the sample set.
-- Do not redesign the entire pipeline.
-- Do not over-optimize UI yet.
-- Do not rewrite the whole project structure unless necessary.
-- Do not treat this as a pure OCR or PDF vision project.
+The repository now supports separate surfaces:
 
-## Later Phases
-- UI Phase2
-- Leader demo
-- README polishing
-- More stable output comparison
-- Human validation workflow
+1. Owner/admin workspace
+   - Upload or fetch admissions materials.
+   - Run extraction.
+   - Review extracted entries against source PDFs.
+   - Confirm records into the main database.
+   - Search and export confirmed admissions data.
+   - Monitor source changes and extraction quality.
 
-## Repository Structure Guidance (Safe, Non-Breaking)
-Target shape for gradual cleanup:
+2. Owner partner-management / partner service center
+   - Partner users can submit source links or PDFs.
+   - Owner/admin controls processing and final confirmation.
+   - Partner users do not own the master database and cannot confirm records or export the full database.
 
-```text
-project-root/
-├─ data/
-│  ├─ samples/
-│  ├─ traces/
-│  └─ outputs/
-├─ src/
-│  ├─ extract/
-│  ├─ snippet/
-│  ├─ schema/
-│  └─ ui/
-├─ docs/
-│  ├─ handoff.md
-│  ├─ leader_demo.md
-│  └─ phase2_ui.md
-├─ README.md
-└─ TODO.md
+3. Student/parent frontend
+   - Users enter a profile.
+   - The app shows schools worth checking and plain-language requirements.
+   - Users can book a consultation.
+   - Student-facing UI must not expose internal quality, evidence, staging, or review terms.
+
+Keep these surfaces visually, semantically, and operationally separate.
+
+## Current Quality State
+
+The current quality overview command is:
+
+```powershell
+python scripts/quality_overview.py --summary
 ```
 
-Current policy:
-- Keep existing runtime paths (`scripts/`, `input_pdfs/`, `output_pages/`, `database/`) intact.
-- Do not move working pipeline files in this stage.
-- Use docs + lightweight directory scaffolding first, then migrate only when needed with compatibility shims.
+Recent known status:
+
+- seed suite: 18/18 passed
+- baseline files: 18
+- registered extractors: 18
+- missing local sources: 0
+- watched sources: 18
+- source review queue: 0 needing review
+
+Treat the work as a source-tracked data production system, not just a UI shell.
+
+## Current High-Value Work
+
+Prefer changes that improve one of these loops:
+
+- source watchlist -> change detection -> owner review
+- extraction -> staging -> field evidence -> human correction -> confirm
+- confirmed records -> search/filter -> quick export
+- export preview -> source review handoff
+- student profile -> confirmed-only recommendation -> consultation booking
+
+## Do Not Do Without Asking
+
+- Do not rewrite the extraction pipeline.
+- Do not expand seed universities blindly.
+- Do not claim final eligibility guarantees.
+- Do not claim official affiliation with any school or company.
+- Do not automatically overwrite confirmed records when a source changes.
+- Do not expose internal review, confidence, evidence, or full database exports to partner users or students.
+- Do not add login/payment/calendar/CRM expansion unless explicitly approved.
+
+## Verification
+
+Use these checks for normal development:
+
+```powershell
+python -m pytest -q
+cd frontend
+npm run build
+npm run smoke:browser
+```
+
+For source and quality work, also run:
+
+```powershell
+python scripts/quality_overview.py --summary
+python -m pytest tests/test_check_source_updates.py tests/test_source_change_report.py tests/test_source_review_api.py tests/test_source_watchlist.py -q
+```

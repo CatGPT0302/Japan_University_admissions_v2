@@ -45,7 +45,10 @@ Do not merge these into one dashboard. The admin tool is the data production too
 - `frontend/src/App.tsx` keeps the three app shells separate by hash route.
 - `frontend/src/pages/SettingsPage.tsx` is the private-school service center.
 - `frontend/src/pages/StudentApp.tsx` is the student/parent frontend.
-- `frontend/src/index.css` contains the iOS-like grouped layout and shared Song-style typography for settings and student surfaces.
+- `frontend/src/pages/ReviewPage.tsx` is the owner review workbench: source PDF preview, grouped editor, field evidence, priority hints, and confirm flow.
+- `frontend/src/pages/ExportPage.tsx` is the owner export center: single-school export, batch export, saved combinations, row-level export actions, and source-review handoff.
+- `frontend/src/pages/QualityPage.tsx` is owner-only quality/source monitoring: source watchlist, change queue status filters, re-extraction handoff, and correction metrics.
+- `frontend/src/index.css` contains the grouped owner/partner/student visual system and shared Song-style typography.
 
 ## Current Verification Commands
 
@@ -57,10 +60,10 @@ npm run build
 
 ## Next Best Work
 
-1. Add a clearer owner submission detail page or direct review handoff from `#/settings`.
-2. Add lightweight owner/admin access protection before exposing the app outside the local machine.
-3. Improve student recommendations using more confirmed data.
-4. Keep UI copy non-technical for private-school and student-facing pages.
+1. Improve source-change review reports so changed official pages/PDFs produce clearer owner-readable summaries.
+2. Add more checked rows only where official source evidence is available; do not expand seeds blindly.
+3. Improve student recommendations using more real confirmed records.
+4. Keep private-school and student-facing copy non-technical.
 5. Keep extraction improvements narrow and evidence-based.
 
 ## Do Not Do Without Asking

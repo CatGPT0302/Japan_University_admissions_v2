@@ -1,66 +1,83 @@
 # Agent Bootstrap
 
 ## Read First
-Before making any changes, read these files in order:
+
+Before changing code, read these files in order:
 
 1. README.md
 2. HANDOFF.md
 3. docs/handoff.md
 4. TODO.md
-5. trace_debug.json
-6. docs/phase2_ui.md
-7. docs/leader_demo.md
+5. docs/EXTRACTION_QUALITY.md
+
+Only read older demo/spec files when they are directly relevant. Some old notes still describe the repository as a simple extraction MVP; that is no longer the product shape.
 
 ## Project Positioning
-This is an LLM-assisted information extraction and validation system for Japanese university international admissions PDF data.
 
-It is not a pure OCR project.
-It is not trying to build PDF vision recognition from scratch.
-It uses LLM/Agent-based reading to extract structured admission information from PDFs and make the results human-verifiable.
+This is a personal, independent admissions-information system for Japanese university international-student admissions.
 
-## Current Stage
-The first feasibility pass has succeeded.
+It is not a pure OCR project, not an official cram-school product, and not a company internal system. It can support advising workflows, partner submissions, spreadsheet exports, and future notification outputs, but the owner controls the source tracking, extraction workflow, master database, and final confirmation.
 
-Current conclusion:
-- The overall direction is valid.
-- trace_debug.json has been generated.
-- The main bottleneck is snippet quality.
-- The next stage should focus on snippet quality and traceability.
-- Do not expand the sample set yet.
+## Current Architecture
+
+Keep these surfaces separate:
+
+- Owner/admin workspace: upload/fetch sources, run extraction, review entries, confirm records, export confirmed data, monitor quality and source changes.
+- Partner service center: submit materials and see processing progress under owner control.
+- Student/parent frontend: profile input, confirmed-only school recommendations, plain-language requirements, consultation booking.
+
+Do not merge these into one hash-route dashboard or expose owner actions from partner/student surfaces.
 
 ## Current Priority
-Focus on:
-- snippet quality
-- field-to-snippet matching
-- context window selection
-- human verification readability
-- making every extracted value traceable to a useful source snippet
+
+Move the project toward a stable owner-operated data product:
+
+- source tracking and source-change review
+- reusable, evidence-backed extraction output
+- efficient owner review against source PDFs
+- confirmed-record search and quick Excel/CSV export
+- student-facing confirmed-only recommendations
+
+Small, verified improvements are preferred over large rewrites.
 
 ## Do Not Do
+
 Do not:
-- expand samples
-- redesign the entire pipeline
-- rewrite the whole project
-- convert this into an OCR project
-- over-optimize UI before snippet quality is fixed
+
+- rewrite the whole extraction pipeline
+- expand seed universities without a coverage reason
+- overwrite confirmed data automatically after source changes
+- expose internal confidence, evidence, staging, or quality fields to student/partner surfaces
+- describe the project as an official school/company/cram-school product
+- add multiplier data, payment, calendar, CRM, or full SaaS tenant management without approval
 - move files aggressively if that risks breaking existing scripts
-- delete trace_debug.json
-- remove existing demo frontend/backend structure
 
-## Recommended Next Task
-The next agent should start with:
+## Recommended Next Tasks
 
-1. Inspect trace_debug.json.
-2. Identify low-quality snippets.
-3. Improve snippet generation logic only.
-4. Re-run the same sample.
-5. Compare before/after trace quality.
-6. Document findings in docs/snippet_quality_report.md.
+Pick one concrete loop and improve it end to end:
 
-## Success Criteria
-A successful next step means:
-- snippets are more useful for human validation
-- each extracted field has clearer evidence
-- context is concise but sufficient
-- no sample expansion occurred
-- existing demo still runs
+1. Source watchlist/change queue: make owner review and re-extraction easier.
+2. Review workbench: reduce manual correction time while preserving evidence.
+3. Export center: make school/faculty/batch export faster and safer.
+4. Student frontend: improve recommendations only from confirmed records.
+5. Quality foundation: add checked rows or coverage only when source evidence is available.
+
+## Verification
+
+Normal gate:
+
+```powershell
+python -m pytest -q
+cd frontend
+npm run build
+npm run smoke:browser
+```
+
+Quality/source gate:
+
+```powershell
+python scripts/quality_overview.py --summary
+python -m pytest tests/test_check_source_updates.py tests/test_source_change_report.py tests/test_source_review_api.py tests/test_source_watchlist.py -q
+```
+
+Always keep the worktree clean after a pushed checkpoint.
