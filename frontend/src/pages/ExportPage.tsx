@@ -14,12 +14,12 @@ const COLUMNS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "result_date", label: "结果公布" },
 ];
 
-function countFilterItems(value: string) {
+function splitItems(value: string) {
   return value
     .replace(/，/g, ",")
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean).length;
+    .filter(Boolean);
 }
 
 function RowPreview({ row }: { row: ConfirmedRecord }) {
@@ -33,6 +33,7 @@ function RowPreview({ row }: { row: ConfirmedRecord }) {
 }
 
 export default function ExportPage() {
+  const [quickSchool, setQuickSchool] = useState("");
   const [universities, setUniversities] = useState("");
   const [years, setYears] = useState("");
   const [faculties, setFaculties] = useState("");
@@ -49,11 +50,20 @@ export default function ExportPage() {
     [faculties, universities, years],
   );
 
-  async function loadPreview() {
+  const quickParams = useMemo(
+    () => ({
+      universities: quickSchool.trim() || undefined,
+      years: years.trim() || undefined,
+      faculties: undefined,
+    }),
+    [quickSchool, years],
+  );
+
+  async function loadPreview(nextParams = params) {
     setLoading(true);
     setError("");
     try {
-      const nextPreview = await getExportPreview({ ...params, limit: 300 });
+      const nextPreview = await getExportPreview({ ...nextParams, limit: 300 });
       setPreview(nextPreview);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
@@ -62,11 +72,17 @@ export default function ExportPage() {
     }
   }
 
+  function previewQuickSchool() {
+    if (!quickSchool.trim()) return;
+    setUniversities(quickSchool.trim());
+    void loadPreview(quickParams);
+  }
+
   useEffect(() => {
     void loadPreview();
   }, []);
 
-  const filterCount = countFilterItems(universities) + countFilterItems(years) + countFilterItems(faculties);
+  const filterCount = splitItems(universities).length + splitItems(years).length + splitItems(faculties).length;
   const rows = preview?.rows ?? [];
 
   return (
@@ -74,9 +90,9 @@ export default function ExportPage() {
       <section className="export-hero">
         <div>
           <div className="section-kicker">导出中心</div>
-          <h2 className="section-title">按需要取出确认后的招生信息</h2>
+          <h2 className="section-title">快速取出确认后的招生资料</h2>
           <p className="section-copy">
-            面向表格工作流：可以按学校、年度、学部筛选，预览后导出 Excel 或 CSV。这里不显示抽取评分、风险标记和内部证据，只输出已经确认过的业务信息。
+            面向表格工作流：可以查单所学校，也可以把多所学校、多个年度合并成一张表。导出内容只来自已确认资料，不包含内部复审信息。
           </p>
         </div>
         <div className="export-summary-strip">
@@ -98,8 +114,34 @@ export default function ExportPage() {
       <section className="export-layout">
         <aside className="export-panel">
           <div className="export-panel-header">
-            <h3>导出条件</h3>
-            <p>多个值用逗号分开。留空时导出全部确认数据。</p>
+            <h3>单校快速取出</h3>
+            <p>输入学校名，先预览，再导出 Excel。年度留空时会取出该校已有的确认资料。</p>
+          </div>
+
+          <label className="field-wrap">
+            <span className="field-label">学校名</span>
+            <input
+              className="field"
+              value={quickSchool}
+              onChange={(event) => setQuickSchool(event.target.value)}
+              placeholder="例：早稻田大学"
+            />
+          </label>
+
+          <div className="export-quick-actions">
+            <button className="btn btn-primary" type="button" onClick={previewQuickSchool} disabled={!quickSchool.trim() || loading}>
+              预览这所学校
+            </button>
+            <button className="btn btn-green" type="button" onClick={() => downloadExcel(quickParams)} disabled={!quickSchool.trim()}>
+              导出这所学校
+            </button>
+          </div>
+
+          <div className="export-divider" />
+
+          <div className="export-panel-header">
+            <h3>批量合并取出</h3>
+            <p>多个值用逗号分开。留空时不限制该项。</p>
           </div>
 
           <label className="field-wrap">
@@ -108,7 +150,7 @@ export default function ExportPage() {
               className="field export-textarea"
               value={universities}
               onChange={(event) => setUniversities(event.target.value)}
-              placeholder="例：早稻田大学, 明治大学"
+              placeholder="例：早稻田大学, 明治大学, 九州大学"
             />
           </label>
 
@@ -129,7 +171,7 @@ export default function ExportPage() {
               {loading ? "正在整理" : "刷新预览"}
             </button>
             <button className="btn btn-green" type="button" onClick={() => downloadExcel(params)} disabled={!rows.length}>
-              导出 Excel
+              导出合并 Excel
             </button>
             <button className="btn btn-ghost" type="button" onClick={() => downloadCsv(params)} disabled={!rows.length}>
               导出 CSV
@@ -161,7 +203,7 @@ export default function ExportPage() {
 
           {!rows.length && !loading ? (
             <div className="empty-state empty-state-quiet">
-              <h3 className="panel-title">没有符合条件的数据</h3>
+              <h3 className="panel-title">没有符合条件的资料</h3>
               <p className="panel-copy">调整学校、年度或学部后再刷新预览。</p>
             </div>
           ) : null}
