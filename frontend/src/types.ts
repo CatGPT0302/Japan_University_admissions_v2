@@ -224,6 +224,7 @@ export interface OwnerIssue {
 export interface OwnerIssuesResponse {
   summary: {
     total: number;
+    shown?: number;
     by_kind: Record<string, number>;
     export_ready: boolean;
     quality_status: string;

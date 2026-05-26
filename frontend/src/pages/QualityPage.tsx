@@ -469,7 +469,11 @@ export default function QualityPage({ onOpenReview }: Props) {
                   <p className="panel-copy">把导出空白、官网变化、基准薄弱和最近手修集中到一张清单里，按顺序处理即可。</p>
                 </div>
                 <div className="inline-actions inline-actions-tight">
-                  <span className="badge badge-blue">{ownerIssues?.summary.total ?? 0} 项</span>
+                  <span className="badge badge-blue">
+                    {ownerIssues?.summary.shown && ownerIssues.summary.shown < ownerIssues.summary.total
+                      ? `${ownerIssues.summary.shown}/${ownerIssues.summary.total} 项`
+                      : `${ownerIssues?.summary.total ?? 0} 项`}
+                  </span>
                   <a className="btn btn-ghost btn-small" href={ownerIssuesCsvUrl()} target="_blank" rel="noreferrer">
                     导出清单
                   </a>

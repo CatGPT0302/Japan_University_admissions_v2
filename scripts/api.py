@@ -664,14 +664,18 @@ def _manual_correction_owner_issues(*, limit: int = 20) -> list[dict[str, Any]]:
 def _owner_top_issues(*, limit: int = 20) -> dict[str, Any]:
     export_rows = _export_rows(limit=10000, offset=0)
     overview = build_quality_overview(include_source_text_health=False)
-    issues = (
+    all_issues = (
         _export_gap_owner_issues(export_rows)
         + _source_review_owner_issues()
         + _baseline_owner_issues(overview)
         + _manual_correction_owner_issues()
     )
+    summary: dict[str, int] = {}
+    for item in all_issues:
+        kind = str(item.get("kind") or "other")
+        summary[kind] = summary.get(kind, 0) + 1
     issues = sorted(
-        issues,
+        all_issues,
         key=lambda item: (
             -int(item.get("priority") or 0),
             str(item.get("university") or ""),
@@ -679,13 +683,10 @@ def _owner_top_issues(*, limit: int = 20) -> dict[str, Any]:
             str(item.get("field") or ""),
         ),
     )[: max(1, min(int(limit or 20), 100))]
-    summary: dict[str, int] = {}
-    for item in issues:
-        kind = str(item.get("kind") or "other")
-        summary[kind] = summary.get(kind, 0) + 1
     return {
         "summary": {
-            "total": len(issues),
+            "total": len(all_issues),
+            "shown": len(issues),
             "by_kind": summary,
             "export_ready": _export_summary(export_rows)["ready_for_export"],
             "quality_status": overview.get("overall_status", ""),
