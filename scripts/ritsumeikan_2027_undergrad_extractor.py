@@ -24,6 +24,10 @@ def _has_all(text: str, terms: list[str]) -> bool:
     return all(term in text for term in terms)
 
 
+def _no_english_requirement_note() -> str:
+    return "英語外部資格試験は経営学部のみ出願要件。本seedでは要件なしとして明示。"
+
+
 def _common() -> dict[str, Any]:
     return {
         "source_pdf": "ritsumeikan_2027_undergrad.pdf",
@@ -62,6 +66,7 @@ def extract_ritsumeikan_2027_undergrad_records(text: str) -> list[dict[str, Any]
             "department": "法学科",
             "eju_japanese": law_japanese,
             "eju_general": law_general,
+            "english_requirement": _no_english_requirement_note(),
             "screening_method": "全学部(経営学部を除く)は2段階選抜。第1次選考は日本留学試験の成績、第2次選考は日本留学試験の成績と個人面接の総合評価。",
             "screening_schedule": "法学部の第2次選考日は前期2026年10月3日(土)、後期2027年1月9日(土)。日本国内住所は衣笠キャンパスでの対面面接、日本国外住所は自宅等でのオンライン面接。",
         },
@@ -88,6 +93,7 @@ def extract_ritsumeikan_2027_undergrad_records(text: str) -> list[dict[str, Any]
             "eju_math": "EJU受験必須科目: 数学(コース2)。",
             "eju_physics": "EJU受験必須科目: 理科(物理・化学の2科目)。",
             "eju_chemistry": "EJU受験必須科目: 理科(物理・化学の2科目)。",
+            "english_requirement": _no_english_requirement_note(),
             "screening_method": "全学部(経営学部を除く)は2段階選抜。第1次選考は日本留学試験の成績、第2次選考は日本留学試験の成績と個人面接の総合評価。理工学部では理系の素養を確認するために口頭試問を行います。",
             "screening_schedule": "理工学部の第2次選考日は前期2026年10月4日(日)、後期2027年1月10日(日)。日本国内住所はびわこ・くさつキャンパスでの対面面接、日本国外住所は自宅等でのオンライン面接。",
         },

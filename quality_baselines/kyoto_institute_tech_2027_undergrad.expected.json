@@ -30,8 +30,10 @@
     "match": {"university": "京都工芸繊維大学", "admission_year": "2027", "faculty": "物質・材料科学域"},
     "expect": {
       "application_period": {"contains": ["2026 年 7 月 28 日", "2026 年 8 月 3 日"]},
+      "deadline_rule": {"contains": ["簡易書留・速達", "消印", "2026 年 7 月 17 日"]},
       "eligibility": {"contains": ["日本国籍を有しない", "日本留学試験", "TOEFL"]},
       "required_documents": {"contains": ["入学願書", "履歴書", "Test Taker Score Report"]},
+      "eju_session": {"contains": ["2025 年 11 月", "2026 年 6 月"]},
       "eju_japanese": {"contains": ["280 点以上"]},
       "eju_math": {"contains": ["120 点以上"]},
       "eju_physics": {"contains": ["物理", "必須"]},
@@ -52,8 +54,10 @@
     "match": {"university": "京都工芸繊維大学", "admission_year": "2027", "faculty": "設計工学域"},
     "expect": {
       "application_period": {"contains": ["2026 年 7 月 28 日", "2026 年 8 月 3 日"]},
+      "deadline_rule": {"contains": ["簡易書留・速達", "消印", "2026 年 7 月 17 日"]},
       "eligibility": {"contains": ["日本国籍を有しない", "12 年"]},
       "required_documents": {"contains": ["入学願書", "日本留学試験受験票", "TOEFLiBT"]},
+      "eju_session": {"contains": ["2025 年 11 月", "2026 年 6 月"]},
       "eju_japanese": {"contains": ["280 点以上"]},
       "eju_math": {"contains": ["コース 2", "120 点以上"]},
       "eju_physics": {"contains": ["物理", "必須"]},
@@ -74,8 +78,10 @@
     "match": {"university": "京都工芸繊維大学", "admission_year": "2027", "faculty": "デザイン科学域"},
     "expect": {
       "application_period": {"contains": ["2026 年 7 月 28 日", "2026 年 8 月 3 日"]},
+      "deadline_rule": {"contains": ["簡易書留・速達", "消印", "2026 年 7 月 17 日"]},
       "eligibility": {"contains": ["日本国籍を有しない", "2027 年 3 月 31 日"]},
       "required_documents": {"contains": ["履歴書", "TOEFLiBT", "宛名ラベル"]},
+      "eju_session": {"contains": ["2025 年 11 月", "2026 年 6 月"]},
       "eju_japanese": {"contains": ["280 点以上"]},
       "eju_math": {"contains": ["数学", "120 点以上"]},
       "eju_physics": {"contains": ["物理", "化学", "生物", "1 科目"]},

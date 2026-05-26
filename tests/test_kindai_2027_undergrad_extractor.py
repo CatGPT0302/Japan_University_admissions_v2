@@ -38,6 +38,16 @@ class Kindai2027UndergradExtractorTest(unittest.TestCase):
         self.assertEqual(len(records), 3)
         self.assertTrue(report["passed"], report)
 
+    def test_distinguishes_no_english_requirement_from_unknown(self) -> None:
+        from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
+
+        records = extract_kindai_2027_undergrad_records(KINDAI_UNDERGRAD_TEXT)
+        by_id = {record["id"]: record for record in records}
+
+        self.assertIn("要件なし", by_id["kindai-2027-law"]["english_requirement"])
+        self.assertIn("要件なし", by_id["kindai-2027-architecture"]["english_requirement"])
+        self.assertIn("TOEFL", by_id["kindai-2027-agriculture"]["english_requirement"])
+
     def test_extracts_seed_records_from_real_pdf_text(self) -> None:
         from scripts.kindai_2027_undergrad_extractor import extract_kindai_2027_undergrad_records
         from scripts.pdf_text_extractor import extract_text_per_page

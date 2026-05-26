@@ -59,6 +59,16 @@ class Ritsumeikan2027UndergradExtractorTest(unittest.TestCase):
 
         self.assertEqual(extract_ritsumeikan_2027_undergrad_records("立命館大学 一般選抜 入学試験要項"), [])
 
+    def test_distinguishes_no_english_requirement_from_unknown(self) -> None:
+        from scripts.ritsumeikan_2027_undergrad_extractor import extract_ritsumeikan_2027_undergrad_records
+
+        records = extract_ritsumeikan_2027_undergrad_records(RITSUMEIKAN_UNDERGRAD_TEXT)
+        by_id = {record["id"]: record for record in records}
+
+        self.assertIn("要件なし", by_id["ritsumeikan-2027-law"]["english_requirement"])
+        self.assertIn("要件なし", by_id["ritsumeikan-2027-science-engineering"]["english_requirement"])
+        self.assertIn("Duolingo", by_id["ritsumeikan-2027-business"]["english_requirement"])
+
     def test_cli_reads_text_file_and_writes_records_json(self) -> None:
         with TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

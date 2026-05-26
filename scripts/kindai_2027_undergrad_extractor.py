@@ -50,6 +50,10 @@ def _required_documents(*, english: bool = False) -> str:
     return " / ".join(docs)
 
 
+def _no_english_requirement_note() -> str:
+    return "英語能力証明書は出願書類に含まれない。英語要件は情報学部・農学部の出願者に限定されるため、本seedでは要件なしとして明示。"
+
+
 def _eju_session() -> str:
     return "前期入試: 2025年第2回または2026年度第1回。後期入試: 2026年第1回または第2回。"
 
@@ -95,6 +99,7 @@ def extract_kindai_2027_undergrad_records(text: str) -> list[dict[str, Any]]:
             "faculty": "法学部",
             "department": "法律学科",
             "required_documents": _required_documents(),
+            "english_requirement": _no_english_requirement_note(),
             "eju_japanese": "EJU日本語(記述を含む)が320点以上。",
             "eju_general": "EJU総合科目が140点以上。",
             "screening_method": "出願書類、日本留学試験(EJU)成績、口頭試問結果を総合して合否を判定。",
@@ -107,6 +112,7 @@ def extract_kindai_2027_undergrad_records(text: str) -> list[dict[str, Any]]:
             "faculty": "建築学部",
             "department": "建築学科",
             "required_documents": _required_documents(),
+            "english_requirement": _no_english_requirement_note(),
             "eju_japanese": "EJU受験必須科目: 日本語(記述を含む)。",
             "eju_math": "EJU受験必須科目: 数学コース2。出題言語は日本語と英語いずれか選択。",
             "eju_physics": "EJU受験必須科目に理科を含む。",
