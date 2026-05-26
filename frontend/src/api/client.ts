@@ -308,7 +308,21 @@ export async function createPartnerSubmission(payload: {
   pdf_url?: string;
   page_url?: string;
   notes?: string;
+  file?: File | null;
 }): Promise<{ status: string; id: number; processing_status: string }> {
+  if (payload.file) {
+    const form = new FormData();
+    form.append("university", payload.university);
+    form.append("admission_year", payload.admission_year || "");
+    form.append("pdf_url", payload.pdf_url || "");
+    form.append("page_url", payload.page_url || "");
+    form.append("notes", payload.notes || "");
+    form.append("file", payload.file);
+    const { data } = await client.post("/partner/submissions", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  }
   const { data } = await client.post("/partner/submissions", payload);
   return data;
 }

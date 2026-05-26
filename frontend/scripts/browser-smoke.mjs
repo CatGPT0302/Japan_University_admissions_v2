@@ -270,10 +270,10 @@ async function runSurfaceAction(page, surface) {
   }
 
   if (surface.action === "partner-submission") {
-    await page.locator("input").nth(0).fill("东京测试大学");
-    await page.locator("input").nth(1).fill("2027");
-    await page.locator("input").nth(2).fill("https://example.edu/tokyo-test-2027.pdf");
-    await page.locator("input").nth(3).fill("https://example.edu/admissions");
+    await page.getByLabel("学校名称").fill("东京测试大学");
+    await page.getByLabel("入学年度").fill("2027");
+    await page.getByLabel("PDF 地址").fill("https://example.edu/tokyo-test-2027.pdf");
+    await page.getByLabel("官网页面").fill("https://example.edu/admissions");
     await page.locator("textarea").fill("浏览器 smoke 提交：外国人留学生入试资料");
     const submissionResponsePromise = page.waitForResponse((response) => response.url().endsWith("/partner/submissions"), {
       timeout: 10_000,

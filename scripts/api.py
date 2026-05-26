@@ -1074,14 +1074,46 @@ def licensed_document_submission_detail(submission_id: int, request: Request) ->
     return submission
 
 
+async def _submission_payload_from_request(request: Request) -> dict[str, Any]:
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" not in content_type:
+        try:
+            data = await request.json()
+        except Exception:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    form = await request.form()
+    data = {
+        "university": str(form.get("university") or ""),
+        "admission_year": str(form.get("admission_year") or ""),
+        "pdf_url": str(form.get("pdf_url") or ""),
+        "page_url": str(form.get("page_url") or ""),
+        "notes": str(form.get("notes") or ""),
+        "file_name": "",
+        "original_file_name": "",
+    }
+    file = form.get("file")
+    if file is not None and hasattr(file, "filename") and hasattr(file, "read"):
+        original_name = Path(getattr(file, "filename", "") or "submitted.pdf").name
+        suffix = Path(original_name).suffix or ".pdf"
+        stem = Path(original_name).stem or "submitted"
+        saved_name = f"{stem}-{uuid.uuid4().hex[:8]}{suffix}"
+        save_path = INPUT_DIR / saved_name
+        save_path.write_bytes(await file.read())
+        data["file_name"] = saved_name
+        data["original_file_name"] = original_name
+    return data
+
+
 @app.post("/partner/submissions")
-async def partner_create_submission(payload: PartnerSubmissionRequest, request: Request) -> dict[str, Any]:
+async def partner_create_submission(request: Request) -> dict[str, Any]:
     user = _require_user(request, {"partner_staff"})
-    data = _model_data(payload)
+    data = await _submission_payload_from_request(request)
     if not str(data.get("university") or "").strip():
         raise HTTPException(status_code=400, detail="请填写学校名称")
-    if not any(str(data.get(field) or "").strip() for field in ("pdf_url", "page_url")):
-        raise HTTPException(status_code=400, detail="请填写 PDF 地址或官网页面")
+    if not any(str(data.get(field) or "").strip() for field in ("pdf_url", "page_url", "file_name")):
+        raise HTTPException(status_code=400, detail="请上传 PDF，或填写 PDF 地址/官网页面")
     submission_id = create_document_submission(
         int(user.get("organization_id") or 0),
         None,

@@ -335,6 +335,32 @@ class PublicUserApiTest(unittest.TestCase):
         self.assertEqual(partner_queue.json()[0]["university"], "早稲田大学")
         self.assertEqual(owner_records.status_code, 200)
 
+    def test_partner_console_can_submit_local_pdf_without_owner_access(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, _db = self._load_api(Path(tmp))
+            client = TestClient(api.app)
+            self._login_partner(client)
+
+            created = client.post(
+                "/partner/submissions",
+                data={"university": "慶應義塾大学", "admission_year": "2027", "notes": "留学生入試 PDF"},
+                files={"file": ("keio.pdf", b"%PDF-1.4 partner upload", "application/pdf")},
+            )
+            partner_queue = client.get("/partner/submissions")
+            partner_records = client.get("/records")
+            client.post("/auth/logout")
+            self._login_owner(client)
+            owner_queue = client.get("/admin/submissions")
+
+        self.assertEqual(created.status_code, 200)
+        self.assertEqual(created.json()["processing_status"], "submitted")
+        self.assertEqual(partner_queue.status_code, 200)
+        self.assertEqual(partner_queue.json()[0]["original_file_name"], "keio.pdf")
+        self.assertTrue(partner_queue.json()[0]["file_name"].endswith(".pdf"))
+        self.assertEqual(partner_records.status_code, 403)
+        self.assertEqual(owner_queue.status_code, 200)
+        self.assertEqual(owner_queue.json()[0]["original_file_name"], "keio.pdf")
+
     def test_public_program_can_include_safe_quality_metadata_from_staging(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             api, db = self._load_api(Path(tmp))

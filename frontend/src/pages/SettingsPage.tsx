@@ -70,6 +70,7 @@ export default function SettingsPage() {
     page_url: "",
     notes: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const baseUrl = useMemo(() => `${API_BASE_URL}/v1`, []);
   const usageSummary = center?.usage_summary;
@@ -101,8 +102,9 @@ export default function SettingsPage() {
     event.preventDefault();
     setMessage("");
     try {
-      await createPartnerSubmission(form);
+      await createPartnerSubmission({ ...form, file: selectedFile });
       setForm({ university: "", admission_year: form.admission_year, pdf_url: "", page_url: "", notes: "" });
+      setSelectedFile(null);
       setSection("progress");
       await load();
       setMessage("资料已提交。你可以在整理进度里查看后续状态。");
@@ -176,7 +178,7 @@ export default function SettingsPage() {
               <section className="settings-panel partner-panel">
                 <p className="section-kicker">提交资料</p>
                 <h3>把学校的招生资料交过来</h3>
-                <p className="settings-note">填学校名称，再贴 PDF 地址或官网页面。资料会先整理，确认后才会进入可查询内容。</p>
+                <p className="settings-note">填学校名称，上传 PDF 或贴官网链接。资料会先整理，确认后才会进入可查询内容。</p>
                 <form className="partner-submit-form" onSubmit={(event) => void submit(event)}>
                   <label className="field-wrap">
                     <span className="field-label">学校名称</span>
@@ -196,6 +198,19 @@ export default function SettingsPage() {
                       placeholder="2027"
                     />
                   </label>
+                  <label className="field-wrap">
+                    <span className="field-label">本地 PDF</span>
+                    <input
+                      className="field"
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                  <div className="partner-upload-note">
+                    <strong>{selectedFile ? selectedFile.name : "可以直接上传学校 PDF"}</strong>
+                    <span>{selectedFile ? "提交后会进入整理队列。" : "没有 PDF 文件时，也可以只填写下面的官网页面。"}</span>
+                  </div>
                   <label className="field-wrap">
                     <span className="field-label">PDF 地址</span>
                     <input
