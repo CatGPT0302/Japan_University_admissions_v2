@@ -251,6 +251,7 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "待复审", `${surface.name} owner work queue`);
     await assertBodyIncludes(page, "可导出", `${surface.name} owner work queue`);
     await assertBodyIncludes(page, "来源变化", `${surface.name} owner work queue`);
+    await assertBodyIncludes(page, "来源维护", `${surface.name} owner work queue`);
     await page.getByRole("button", { name: /导出中心/ }).click();
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} export page`);
     await assertBodyIncludes(page, "批量合并取出", `${surface.name} export page`);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getDocuments, getSourceReviewQueue, runAgentWorkflow, toErrorMessage, uploadPdf } from "../api/client";
-import type { AgentRunResponse, DocumentListItem, FetchPdfCandidate, SourceReviewResponse } from "../types";
+import { getDocuments, getSourceReviewQueue, getSourceWatchlist, runAgentWorkflow, toErrorMessage, uploadPdf } from "../api/client";
+import type { AgentRunResponse, DocumentListItem, FetchPdfCandidate, SourceReviewResponse, SourceWatchlistResponse } from "../types";
 
 interface Props {
   onDone: (docId: number) => void;
@@ -65,6 +65,7 @@ export default function RunPage({ onDone, onOpenExports, onOpenQuality }: Props)
   const [candidates, setCandidates] = useState<FetchPdfCandidate[]>([]);
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [sourceQueue, setSourceQueue] = useState<SourceReviewResponse | null>(null);
+  const [sourceWatchlist, setSourceWatchlist] = useState<SourceWatchlistResponse | null>(null);
   const [queueError, setQueueError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -74,13 +75,17 @@ export default function RunPage({ onDone, onOpenExports, onOpenQuality }: Props)
   const exportableDocs = useMemo(() => documents.filter((doc) => Number(doc.confirmed_count || 0) > 0), [documents]);
   const queueDocs = pendingDocs.length ? pendingDocs : documents.filter((doc) => Number(doc.staging_count || 0) > 0).slice(0, 3);
   const sourceOpenCount = sourceQueue?.summary.open ?? sourceQueue?.summary.needs_review ?? 0;
+  const sourceMaintenanceCount =
+    Number(sourceWatchlist?.summary.metadata_gaps?.stale_last_checked_at || 0) +
+    Number(sourceWatchlist?.summary.metadata_gaps?.missing_last_checked_at || 0);
 
   async function loadOwnerQueue() {
     setQueueError("");
     try {
-      const [docs, queue] = await Promise.all([getDocuments({ limit: 40 }), getSourceReviewQueue()]);
+      const [docs, queue, watchlist] = await Promise.all([getDocuments({ limit: 40 }), getSourceReviewQueue(), getSourceWatchlist()]);
       setDocuments(docs);
       setSourceQueue(queue);
+      setSourceWatchlist(watchlist);
     } catch (nextError) {
       setQueueError(toErrorMessage(nextError));
     }
@@ -257,6 +262,11 @@ export default function RunPage({ onDone, onOpenExports, onOpenQuality }: Props)
                 <span>来源变化</span>
                 <strong>{sourceOpenCount}</strong>
                 <em>{sourceOpenCount ? "需要查看官方来源" : "暂无待查看来源"}</em>
+              </button>
+              <button className="workflow-status-card" type="button" disabled={!sourceMaintenanceCount || !onOpenQuality} onClick={onOpenQuality}>
+                <span>来源维护</span>
+                <strong>{sourceMaintenanceCount}</strong>
+                <em>{sourceMaintenanceCount ? "有来源需要重新检查" : "来源检查节奏正常"}</em>
               </button>
             </div>
 
