@@ -126,7 +126,10 @@ python -m pytest -q
 cd frontend
 npm run build
 npm run smoke:surfaces
+npm run smoke:browser
 ```
+
+`smoke:browser` uses the local Chrome or Edge installation and checks that the owner, owner-service, partner, and student surfaces render as separate browser pages.
 
 ## Ownership
 
