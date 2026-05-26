@@ -105,6 +105,50 @@ class QualityBaselineSuiteTest(unittest.TestCase):
             report["items"][0]["metadata_failures"],
         )
 
+    def test_suite_reports_baseline_integrity_failures_separately(self) -> None:
+        from scripts.quality_baseline_suite import run_seed_baseline_suite
+
+        with TemporaryDirectory() as tmp:
+            expected_path = Path(tmp) / "expected.json"
+            expected_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "seed-law",
+                            "source_document": "https://example.test/source.pdf",
+                            "source_note": "Checked against official PDF page 1.",
+                            "match": {"university": "Meiji", "faculty": "Law"},
+                            "expect": {"english_requirement": "TOEFL iBT"},
+                            "review_status": "human_checked_seed",
+                        },
+                        {
+                            "id": "seed-law",
+                            "source_document": "https://example.test/source.pdf",
+                            "source_note": "Checked against official PDF page 1.",
+                            "match": {"university": "Meiji", "faculty": "Law"},
+                            "expect": {"english_requirement": "TOEFL iBT"},
+                            "review_status": "human_checked_seed",
+                        },
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            report = run_seed_baseline_suite(
+                [
+                    {
+                        "id": "sample-seed",
+                        "expected_path": expected_path,
+                        "records": [{"university": "Meiji", "faculty": "Law", "english_requirement": "TOEFL iBT"}],
+                    }
+                ]
+            )
+
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["items"][0]["status"], "failed")
+        self.assertIn("baseline_integrity_invalid", report["items"][0]["failures"])
+        self.assertEqual(report["items"][0]["baseline_integrity_failures"][0]["failure"], "duplicate_expected_id")
+
     def test_suite_reports_registered_seed_without_local_source_as_skipped(self) -> None:
         from scripts.quality_baseline_suite import run_seed_baseline_suite
 

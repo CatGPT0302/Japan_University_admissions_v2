@@ -127,6 +127,9 @@ def run_seed_baseline_suite(
             extracted_records,
             min_exact_match_rate=min_exact_match_rate,
         )
+        baseline_integrity_failures = baseline_report.get("baseline_integrity_failures") or []
+        if baseline_integrity_failures:
+            failures.append("baseline_integrity_invalid")
         if not baseline_report["passed"]:
             failures.append("baseline_mismatch")
         field_coverage_failures = []
@@ -147,6 +150,7 @@ def run_seed_baseline_suite(
                 "extracted_count": len(extracted_records),
                 "failures": failures,
                 "metadata_failures": metadata_failures,
+                "baseline_integrity_failures": baseline_integrity_failures,
                 "field_coverage_failures": field_coverage_failures,
                 "baseline": baseline_report,
             }
