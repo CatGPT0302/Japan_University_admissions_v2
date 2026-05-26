@@ -58,7 +58,7 @@ from scripts.db import (  # noqa: E402
     update_document_submission,
     update_staging_record,
 )
-from scripts.export_excel import export_excel_bytes_from_records  # noqa: E402
+from scripts.export_excel import export_confirmed_excel_bytes_from_records  # noqa: E402
 from scripts.pdf_render import render_pdf_to_images  # noqa: E402
 from scripts.runtime_paths import ensure_runtime_dirs, frontend_dist_dir, rendered_pages_dir, uploads_dir  # noqa: E402
 from scripts.source_change_report import build_change_report, load_review_queue  # noqa: E402
@@ -1094,7 +1094,7 @@ def export_excel(
     if not rows:
         raise HTTPException(status_code=404, detail="No records found for the given filters")
     try:
-        content, _count = export_excel_bytes_from_records(rows)
+        content, _count = export_confirmed_excel_bytes_from_records(rows)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

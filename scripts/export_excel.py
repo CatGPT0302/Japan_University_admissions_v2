@@ -19,6 +19,30 @@ from scripts.normalize_fields import (  # noqa: E402
     normalize_extraction_result,
 )
 
+CONFIRMED_EXPORT_COLUMNS = [
+    ("university", "学校"),
+    ("admission_year", "年度"),
+    ("admission_period", "入学时期"),
+    ("faculty", "学部"),
+    ("department", "学科・专攻"),
+    ("application_period", "出愿时间"),
+    ("deadline_rule", "截止规则"),
+    ("eju_session", "EJU 场次"),
+    ("eju_japanese", "EJU 日语"),
+    ("eju_general", "EJU 综合科目"),
+    ("eju_math", "EJU 数学"),
+    ("eju_physics", "EJU 物理"),
+    ("eju_chemistry", "EJU 化学"),
+    ("eju_biology", "EJU 生物"),
+    ("english_requirement", "英语要求"),
+    ("screening_method", "选考方式"),
+    ("screening_schedule", "考试日程"),
+    ("result_date", "结果公布"),
+    ("enrollment_period", "入学手续"),
+    ("prefecture", "地区"),
+    ("campus", "校区"),
+]
+
 
 def _load_from_db() -> dict[str, Any]:
     from scripts.db import get_records, init_db
@@ -180,6 +204,55 @@ def export_excel_bytes_from_records(records: list[dict[str, Any]]) -> tuple[byte
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue(), count
+
+
+def export_confirmed_excel_bytes_from_records(records: list[dict[str, Any]]) -> tuple[bytes, int]:
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+        from openpyxl.utils import get_column_letter
+    except ImportError as exc:
+        raise RuntimeError("openpyxl is required for Excel export") from exc
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "招生资料"
+    ws["A1"] = "已确认招生资料"
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(CONFIRMED_EXPORT_COLUMNS))
+    ws.append([])
+    ws.append([label for _key, label in CONFIRMED_EXPORT_COLUMNS])
+    for record in records:
+        ws.append([record.get(key, "") for key, _label in CONFIRMED_EXPORT_COLUMNS])
+
+    header_fill = PatternFill("solid", fgColor="1F2937")
+    header_font = Font(name="Microsoft YaHei UI", color="FFFFFF", bold=True)
+    title_font = Font(name="Microsoft YaHei UI", color="111827", bold=True, size=16)
+    thin = Side(style="thin", color="E5E7EB")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws["A1"].font = title_font
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+    ws.row_dimensions[1].height = 28
+    for cell in ws[3]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = border
+
+    for row in ws.iter_rows(min_row=4, max_row=ws.max_row):
+        for cell in row:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.border = border
+        ws.row_dimensions[row[0].row].height = 42
+
+    for col_idx, (_key, label) in enumerate(CONFIRMED_EXPORT_COLUMNS, start=1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = 34 if label in {"出愿时间", "截止规则", "英语要求", "选考方式", "考试日程"} else 16
+
+    ws.freeze_panes = "E4"
+    ws.auto_filter.ref = f"A3:{ws.cell(row=ws.max_row, column=len(CONFIRMED_EXPORT_COLUMNS)).coordinate}"
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue(), len(records)
 
 
 def export_excel_bytes(*, from_db: bool = False) -> tuple[bytes, int]:

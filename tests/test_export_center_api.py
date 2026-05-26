@@ -5,9 +5,11 @@ import os
 import sys
 import tempfile
 import unittest
+from io import BytesIO
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 
 
 class ExportCenterApiTest(unittest.TestCase):
@@ -110,6 +112,26 @@ class ExportCenterApiTest(unittest.TestCase):
         body = response.text
         self.assertIn("Kyushu University", body)
         self.assertNotIn("Meiji University", body)
+
+    def test_export_excel_hides_internal_quality_columns(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Meiji University", "2027", "Science")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get("/export/excel", params={"universities": "Meiji", "years": "2027"})
+
+        self.assertEqual(response.status_code, 200)
+        wb = load_workbook(BytesIO(response.content))
+        self.assertEqual(wb.sheetnames, ["招生资料"])
+        ws = wb["招生资料"]
+        headers = [ws.cell(row=3, column=index + 1).value for index in range(ws.max_column)]
+        self.assertIn("学校", headers)
+        self.assertIn("英语要求", headers)
+        for hidden_label in ("置信度", "是否需要复核", "风险等级", "警告/备注", "信頼度", "要確認", "リスク"):
+            self.assertNotIn(hidden_label, headers)
+        self.assertEqual(ws.cell(row=4, column=1).value, "Meiji University")
 
     def test_export_routes_require_owner_login(self) -> None:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
