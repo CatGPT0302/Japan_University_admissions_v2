@@ -1,5 +1,45 @@
 [
   {
+    "id": "waseda-2027-political-science-economics",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "政治経済学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "筆記試験", "面接試験", "対面"]
+      },
+      "screening_schedule": {
+        "contains": ["9月6日", "9月27日"]
+      },
+      "result_date": {
+        "contains": ["9月17日", "10月1日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
     "id": "waseda-2027-law",
     "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
     "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
@@ -35,6 +75,47 @@
       },
       "result_date": {
         "contains": ["10月1日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-education",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "教育学部",
+      "department": "教育学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "対面"]
+      },
+      "screening_schedule": {
+        "contains": ["9月25日"]
+      },
+      "result_date": {
+        "contains": ["9月10日", "10月22日"]
       },
       "english_requirement": {
         "contains": ["TOEFL", "IELTS"]
@@ -129,6 +210,88 @@
     "review_status": "human_checked_seed"
   },
   {
+    "id": "waseda-2027-culture-media-society",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "文化構想学部",
+      "department": "文化構想学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "オンライン"]
+      },
+      "screening_schedule": {
+        "contains": ["9月16日"]
+      },
+      "result_date": {
+        "contains": ["9月25日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-literature",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "文学部",
+      "department": "文学科"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["書類選考", "面接試験", "オンライン"]
+      },
+      "screening_schedule": {
+        "contains": ["9月16日"]
+      },
+      "result_date": {
+        "contains": ["9月25日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
     "id": "waseda-2027-fundamental-science-engineering-system-1",
     "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
     "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
@@ -168,6 +331,46 @@
       },
       "english_requirement": {
         "contains": ["TOEFL", "IELTS", "TOEIC"]
+      }
+    },
+    "review_status": "human_checked_seed"
+  },
+  {
+    "id": "waseda-2027-human-sciences",
+    "source_document": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+    "source_note": "Official Waseda 2027 foreign student undergraduate admissions guideline. Checked against cover application period and page 5 table.",
+    "match": {
+      "university": "早稲田大学",
+      "admission_year": "2027",
+      "faculty": "人間科学部"
+    },
+    "expect": {
+      "application_period": {
+        "contains": ["2026年6月1日", "6月18日", "17:00"]
+      },
+      "deadline_rule": {
+        "contains": ["TAO", "アップロード", "入学検定料", "6月18日", "17:00"]
+      },
+      "required_documents": {
+        "contains": ["卒業証明書", "成績証明書", "志望理由書", "顔写真", "パスポート"]
+      },
+      "eligibility": {
+        "contains": ["日本の教育制度以外", "2027年3月31日", "日本留学試験", "日本語能力試験", "提出書類"]
+      },
+      "evidence": {
+        "contains": ["p.3", "p.5", "p.7-p.9", "p.10-p.14", "p.24-p.27"]
+      },
+      "screening_method": {
+        "contains": ["筆記試験", "面接試験", "オンライン"]
+      },
+      "screening_schedule": {
+        "contains": ["9月12日", "10月10日"]
+      },
+      "result_date": {
+        "contains": ["9月25日", "10月16日"]
+      },
+      "english_requirement": {
+        "contains": ["TOEFL", "IELTS"]
       }
     },
     "review_status": "human_checked_seed"

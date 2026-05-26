@@ -16,9 +16,14 @@ WASEDA_TEXT = """
 出願期間 2026年6月1日(月) 10:00 ～ 6月18日(木) 17:00
 (3)入学試験日程・選考方法
 法学部 書類選考 面接試験 9月18日 10月1日 TOEFL IELTS
+政治経済学部 書類選考 筆記試験 9月6日 9月17日 面接試験 9月27日 10月1日 TOEFL IELTS
+教育学部 教育学科 書類選考 面接試験 9月25日 10月22日 TOEFL IELTS
 商学部 書類選考 面接試験 オンライン 10月3日 10月15日 TOEFL
 社会科学部 書類選考 面接試験 オンライン 9月18日 10月9日 TOEFL
+文化構想学部 書類選考 面接試験 オンライン 9月16日 9月25日 TOEFL
+文学部 書類選考 面接試験 オンライン 9月16日 9月25日 TOEFL
 基幹理工学部 学系1 書類選考 面接試験 9月28日 10月26日 TOEFL IELTS TOEIC
+人間科学部 書類選考 筆記試験 9月12日 9月25日 面接試験 オンライン 10月10日 10月16日 TOEFL IELTS
 スポーツ科学部 書類選考 面接試験 オンライン 9月11日 9月18日 TOEFL
 """
 
@@ -32,7 +37,7 @@ class Waseda2027ExtractorTest(unittest.TestCase):
         expected = load_json_records(ROOT / "quality_baselines" / "waseda_2027_official.expected.json")
         report = evaluate_against_expected(expected, records)
 
-        self.assertEqual(len(records), 5)
+        self.assertEqual(len(records), 10)
         self.assertTrue(report["passed"], report)
 
     def test_returns_no_records_for_unrelated_text(self) -> None:
@@ -61,7 +66,7 @@ class Waseda2027ExtractorTest(unittest.TestCase):
             )
 
             payload = json.loads(output_path.read_text(encoding="utf-8"))
-            self.assertEqual(payload["record_count"], 5)
+            self.assertEqual(payload["record_count"], 10)
             self.assertEqual(payload["records"][0]["university"], "早稲田大学")
 
     def test_text_path_uses_waseda_seed_without_llm_call(self) -> None:
@@ -69,14 +74,14 @@ class Waseda2027ExtractorTest(unittest.TestCase):
 
         with (
             patch("scripts.extract_direct._read_pdf_text", return_value=(WASEDA_TEXT, {1: WASEDA_TEXT})),
-            patch("scripts.extract_direct._insert_result", return_value=5) as insert_result,
+            patch("scripts.extract_direct._insert_result", return_value=10) as insert_result,
             patch("scripts.extract_direct._call_openai", side_effect=AssertionError("LLM should not be called")),
         ):
             result = _run_text_path(1, Path("dummy.pdf"), "早稲田大学", "2027")
 
         self.assertEqual(result["mode"], "deterministic_text")
-        self.assertEqual(result["records"], 5)
-        self.assertEqual(result["inserted"], 5)
+        self.assertEqual(result["records"], 10)
+        self.assertEqual(result["inserted"], 10)
         insert_result.assert_called_once()
 
 

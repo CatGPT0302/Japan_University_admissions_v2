@@ -55,6 +55,18 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
     )
     records: list[dict[str, Any]] = []
 
+    if official_2027_guideline or _has_all(compact, ["政治経済学部", "書類選考", "筆記試験", "9月6日", "9月17日", "面接試験", "9月27日", "TOEFL", "IELTS"]):
+        record = _base_record(faculty="政治経済学部")
+        record.update(
+            {
+                "screening_method": "書類選考および筆記試験 / 面接試験（対面）",
+                "screening_schedule": "一次選考: 2026年9月6日(日) 10:00-12:00 / 二次選考: 2026年9月27日(日)",
+                "result_date": "一次選考: 2026年9月17日(木) / 最終: 2026年10月1日(木)",
+                "english_requirement": "TOEFL / IELTS",
+            }
+        )
+        records.append(record)
+
     if official_2027_guideline or _has_all(compact, ["法学部", "書類選考", "面接試験", "9月18日", "10月1日", "TOEFL", "IELTS"]):
         record = _base_record(faculty="法学部")
         record.update(
@@ -63,6 +75,18 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "screening_schedule": "2026年9月18日",
                 "result_date": "2026年10月1日",
                 "enrollment_period": "第1次振込締切日: 2026年10月30日(金) / 出願書類原本提出締切日: 2026年11月27日(金)",
+                "english_requirement": "TOEFL / IELTS",
+            }
+        )
+        records.append(record)
+
+    if official_2027_guideline or _has_all(compact, ["教育学部", "教育学科", "書類選考", "面接試験", "9月25日", "10月22日", "TOEFL", "IELTS"]):
+        record = _base_record(faculty="教育学部", department="教育学科")
+        record.update(
+            {
+                "screening_method": "書類選考 / 面接試験（対面）",
+                "screening_schedule": "2026年9月25日(金) 9:30集合",
+                "result_date": "一次選考: 2026年9月10日(木) / 最終: 2026年10月22日(木)",
                 "english_requirement": "TOEFL / IELTS",
             }
         )
@@ -94,6 +118,30 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
         )
         records.append(record)
 
+    if official_2027_guideline or _has_all(compact, ["文化構想学部", "書類選考", "面接試験", "オンライン", "9月16日", "9月25日", "TOEFL"]):
+        record = _base_record(faculty="文化構想学部", department="文化構想学科")
+        record.update(
+            {
+                "screening_method": "書類選考 / 面接試験（オンライン）",
+                "screening_schedule": "2026年9月16日(水)",
+                "result_date": "2026年9月25日(金)",
+                "english_requirement": "TOEFL",
+            }
+        )
+        records.append(record)
+
+    if official_2027_guideline or _has_all(compact, ["文学部", "文学科", "書類選考", "面接試験", "オンライン", "9月16日", "9月25日", "TOEFL"]):
+        record = _base_record(faculty="文学部", department="文学科")
+        record.update(
+            {
+                "screening_method": "書類選考 / 面接試験（オンライン）",
+                "screening_schedule": "2026年9月16日(水)",
+                "result_date": "2026年9月25日(金)",
+                "english_requirement": "TOEFL",
+            }
+        )
+        records.append(record)
+
     if official_2027_guideline or _has_all(compact, ["基幹理工学部", "学系1", "書類選考", "面接試験", "9月28日", "10月26日", "TOEFL", "IELTS", "TOEIC"]):
         record = _base_record(faculty="基幹理工学部", department="学系1")
         record.update(
@@ -103,6 +151,18 @@ def extract_waseda_2027_records(text: str) -> list[dict[str, Any]]:
                 "result_date": "2026年10月26日",
                 "enrollment_period": "第2次振込締切日: 2026年11月13日(金) / 出願書類原本提出締切日: 2026年11月27日(金) / 入学手続情報入力: 2027年3月上旬〜中旬予定",
                 "english_requirement": "TOEFL / IELTS / TOEIC",
+            }
+        )
+        records.append(record)
+
+    if official_2027_guideline or _has_all(compact, ["人間科学部", "書類選考", "筆記試験", "9月12日", "9月25日", "面接試験", "オンライン", "10月10日", "10月16日", "TOEFL", "IELTS"]):
+        record = _base_record(faculty="人間科学部")
+        record.update(
+            {
+                "screening_method": "筆記試験（論述（総合）問題） / 面接試験（オンライン）",
+                "screening_schedule": "一次選考: 2026年9月12日(土) 10:00-11:00 / 二次選考: 2026年10月10日(土)",
+                "result_date": "一次選考: 2026年9月25日(金) / 最終: 2026年10月16日(金)",
+                "english_requirement": "TOEFL / IELTS",
             }
         )
         records.append(record)
