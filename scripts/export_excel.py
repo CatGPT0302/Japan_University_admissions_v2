@@ -278,6 +278,33 @@ def export_confirmed_excel_bytes_from_records(records: list[dict[str, Any]]) -> 
     summary.column_dimensions["A"].width = 16
     summary.column_dimensions["B"].width = 80
 
+    school_summary = wb.create_sheet("学校汇总", 1)
+    school_summary.append(["学校", "年度", "学部数量", "资料条数"])
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
+    for record in records:
+        university = str(record.get("university") or "").strip() or "未命名学校"
+        year = str(record.get("admission_year") or "").strip() or "未标年度"
+        key = (university, year)
+        group = grouped.setdefault(key, {"faculties": set(), "count": 0})
+        faculty = str(record.get("faculty") or "").strip()
+        if faculty:
+            group["faculties"].add(faculty)
+        group["count"] = int(group["count"]) + 1
+    for (university, year), group in sorted(grouped.items()):
+        school_summary.append([university, year, len(group["faculties"]), group["count"]])
+    for cell in school_summary[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = border
+    for row in school_summary.iter_rows(min_row=2, max_row=school_summary.max_row):
+        for cell in row:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.border = border
+    for col_idx, width in enumerate([24, 14, 12, 12], start=1):
+        school_summary.column_dimensions[get_column_letter(col_idx)].width = width
+    school_summary.freeze_panes = "A2"
+
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue(), len(records)
