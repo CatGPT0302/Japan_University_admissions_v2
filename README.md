@@ -84,12 +84,17 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 For local split-site testing, run separate Vite servers with different surfaces:
 
 ```powershell
-$env:VITE_API_BASE_URL="http://127.0.0.1:8000"
-$env:VITE_APP_SURFACE="owner"; npm run dev -- --host 127.0.0.1 --port 5173
-$env:VITE_APP_SURFACE="owner-service"; npm run dev -- --host 127.0.0.1 --port 5174
-$env:VITE_APP_SURFACE="partner"; npm run dev -- --host 127.0.0.1 --port 5175
-$env:VITE_APP_SURFACE="student"; npm run dev -- --host 127.0.0.1 --port 5176
+.\start_all_surfaces.bat
 ```
+
+Or open only one surface:
+
+- `start_owner.bat`: owner data workspace, `http://127.0.0.1:5173`
+- `start_owner_service.bat`: owner partner-management site, `http://127.0.0.1:5174`
+- `start_partner.bat`: partner service center, `http://127.0.0.1:5175`
+- `start_student.bat`: student/parent frontend, `http://127.0.0.1:5176`
+
+Do not use hash routes such as `#/student` on the owner site as the product model. The surfaces are separate local websites that happen to share code and backend APIs.
 
 For the owner partner-management site, set `VITE_OWNER_WORKSPACE_URL` to the separate owner data workspace URL. This lets the partner-management site send the owner back to the review workspace after a submitted source has been processed.
 

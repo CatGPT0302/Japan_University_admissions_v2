@@ -5,12 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:owner": "vite --host 127.0.0.1 --port 5173",
+    "dev:owner-service": "vite --host 127.0.0.1 --port 5174",
+    "dev:partner": "vite --host 127.0.0.1 --port 5175",
+    "dev:student": "vite --host 127.0.0.1 --port 5176",
     "build": "tsc -b && vite build",
     "build:owner": "node scripts/build-surface.mjs owner",
     "build:owner-service": "node scripts/build-surface.mjs owner-service",
     "build:partner": "node scripts/build-surface.mjs partner",
     "build:student": "node scripts/build-surface.mjs student",
     "smoke:surfaces": "node scripts/smoke-surfaces.mjs",
+    "smoke:entrypoints": "node scripts/check-surface-entrypoints.mjs",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "preview": "vite preview"
   },
