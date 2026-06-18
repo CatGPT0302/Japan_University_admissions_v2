@@ -141,6 +141,8 @@ export interface DocumentListItem {
 export interface DocumentSummary extends DocumentListItem {
   review_count?: number;
   avg_confidence?: number;
+  source_file_available?: boolean;
+  source_file_message?: string;
 }
 
 export interface StatsResponse {

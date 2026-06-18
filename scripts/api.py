@@ -944,6 +944,9 @@ def get_document_summary(doc_id: int, request: Request) -> dict[str, Any]:
     row = db_get_document_summary(doc_id)
     if not row:
         raise HTTPException(status_code=404, detail="document not found")
+    source_status = _document_source_file_status(doc_id)
+    row["source_file_available"] = source_status["available"]
+    row["source_file_message"] = source_status["message"]
     return row
 
 
@@ -973,10 +976,10 @@ def get_document_page_image(doc_id: int, request: Request, page: int = 1) -> Fil
     return FileResponse(image_path, media_type="image/png")
 
 
-def _document_pdf_path(doc_id: int) -> Path:
+def _document_source_file_status(doc_id: int) -> dict[str, Any]:
     row = db_get_document_file(doc_id)
     if not row:
-        raise HTTPException(status_code=404, detail="document not found")
+        return {"available": False, "message": "document not found", "path": None}
     raw_path = str(row.get("file_path") or "").strip()
     filename = str(row.get("filename") or f"document_{doc_id}.pdf")
     candidates = []
@@ -984,6 +987,17 @@ def _document_pdf_path(doc_id: int) -> Path:
         candidates.append(Path(raw_path))
     candidates.append(INPUT_DIR / filename)
     pdf_path = next((path for path in candidates if path.exists() and path.is_file()), None)
+    if not pdf_path:
+        return {"available": False, "message": "source file is missing", "path": None}
+    return {"available": True, "message": "source file is available", "path": pdf_path}
+
+
+def _document_pdf_path(doc_id: int) -> Path:
+    row = db_get_document_file(doc_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="document not found")
+    source_status = _document_source_file_status(doc_id)
+    pdf_path = source_status.get("path")
     if not pdf_path:
         raise HTTPException(status_code=404, detail="PDF file not found")
     return pdf_path
@@ -1274,10 +1288,11 @@ def admin_start_submission(submission_id: int, request: Request) -> dict[str, An
         year=str(submission.get("admission_year") or ""),
     )
     if os.environ.get("ADMISSIONS_BROWSER_SMOKE_FAKE_WORKFLOW") == "1":
+        smoke_pdf = next((path for path in (ROOT / "data" / "uploads").glob("*.pdf") if path.is_file() and path.stat().st_size > 1000), None)
         doc_id = create_source_document(
             request.university,
-            "browser-smoke.pdf",
-            "",
+            smoke_pdf.name if smoke_pdf else "browser-smoke.pdf",
+            str(smoke_pdf) if smoke_pdf else "",
             request.pdf_url,
             request.year,
         )

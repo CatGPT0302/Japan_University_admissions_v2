@@ -257,6 +257,11 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   const pendingReviewCount = rows.filter((row) => Number(row.needs_review) && !isReviewed(row)).length;
   const priorityCount = rows.filter((row) => needsAttention(row)).length;
   const currentPage = focusedEvidencePage || selectedRow?.page_number || 1;
+  const sourceFileAvailable = summary?.source_file_available !== false;
+  const sourceFileMessage =
+    summary?.source_file_message === "source file is missing"
+      ? "原文暂时没有连上。请重新上传 PDF，或补上这份资料的本地来源后再对照复审。"
+      : summary?.source_file_message || "";
   const changedFields = useMemo(
     () => REVIEW_KEYS.filter((key) => selectedRow && (draft[key] ?? "") !== textValue(selectedRow, key)),
     [draft, selectedRow],
@@ -582,7 +587,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
                   <h3>源 PDF</h3>
                   <span>第 {currentPage} 页</span>
                 </div>
-                {selectedDocId ? (
+                {selectedDocId && sourceFileAvailable ? (
                   <div className="review-pdf-tools" aria-label="PDF 页面操作">
                     <button className="btn btn-ghost btn-small" disabled={currentPage <= 1} onClick={() => setPdfPage(currentPage - 1)} type="button">
                       上一页
@@ -620,8 +625,13 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
                 ) : null}
               </div>
               <div className="review-pdf-scroll">
-                {selectedDocId ? (
+                {selectedDocId && sourceFileAvailable ? (
                   <img className="review-pdf-image" alt="PDF 页面预览" src={documentPageImageUrl(selectedDocId, currentPage, 1.35)} />
+                ) : selectedDocId ? (
+                  <div className="review-pdf-missing">
+                    <strong>原文暂时没有连上</strong>
+                    <p>{sourceFileMessage || "请重新上传 PDF，或补上这份资料的本地来源后再对照复审。"}</p>
+                  </div>
                 ) : null}
               </div>
             </section>

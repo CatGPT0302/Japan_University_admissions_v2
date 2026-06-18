@@ -1965,6 +1965,28 @@ a {
   height: auto;
 }
 
+.review-pdf-missing {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 360px;
+  padding: 32px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.review-pdf-missing strong {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.review-pdf-missing p {
+  max-width: 360px;
+  margin: 0;
+  line-height: 1.7;
+}
+
 .review-editor-panel {
   height: calc(100vh - 150px);
 }
