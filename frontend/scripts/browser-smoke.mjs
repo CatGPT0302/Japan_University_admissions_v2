@@ -242,19 +242,30 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "来源变化", `${surface.name} owner work queue`);
     await assertBodyIncludes(page, "来源维护", `${surface.name} owner work queue`);
     await page.getByRole("button", { name: /导出中心/ }).click();
-    await assertBodyIncludes(page, "单校快速取出", `${surface.name} export page`);
-    await assertBodyIncludes(page, "批量合并取出", `${surface.name} export page`);
+    await assertBodyIncludes(page, "单校导出", `${surface.name} export mode tabs`);
+    await assertBodyIncludes(page, "单校快速取出", `${surface.name} single-school mode`);
     await assertBodyIncludes(page, "导出前检查", `${surface.name} export check`);
-    await assertBodyIncludes(page, "临时勾选", `${surface.name} selected export basket`);
-    await assertBodyIncludes(page, "导出勾选 Excel", `${surface.name} selected export basket`);
     await assertBodyIncludes(page, "回到复审", `${surface.name} export review handoff`);
     await assertBodyIncludes(page, "当前可取学校", `${surface.name} export options`);
+    await page.getByLabel("学校名").fill("不存在的测试大学");
+    const pagesBeforeFailedDownload = page.context().pages().length;
+    await page.getByRole("button", { name: "导出这所学校" }).click();
+    await assertBodyIncludes(page, "导出失败", `${surface.name} controlled export error`);
+    if (page.context().pages().length !== pagesBeforeFailedDownload) {
+      throw new Error(`${surface.name} failed export opened a new browser tab`);
+    }
+    await page.getByRole("tab", { name: /批量合并/ }).click();
+    await assertBodyIncludes(page, "批量合并取出", `${surface.name} batch mode`);
     await assertBodyIncludes(page, "常用组合", `${surface.name} export presets`);
     await page.getByLabel("学校", { exact: true }).fill("东京测试大学");
     await page.getByLabel("年度", { exact: true }).fill("2027");
     await page.getByLabel("组合名称").fill("浏览器测试组合");
     await page.getByRole("button", { name: "保存当前组合" }).click();
     await assertBodyIncludes(page, "浏览器测试组合", `${surface.name} saved export preset`);
+    await page.getByRole("tab", { name: /勾选导出/ }).click();
+    await assertBodyIncludes(page, "勾选需要的资料", `${surface.name} selected mode`);
+    await assertBodyIncludes(page, "临时勾选", `${surface.name} selected export basket`);
+    await assertBodyIncludes(page, "请先勾选要导出的资料", `${surface.name} selected export check`);
 
     await page.getByRole("button", { name: /人工核对/ }).click();
     await assertBodyIncludes(page, "资料队列", `${surface.name} review page`);
@@ -373,6 +384,23 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} confirm export handoff`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} confirm export handoff`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirm export preview`);
+    const controlledDownloadPromise = page.waitForEvent("download", { timeout: 15_000 });
+    await page.getByRole("button", { name: "导出这所学校" }).click();
+    const controlledDownload = await controlledDownloadPromise;
+    const controlledFilename = controlledDownload.suggestedFilename();
+    if (!controlledFilename.endsWith(".xlsx") || !controlledFilename.includes("admissions_") || !controlledFilename.includes("2027")) {
+      throw new Error(`${surface.name} controlled export returned unexpected filename: ${controlledFilename}`);
+    }
+    await assertBodyIncludes(page, "已生成 admissions_", `${surface.name} controlled export success`);
+    await page.getByRole("tab", { name: /勾选导出/ }).click();
+    await page.getByLabel("勾选当前预览全部资料").check();
+    await page.locator(".export-selection-count strong").waitFor({ state: "visible" });
+    const selectedCount = (await page.locator(".export-selection-count strong").innerText()).trim();
+    if (selectedCount !== "1") {
+      throw new Error(`${surface.name} selected export count expected 1, got ${selectedCount}`);
+    }
+    await assertBodyIncludes(page, "缺口检查只计算这些词条", `${surface.name} selected export scope`);
+    await page.getByRole("tab", { name: /单校导出/ }).click();
     await assertBodyIncludes(page, "回到复审补齐", `${surface.name} export gap review handoff`);
     await page.getByRole("button", { name: "回到复审补齐" }).click();
     await assertBodyIncludes(page, "从导出缺口进入", `${surface.name} export gap focus notice`);

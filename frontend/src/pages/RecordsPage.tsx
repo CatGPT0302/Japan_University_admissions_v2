@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { downloadCsv, downloadExcel, getRecords, getStats, toErrorMessage } from "../api/client";
+import type { ExportDownloadParams } from "../api/client";
 import type { ConfirmedRecord, StatsResponse } from "../types";
 
 const RECORD_FIELDS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
@@ -39,6 +40,8 @@ export default function RecordsPage() {
   const [faculty, setFaculty] = useState("");
   const [year, setYear] = useState("");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadMessage, setDownloadMessage] = useState("");
 
   async function load() {
     setLoading(true);
@@ -66,6 +69,20 @@ export default function RecordsPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  async function runDownload(format: "excel" | "csv", params: ExportDownloadParams) {
+    setDownloadBusy(true);
+    setError("");
+    setDownloadMessage("");
+    try {
+      const filename = format === "excel" ? await downloadExcel(params) : await downloadCsv(params);
+      setDownloadMessage(`已生成 ${filename}`);
+    } catch (nextError) {
+      setError(`导出失败：${toErrorMessage(nextError)}`);
+    } finally {
+      setDownloadBusy(false);
+    }
+  }
 
   const selectedRow = selectedIndex === null ? null : rows[selectedIndex] ?? null;
   const activeFilters = useMemo(
@@ -121,27 +138,29 @@ export default function RecordsPage() {
                 {loading ? "查询中..." : "查询"}
               </button>
               <button
-                className="btn btn-green"
+                className="btn btn-primary"
                 onClick={() =>
-                  downloadExcel({
+                  void runDownload("excel", {
                     university: university || undefined,
                     faculty: faculty || undefined,
                     year: year ? Number(year) : undefined,
                   })
                 }
+                disabled={downloadBusy}
                 type="button"
               >
-                导出 Excel 表
+                {downloadBusy ? "正在生成" : "导出 Excel 表"}
               </button>
               <button
                 className="btn btn-ghost"
                 onClick={() =>
-                  downloadCsv({
+                  void runDownload("csv", {
                     university: university || undefined,
                     faculty: faculty || undefined,
                     year: year ? Number(year) : undefined,
                   })
                 }
+                disabled={downloadBusy}
                 type="button"
               >
                 导出 CSV 表
@@ -166,6 +185,7 @@ export default function RecordsPage() {
 
         <div className="item-detail">
           {error && <div className="message-box error">{error}</div>}
+          {downloadMessage && <div className="message-box">{downloadMessage}</div>}
 
           {!selectedRow ? (
             <div className="detail-shell">
@@ -209,14 +229,15 @@ export default function RecordsPage() {
                 </div>
                 <div className="inline-actions inline-actions-tight">
                   <button
-                    className="btn btn-green"
+                    className="btn btn-primary"
                     type="button"
                     onClick={() =>
-                      downloadExcel({
+                      void runDownload("excel", {
                         university: selectedRow.university || undefined,
                         year: yearNumber(selectedRow.admission_year),
                       })
                     }
+                    disabled={downloadBusy}
                   >
                     导出这所学校
                   </button>
@@ -224,12 +245,13 @@ export default function RecordsPage() {
                     className="btn btn-ghost"
                     type="button"
                     onClick={() =>
-                      downloadExcel({
+                      void runDownload("excel", {
                         university: selectedRow.university || undefined,
                         faculty: selectedRow.faculty || undefined,
                         year: yearNumber(selectedRow.admission_year),
                       })
                     }
+                    disabled={downloadBusy}
                   >
                     导出当前学部
                   </button>
@@ -237,12 +259,13 @@ export default function RecordsPage() {
                     className="btn btn-ghost"
                     type="button"
                     onClick={() =>
-                      downloadCsv({
+                      void runDownload("csv", {
                         university: selectedRow.university || undefined,
                         faculty: selectedRow.faculty || undefined,
                         year: yearNumber(selectedRow.admission_year),
                       })
                     }
+                    disabled={downloadBusy}
                   >
                     导出 CSV
                   </button>

@@ -386,7 +386,7 @@ export async function acceptSourceReviewItem(itemId: string): Promise<SourceRevi
   return data;
 }
 
-export function downloadExcel(params?: {
+export type ExportDownloadParams = {
   university?: string;
   year?: number;
   faculty?: string;
@@ -394,7 +394,9 @@ export function downloadExcel(params?: {
   years?: string;
   faculties?: string;
   record_ids?: string;
-}): void {
+};
+
+function exportSearch(params?: ExportDownloadParams): string {
   const search = new URLSearchParams();
   if (params?.university) search.set("university", params.university);
   if (params?.year) search.set("year", String(params.year));
@@ -403,31 +405,47 @@ export function downloadExcel(params?: {
   if (params?.years) search.set("years", params.years);
   if (params?.faculties) search.set("faculties", params.faculties);
   if (params?.record_ids) search.set("record_ids", params.record_ids);
-  const qs = search.toString();
-  const url = `${BASE_URL}/export/excel${qs ? `?${qs}` : ""}`;
-  window.open(url, "_blank");
+  return search.toString();
 }
 
-export function downloadCsv(params?: {
-  university?: string;
-  year?: number;
-  faculty?: string;
-  universities?: string;
-  years?: string;
-  faculties?: string;
-  record_ids?: string;
-}): void {
-  const search = new URLSearchParams();
-  if (params?.university) search.set("university", params.university);
-  if (params?.year) search.set("year", String(params.year));
-  if (params?.faculty) search.set("faculty", params.faculty);
-  if (params?.universities) search.set("universities", params.universities);
-  if (params?.years) search.set("years", params.years);
-  if (params?.faculties) search.set("faculties", params.faculties);
-  if (params?.record_ids) search.set("record_ids", params.record_ids);
-  const qs = search.toString();
-  const url = `${BASE_URL}/export/csv${qs ? `?${qs}` : ""}`;
-  window.open(url, "_blank");
+function downloadName(header: string | undefined, fallback: string): string {
+  if (!header) return fallback;
+  const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+  const plainMatch = header.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || fallback;
+}
+
+async function downloadExport(format: "excel" | "csv", params?: ExportDownloadParams): Promise<string> {
+  const qs = exportSearch(params);
+  const extension = format === "excel" ? "xlsx" : "csv";
+  const response = await client.get<Blob>(`/export/${format}${qs ? `?${qs}` : ""}`, {
+    responseType: "blob",
+  });
+  const filename = downloadName(response.headers["content-disposition"], `admissions_export.${extension}`);
+  const href = URL.createObjectURL(response.data);
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(href), 0);
+  return filename;
+}
+
+export function downloadExcel(params?: ExportDownloadParams): Promise<string> {
+  return downloadExport("excel", params);
+}
+
+export function downloadCsv(params?: ExportDownloadParams): Promise<string> {
+  return downloadExport("csv", params);
 }
 
 export async function checkHealth(): Promise<boolean> {

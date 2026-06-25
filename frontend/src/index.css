@@ -96,6 +96,59 @@ body,
   line-height: 1;
 }
 
+.export-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.export-mode-tabs button {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.export-mode-tabs button:hover,
+.export-mode-tabs button:focus-visible {
+  color: var(--text);
+  outline: none;
+}
+
+.export-mode-tabs button.is-active {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+}
+
+.export-mode-tabs strong {
+  font-size: 14px;
+}
+
+.export-mode-tabs span {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .export-layout {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
@@ -138,6 +191,37 @@ body,
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+}
+
+.export-selected-mode {
+  display: grid;
+  gap: 16px;
+}
+
+.export-selection-count {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 16px;
+  background: rgba(240, 253, 250, 0.56);
+}
+
+.export-selection-count span,
+.export-selection-count p {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.export-selection-count strong {
+  color: var(--text);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.export-selection-count p {
+  margin: 0;
+  line-height: 1.6;
 }
 
 .export-preset-list {
@@ -510,6 +594,7 @@ body,
 @media (max-width: 980px) {
   .export-hero,
   .export-layout,
+  .export-mode-tabs,
   .export-check-grid,
   .export-quick-actions,
   .workflow-status-grid {

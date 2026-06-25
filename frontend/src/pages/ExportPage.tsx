@@ -34,6 +34,9 @@ type ExportPreset = {
   faculties: string;
 };
 
+type ExportMode = "school" | "batch" | "selected";
+type ExportFormat = "excel" | "csv";
+
 interface Props {
   onOpenReview?: (docId: number, focus?: ReviewFocus) => void;
   initialFilters?: {
@@ -174,6 +177,7 @@ function OptionChips({
 }
 
 export default function ExportPage({ onOpenReview, initialFilters }: Props) {
+  const [mode, setMode] = useState<ExportMode>("school");
   const [quickSchool, setQuickSchool] = useState("");
   const [universities, setUniversities] = useState("");
   const [years, setYears] = useState("");
@@ -188,6 +192,8 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
   const [presetName, setPresetName] = useState("");
   const [presets, setPresets] = useState<ExportPreset[]>(() => loadPresets());
   const [options, setOptions] = useState<ExportOptionsResponse | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadMessage, setDownloadMessage] = useState("");
 
   const params = useMemo(
     () => ({
@@ -318,6 +324,20 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
     setSelectedExportIds(allVisibleSelected ? selectedExportIds.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...selectedExportIds, ...visibleIds])));
   }
 
+  async function runDownload(format: ExportFormat, downloadParams: Parameters<typeof downloadExcel>[0]) {
+    setDownloadBusy(true);
+    setError("");
+    setDownloadMessage("");
+    try {
+      const filename = format === "excel" ? await downloadExcel(downloadParams) : await downloadCsv(downloadParams);
+      setDownloadMessage(`已生成 ${filename}`);
+    } catch (nextError) {
+      setError(`导出失败：${toErrorMessage(nextError)}`);
+    } finally {
+      setDownloadBusy(false);
+    }
+  }
+
   useEffect(() => {
     void loadPreview();
     void loadOptions();
@@ -340,6 +360,9 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
 
   const filterCount = splitItems(universities).length + splitItems(years).length + splitItems(faculties).length;
   const rows = preview?.rows ?? [];
+  const selectedRows = rows.filter((row) => selectedExportIds.includes(row.id));
+  const checkedRows = mode === "selected" ? selectedRows : rows;
+  const checkRowCount = checkedRows.length;
   const selectedRow = rows.find((row) => row.id === selectedRowId) ?? rows[0] ?? null;
   const selectedExportParam = selectedExportIds.join(",");
   const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedExportIds.includes(row.id));
@@ -354,9 +377,9 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
       }
     : {};
   const exportCheck = useMemo(() => {
-    const schools = uniqueValues(rows, "university");
-    const exportYears = uniqueValues(rows, "admission_year");
-    const exportFaculties = uniqueValues(rows, "faculty");
+    const schools = uniqueValues(checkedRows, "university");
+    const exportYears = uniqueValues(checkedRows, "admission_year");
+    const exportFaculties = uniqueValues(checkedRows, "faculty");
     const requiredChecks = [
       { key: "application_period" as const, label: "出愿时间" },
       { key: "eju_japanese" as const, label: "EJU 日语" },
@@ -368,18 +391,28 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
     ];
     const serverMissing = preview?.summary.missing_required || {};
     const gaps = requiredChecks
-      .map((item) => ({ ...item, missing: Number(serverMissing[item.key] ?? missingCount(rows, item.key)) }))
+      .map((item) => ({
+        ...item,
+        missing:
+          mode === "selected"
+            ? missingCount(checkedRows, item.key)
+            : Number(serverMissing[item.key] ?? missingCount(checkedRows, item.key)),
+      }))
       .filter((item) => item.missing > 0);
     return {
       schools,
       years: exportYears,
       faculties: exportFaculties,
       gaps,
-      ready: preview?.summary.ready_for_export ?? (Boolean(rows.length) && gaps.length === 0),
+      ready:
+        mode === "selected"
+          ? Boolean(checkedRows.length) && gaps.length === 0
+          : preview?.summary.ready_for_export ?? (Boolean(checkedRows.length) && gaps.length === 0),
     };
-  }, [preview?.summary.missing_required, preview?.summary.ready_for_export, rows]);
-  const firstGapRow = rows.find((row) => (row.export_missing || []).length);
-  const reviewGapRow = selectedRow?.export_missing?.length ? selectedRow : firstGapRow ?? selectedRow;
+  }, [checkedRows, mode, preview?.summary.missing_required, preview?.summary.ready_for_export]);
+  const firstGapRow = checkedRows.find((row) => (row.export_missing || []).length);
+  const selectedRowInCheck = mode !== "selected" || (selectedRow && selectedExportIds.includes(selectedRow.id)) ? selectedRow : null;
+  const reviewGapRow = selectedRowInCheck?.export_missing?.length ? selectedRowInCheck : firstGapRow ?? selectedRowInCheck;
   const reviewGapField = firstMissingField(reviewGapRow) ?? exportCheck.gaps[0]?.key;
 
   return (
@@ -408,12 +441,38 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
         </div>
       </section>
 
+      <div className="export-mode-tabs" role="tablist" aria-label="导出方式">
+        {[
+          { key: "school" as const, label: "单校导出", note: "按学校快速取表" },
+          { key: "batch" as const, label: "批量合并", note: "多校合成一个工作簿" },
+          { key: "selected" as const, label: "勾选导出", note: "自由选择需要的词条" },
+        ].map((item) => (
+          <button
+            aria-selected={mode === item.key}
+            className={mode === item.key ? "is-active" : ""}
+            key={item.key}
+            onClick={() => {
+              setMode(item.key);
+              setDownloadMessage("");
+              setError("");
+            }}
+            role="tab"
+            type="button"
+          >
+            <strong>{item.label}</strong>
+            <span>{item.note}</span>
+          </button>
+        ))}
+      </div>
+
       <section className="export-layout">
         <aside className="export-panel">
-          <div className="export-panel-header">
+          {mode === "school" ? (
+            <>
+              <div className="export-panel-header">
             <h3>单校快速取出</h3>
             <p>输入学校名，先预览，再导出 Excel。年度留空时会取出该校已有的确认资料。</p>
-          </div>
+              </div>
 
           <label className="field-wrap">
             <span className="field-label">学校名</span>
@@ -425,23 +484,28 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
             />
           </label>
 
-          <div className="export-quick-actions">
-            <button className="btn btn-primary" type="button" onClick={previewQuickSchool} disabled={!quickSchool.trim() || loading}>
+              <div className="export-quick-actions">
+            <button className="btn btn-ghost" type="button" onClick={previewQuickSchool} disabled={!quickSchool.trim() || loading}>
               预览这所学校
             </button>
-            <button className="btn btn-green" type="button" onClick={() => downloadExcel(quickParams)} disabled={!quickSchool.trim()}>
-              导出这所学校
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => void runDownload("excel", quickParams)}
+              disabled={!quickSchool.trim() || downloadBusy}
+            >
+              {downloadBusy ? "正在生成" : "导出这所学校"}
             </button>
             {onOpenReview ? (
               <button className="btn btn-ghost" type="button" onClick={() => void openQuickSchoolReview()} disabled={!quickSchool.trim() || openingSource}>
                 {openingSource ? "正在打开" : "回到复审"}
               </button>
             ) : null}
-          </div>
+              </div>
 
           {sourceLookupError ? <div className="message-box error">{sourceLookupError}</div> : null}
 
-          <div className="export-option-block">
+              <div className="export-option-block">
             <span>当前可取学校</span>
             <OptionChips
               items={options?.universities || []}
@@ -452,14 +516,16 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
                 void loadPreview({ universities: value, years: years.trim() || undefined, faculties: undefined });
               }}
             />
-          </div>
+              </div>
+            </>
+          ) : null}
 
-          <div className="export-divider" />
-
-          <div className="export-panel-header">
+          {mode === "batch" ? (
+            <>
+              <div className="export-panel-header">
             <h3>批量合并取出</h3>
             <p>多个值用逗号分开。留空时不限制该项。</p>
-          </div>
+              </div>
 
           <label className="field-wrap">
             <span className="field-label">学校</span>
@@ -499,19 +565,22 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
             />
           </div>
 
-          {error ? <div className="message-box error">{error}</div> : null}
-
-          <div className="export-actions">
-            <button className="btn btn-primary" type="button" onClick={() => void loadPreview()} disabled={loading}>
+              <div className="export-actions">
+            <button className="btn btn-ghost" type="button" onClick={() => void loadPreview()} disabled={loading}>
               {loading ? "正在整理" : "刷新预览"}
             </button>
-            <button className="btn btn-green" type="button" onClick={() => downloadExcel(params)} disabled={!rows.length}>
-              导出合并 Excel
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => void runDownload("excel", params)}
+              disabled={!rows.length || downloadBusy}
+            >
+              {downloadBusy ? "正在生成" : "导出合并 Excel"}
             </button>
-            <button className="btn btn-ghost" type="button" onClick={() => downloadCsv(params)} disabled={!rows.length}>
+            <button className="btn btn-ghost" type="button" onClick={() => void runDownload("csv", params)} disabled={!rows.length || downloadBusy}>
               导出 CSV
             </button>
-          </div>
+              </div>
 
           <div className="export-divider" />
 
@@ -539,7 +608,7 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
             保存当前组合
           </button>
 
-          <div className="export-preset-list" aria-label="常用导出组合">
+              <div className="export-preset-list" aria-label="常用导出组合">
             {presets.map((preset) => (
               <div className="export-preset-card" key={preset.id}>
                 <button type="button" onClick={() => applyPreset(preset)}>
@@ -552,7 +621,47 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
               </div>
             ))}
             {!presets.length ? <p className="export-preset-empty">还没有保存组合。</p> : null}
-          </div>
+              </div>
+            </>
+          ) : null}
+
+          {mode === "selected" ? (
+            <div className="export-selected-mode">
+              <div className="export-panel-header">
+                <h3>勾选需要的资料</h3>
+                <p>先用右侧表格勾选，再把不同学校、年度和学部合并成一份文件。</p>
+              </div>
+              <div className="export-selection-count">
+                <span>已经勾选</span>
+                <strong>{selectedExportIds.length}</strong>
+                <p>{selectedExportIds.length ? "缺口检查只计算这些词条。" : "请在右侧表格中选择需要导出的词条。"}</p>
+              </div>
+              <div className="export-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => void runDownload("excel", { record_ids: selectedExportParam })}
+                  disabled={!selectedExportIds.length || downloadBusy}
+                >
+                  {downloadBusy ? "正在生成" : "导出勾选 Excel"}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => void runDownload("csv", { record_ids: selectedExportParam })}
+                  disabled={!selectedExportIds.length || downloadBusy}
+                >
+                  导出 CSV
+                </button>
+                <button className="btn btn-ghost" type="button" onClick={() => setSelectedExportIds([])} disabled={!selectedExportIds.length}>
+                  清空勾选
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {downloadMessage ? <div className="message-box">{downloadMessage}</div> : null}
+          {error ? <div className="message-box error">{error}</div> : null}
         </aside>
 
         <div className="export-table-shell">
@@ -572,10 +681,20 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
                 <p>{[selectedRow.admission_year, selectedRow.faculty, selectedRow.department].filter(Boolean).join(" / ")}</p>
               </div>
               <div className="export-selected-actions">
-                <button className="btn btn-green btn-small" type="button" onClick={() => downloadExcel(selectedSchoolParams)}>
+                <button
+                  className="btn btn-primary btn-small"
+                  type="button"
+                  onClick={() => void runDownload("excel", selectedSchoolParams)}
+                  disabled={downloadBusy}
+                >
                   导出学校
                 </button>
-                <button className="btn btn-ghost btn-small" type="button" onClick={() => downloadExcel(selectedFacultyParams)}>
+                <button
+                  className="btn btn-ghost btn-small"
+                  type="button"
+                  onClick={() => void runDownload("excel", selectedFacultyParams)}
+                  disabled={downloadBusy}
+                >
                   导出学部
                 </button>
                 {onOpenReview ? (
@@ -594,7 +713,8 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
             </div>
           ) : null}
 
-          <section className="export-basket-panel" aria-label="勾选合并导出">
+          {mode === "selected" ? (
+            <section className="export-basket-panel" aria-label="勾选合并导出">
             <div>
               <span>临时勾选</span>
               <strong>{selectedExportIds.length ? `已选择 ${selectedExportIds.length} 条` : "可从下方表格勾选"}</strong>
@@ -604,25 +724,36 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
               <button className="btn btn-ghost btn-small" type="button" onClick={toggleAllVisibleRows} disabled={!rows.length}>
                 {allVisibleSelected ? "取消本页" : "勾选本页"}
               </button>
-              <button className="btn btn-green btn-small" type="button" onClick={() => downloadExcel({ record_ids: selectedExportParam })} disabled={!selectedExportIds.length}>
+              <button
+                className="btn btn-primary btn-small"
+                type="button"
+                onClick={() => void runDownload("excel", { record_ids: selectedExportParam })}
+                disabled={!selectedExportIds.length || downloadBusy}
+              >
                 导出勾选 Excel
               </button>
-              <button className="btn btn-ghost btn-small" type="button" onClick={() => downloadCsv({ record_ids: selectedExportParam })} disabled={!selectedExportIds.length}>
+              <button
+                className="btn btn-ghost btn-small"
+                type="button"
+                onClick={() => void runDownload("csv", { record_ids: selectedExportParam })}
+                disabled={!selectedExportIds.length || downloadBusy}
+              >
                 导出勾选 CSV
               </button>
               <button className="btn btn-ghost btn-small" type="button" onClick={() => setSelectedExportIds([])} disabled={!selectedExportIds.length}>
                 清空
               </button>
             </div>
-          </section>
+            </section>
+          ) : null}
 
           <section className={`export-check-panel${exportCheck.ready ? " is-ready" : ""}`} aria-label="导出前检查">
             <div className="export-check-head">
               <div>
                 <span>导出前检查</span>
-                <strong>{!rows.length ? "先选择要导出的资料" : exportCheck.ready ? "主要栏位已齐" : "导出前建议看一眼"}</strong>
+                <strong>{!checkRowCount ? (mode === "selected" ? "请先勾选要导出的资料" : "先选择要导出的资料") : exportCheck.ready ? "主要栏位已齐" : "导出前建议看一眼"}</strong>
               </div>
-              <em>{!rows.length ? "等待预览" : exportCheck.ready ? "可以直接导出" : `${exportCheck.gaps.length} 类内容有空白`}</em>
+              <em>{!checkRowCount ? (mode === "selected" ? "等待勾选" : "等待预览") : exportCheck.ready ? "可以直接导出" : `${exportCheck.gaps.length} 类内容有空白`}</em>
             </div>
             <div className="export-check-grid">
               <div>
@@ -642,8 +773,8 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
               </div>
             </div>
             <div className="export-gap-strip" aria-label="空白提醒">
-              {!rows.length ? (
-                <span>预览后会显示合并范围和空白提醒</span>
+              {!checkRowCount ? (
+                <span>{mode === "selected" ? "勾选后会只检查所选词条" : "预览后会显示合并范围和空白提醒"}</span>
               ) : exportCheck.gaps.length ? (
                 exportCheck.gaps.map((gap) => (
                   <span key={gap.key}>
@@ -654,14 +785,14 @@ export default function ExportPage({ onOpenReview, initialFilters }: Props) {
                 <span>出愿、EJU、英语、考试日程、结果公布、资格和材料都有内容</span>
               )}
             </div>
-            {rows.length && exportCheck.gaps.length && selectedRow && onOpenReview ? (
+            {checkRowCount > 0 && exportCheck.gaps.length && reviewGapRow && onOpenReview ? (
               <div className="export-check-action">
                 <p>导出前可以先回到复审页，把空白内容对照源 PDF 补齐。</p>
                 <button
                   className="btn btn-ghost btn-small"
                   type="button"
                   onClick={() =>
-                    void openReviewForSchool(reviewGapRow?.university || selectedRow.university, yearText(reviewGapRow?.admission_year || selectedRow.admission_year), reviewGapRow, reviewGapField)
+                    void openReviewForSchool(reviewGapRow.university, yearText(reviewGapRow.admission_year), reviewGapRow, reviewGapField)
                   }
                   disabled={openingSource}
                 >

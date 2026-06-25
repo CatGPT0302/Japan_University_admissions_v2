@@ -704,6 +704,23 @@ class ExportCenterApiTest(unittest.TestCase):
         self.assertEqual(options.status_code, 401)
         self.assertEqual(csv_response.status_code, 401)
 
+    def test_export_download_exposes_filename_header_to_frontend(self) -> None:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            api, db = self._load_api(Path(tmp))
+            self._insert_confirmed(db, "Meiji University", "2027", "Science")
+            client = TestClient(api.app)
+            self._login_owner(client)
+
+            response = client.get(
+                "/export/excel",
+                params={"universities": "Meiji University", "years": "2027"},
+                headers={"Origin": "http://127.0.0.1:5173"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        exposed = response.headers.get("access-control-expose-headers", "").lower()
+        self.assertIn("content-disposition", exposed)
+
 
 if __name__ == "__main__":
     unittest.main()
