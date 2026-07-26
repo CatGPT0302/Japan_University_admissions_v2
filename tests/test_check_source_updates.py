@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -166,6 +167,7 @@ class CheckSourceUpdatesTest(unittest.TestCase):
                         "source_url": "https://example.test/sample.pdf",
                     }
                 },
+                now=datetime(2026, 5, 26, 10, tzinfo=timezone.utc),
             )
 
         self.assertEqual(report["items"][0]["last_checked_at"], "2026-05-26T10:00:00+00:00")

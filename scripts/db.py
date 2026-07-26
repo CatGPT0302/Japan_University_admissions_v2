@@ -1838,6 +1838,23 @@ def confirm_staging_record(staging_id, pdf_url="") -> int:
     return new_id
 
 
+def _record_identity_key(row: dict) -> tuple[str, ...]:
+    return tuple(
+        str(row.get(field) or "").strip()
+        for field in (
+            "university",
+            "admission_year",
+            "faculty",
+            "department",
+            "admission_period",
+            "application_period",
+            "screening_method",
+            "screening_schedule",
+            "result_date",
+        )
+    )
+
+
 def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
     conn = get_conn()
     rows = _fetchall(
@@ -1852,31 +1869,23 @@ def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
         return {"processed": 0, "written": 0, "skipped": 0}
 
     decoded_rows = [_decode_staging_row(row) for row in rows]
-    best: dict[tuple, dict] = {}
+    best: dict[tuple[str, ...], dict] = {}
     for row in decoded_rows:
-        key = (
-            (row.get("university") or "").strip(),
-            (row.get("admission_year") or "").strip(),
-            (row.get("faculty") or "").strip(),
-            (row.get("department") or "").strip(),
-        )
+        key = _record_identity_key(row)
         if key not in best or float(row.get("confidence") or 0) > float(best[key].get("confidence") or 0):
             best[key] = row
 
     existing = _fetchall(
         conn,
-        f"SELECT university,admission_year,faculty,department FROM admission_records WHERE document_id={_ph()}",
+        f"""
+        SELECT university, admission_year, faculty, department, admission_period,
+               application_period, screening_method, screening_schedule, result_date
+        FROM admission_records
+        WHERE document_id={_ph()}
+        """,
         (doc_id,),
     )
-    existing_keys = {
-        (
-            (row["university"] or "").strip(),
-            (row["admission_year"] or "").strip(),
-            (row["faculty"] or "").strip(),
-            (row["department"] or "").strip(),
-        )
-        for row in existing
-    }
+    existing_keys = {_record_identity_key(row) for row in existing}
 
     written = 0
     skipped = 0

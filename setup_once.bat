@@ -6,9 +6,24 @@ cd /d "%ROOT%"
 
 echo [1/6] Preparing Python virtual environment...
 if not exist ".venv\Scripts\activate.bat" (
-  py -3.13 -m venv .venv
+  if defined PYTHON_EXE (
+    "%PYTHON_EXE%" -m venv .venv
+  ) else (
+    where py >nul 2>nul
+    if not errorlevel 1 (
+      py -3 -m venv .venv
+    ) else (
+      where python >nul 2>nul
+      if errorlevel 1 (
+        echo Failed to find Python. Install Python 3.11 or newer, or set PYTHON_EXE to python.exe.
+        pause
+        exit /b 1
+      )
+      python -m venv .venv
+    )
+  )
   if errorlevel 1 (
-    echo Failed to create .venv. Please make sure Python 3.13 is installed.
+    echo Failed to create .venv. Python 3.11 or newer is required.
     pause
     exit /b 1
   )
@@ -17,8 +32,7 @@ if not exist ".venv\Scripts\activate.bat" (
 echo [2/6] Installing backend dependencies...
 call ".venv\Scripts\activate.bat"
 python -m pip install --upgrade pip
-pip install -r requirements.txt
-pip install pypdfium2 Pillow
+python -m pip install -r requirements-dev.txt
 if errorlevel 1 (
   echo Failed to install Python dependencies.
   pause

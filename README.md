@@ -65,6 +65,13 @@ pip install -r requirements.txt
 python -m uvicorn scripts.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
+For local development and the full test suite, install the development
+dependencies instead:
+
+```powershell
+pip install -r requirements-dev.txt
+```
+
 ### Frontend
 
 ```powershell

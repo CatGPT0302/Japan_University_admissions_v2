@@ -204,10 +204,11 @@ def build_watchlist_report(
     *,
     root: Path = ROOT,
     seeds: dict[str, dict[str, Any]] | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     items = build_source_watchlist(root=root, seeds=seeds)
-    summary = summarize_watchlist(items)
-    now = datetime.now(timezone.utc)
+    summary = summarize_watchlist(items, now=now)
+    now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     stale_days = int(summary.get("stale_check_days") or STALE_CHECK_DAYS)
     enriched_items = [
         {
@@ -215,7 +216,7 @@ def build_watchlist_report(
             **_maintenance_for_checked_at(
                 item.get("last_checked_at"),
                 last_check_status=item.get("last_check_status"),
-                now=now,
+                now=now_utc,
                 stale_days=stale_days,
             ),
         }
