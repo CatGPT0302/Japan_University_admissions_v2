@@ -69,6 +69,18 @@ def write_bundle(batch: list[dict], output: Path) -> dict:
     output.mkdir(parents=True, exist_ok=False)
     records, review = [], []
     report = ["# 招生资料阅读草稿", "", "全部待人工复核；结构校验通过不等于事实准确。日期按原文年度保留，不代表当前仍可申请。", ""]
+    report.extend(["## 报考方向总览", "",
+                   "| 大学 / 年度 | 学部 / 报考方向 | 入试方式 | 出愿时间 |",
+                   "| --- | --- | --- | --- |"])
+    for item in batch:
+        for row in item["package"]["records"]:
+            report.append("| " + " | ".join(_md(value) for value in (
+                row["university"] + " / " + row["admission_year"],
+                row["faculty"] + " / " + row["department"],
+                row.get("admission_period", "未提供，需复核"),
+                row["application_period"],
+            )) + " |")
+    report.extend(["", "以下逐项列出完整条件；总览不代替原文和人工复核。", ""])
     for item in batch:
         package = item["package"]
         document = package["document"]
@@ -81,6 +93,7 @@ def write_bundle(batch: list[dict], output: Path) -> dict:
             records.append(public)
             report.extend([f"## {_md(record['university'])} · {_md(record['admission_year'])}",
                            f"**{_md(record['faculty'])} / {_md(record['department'])}**", "",
+                           f"入试方式：{_md(record.get('admission_period', '未提供，需复核'))}", "",
                            f"来源：{_md(document['source_url'])}", "",
                            "| 项目 | 当前值 | PDF页码 |", "| --- | --- | --- |"])
             for key, label in DISPLAY:

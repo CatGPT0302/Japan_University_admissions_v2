@@ -10,7 +10,11 @@
       "pdfs": [
         {
           "id": "main",
-          "url": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p00000ivf38-att/yoko.pdf"
+          "url": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p00000ivf38-att/yoko.pdf",
+          "sha256": "189cd4adf14055bf297312259457d10a10914ef32da5eb6a83c22bd788608abe",
+          "pages": 29,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
         }
       ],
       "extraction_status": "not_started",
@@ -23,11 +27,19 @@
       "pdfs": [
         {
           "id": "main",
-          "url": "https://www.aoyama.ac.jp/wp-content/uploads/2026/07/ad_2027_internationalstudent_20260709_e1Nf5.pdf"
+          "url": "https://www.aoyama.ac.jp/wp-content/uploads/2026/07/ad_2027_internationalstudent_20260709_e1Nf5.pdf",
+          "sha256": "6b0652a67b0169dcd1a92f32c4810dfde736701ffda4f684e0679bf45929205d",
+          "pages": 49,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
         },
         {
           "id": "english_department",
-          "url": "https://www.aoyama.ac.jp/wp-content/uploads/2026/07/ad_2027_internationalstudents_doe_20260709_f3C2a.pdf"
+          "url": "https://www.aoyama.ac.jp/wp-content/uploads/2026/07/ad_2027_internationalstudents_doe_20260709_f3C2a.pdf",
+          "sha256": "b56a6d6074bb64c1a3d1f26ff0128ec3d53b52c420a03ff56eed911628989753",
+          "pages": 36,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
         }
       ],
       "extraction_status": "not_started",
@@ -37,15 +49,50 @@
       "id": "rikkyo",
       "name": "立教大学",
       "source_page": "https://www.rikkyo.ac.jp/admissions/undergraduate/guidelines/",
-      "pdfs": [],
+      "pdfs": [
+        {
+          "id": "H",
+          "url": "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/H_guideline/pdf/H_27guideline.pdf",
+          "sha256": "8c15a31daed125aeb1dc44404c8939d7605b40ed6694db522ec91371a2945f61",
+          "pages": 47,
+          "acquisition_status": "downloaded",
+          "extraction_status": "draft_imported",
+          "draft_records": 1
+        },
+        {
+          "id": "G",
+          "url": "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G_guideline/pdf/G_27guideline.pdf",
+          "sha256": "21dd22ace0e1f1da521161b7fab39f2ee89cc32218ad5cc7751ee39c82dc64dc",
+          "pages": 48,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
+        },
+        {
+          "id": "G001",
+          "url": "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G001_guideline/pdf/G001_27guideline.pdf",
+          "sha256": "bfe341c7e185ae26352d5dfe4cf7e4e7dd745407554b8ef2db0b806dfda5532c",
+          "pages": 39,
+          "acquisition_status": "downloaded",
+          "extraction_status": "draft_imported",
+          "draft_records": 1
+        },
+        {
+          "id": "G055",
+          "url": "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G055_guideline/pdf/G055_27guideline.pdf",
+          "sha256": "91520a9a3b0a0e123a0d16e245788c382f0402a5e1644b95b11faa4f073e463a",
+          "pages": 43,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
+        }
+      ],
       "viewer_pages": [
         "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/H_guideline/",
         "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G_guideline/",
         "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G001_guideline/",
         "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G055_guideline/"
       ],
-      "note": "Resolve PDF assets from the public official-linked viewers; never treat viewer HTML as a PDF.",
-      "extraction_status": "not_started",
+      "note": "H and G001 each produced one unreviewed draft. G and G055 remain unread; no claim of complete university coverage.",
+      "extraction_status": "partially_draft_imported",
       "human_review_status": "not_reviewed"
     },
     {
@@ -55,7 +102,11 @@
       "pdfs": [
         {
           "id": "april",
-          "url": "https://www.chuo-u.ac.jp/common_d/connect/admission/2027/special/12_1_2.pdf"
+          "url": "https://www.chuo-u.ac.jp/common_d/connect/admission/2027/special/12_1_2.pdf",
+          "sha256": "6b9226b41ec7ce05088f33f4bb0d66b45ac442609a27a46ab9baeecfcc29f3a1",
+          "pages": 39,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
         }
       ],
       "note": "September Method B is still marked 2026 reference on the source page; do not relabel as 2027.",
@@ -69,7 +120,11 @@
       "pdfs": [
         {
           "id": "main",
-          "url": "https://www.guide.52school.com/export/sites/default/guidance/net-hosei-tokubetsu/gid/pdf/hosei_yoko_ryugakusei_zenki2027_20260709.pdf"
+          "url": "https://www.guide.52school.com/export/sites/default/guidance/net-hosei-tokubetsu/gid/pdf/hosei_yoko_ryugakusei_zenki2027_20260709.pdf",
+          "sha256": "fe11db891546d5298de16da94f2c575eab9e4950e70009d8ac61b2b211fe2238",
+          "pages": 30,
+          "acquisition_status": "downloaded",
+          "extraction_status": "not_started"
         }
       ],
       "extraction_status": "not_started",
@@ -82,11 +137,13 @@
       "pdfs": [
         {
           "id": "main",
-          "url": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf"
+          "url": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf",
+          "acquisition_status": "http_403"
         }
       ],
       "extraction_status": "not_started",
-      "human_review_status": "not_reviewed"
+      "human_review_status": "not_reviewed",
+      "note": "Official page is readable; direct PDF acquisition returned HTTP 403. No local PDF or extraction accepted."
     },
     {
       "id": "keio",
@@ -95,17 +152,26 @@
       "pdfs": [
         {
           "id": "main",
-          "url": "https://www.keio.ac.jp/fixed-files/ryugaku_youkou.pdf"
+          "url": "https://www.keio.ac.jp/fixed-files/ryugaku_youkou.pdf",
+          "sha256": "b41f1da5a2ae8fb0f68de6a327e1e582880675ebb0b2db01db66fec054bc8501",
+          "pages": 40,
+          "acquisition_status": "downloaded",
+          "extraction_status": "draft_imported",
+          "draft_records": 11
         },
         {
           "id": "medicine",
-          "url": "https://www.keio.ac.jp/fixed-files/ryugaku_medicine_youkou.pdf"
+          "url": "https://www.keio.ac.jp/fixed-files/ryugaku_medicine_youkou.pdf",
+          "sha256": "66f9e69c6550ffb5f9da5ee62c5be61aaba0f159b4e619e4752ebdee5b207fba",
+          "pages": 36,
+          "acquisition_status": "downloaded",
+          "extraction_status": "draft_imported",
+          "draft_records": 1
         }
       ],
-      "note": "Medicine is separate. Check the official notice stopping the SFC international-student route from 2027.",
-      "extraction_status": "not_started",
+      "note": "Two PDFs produced 12 unreviewed program/track drafts. This is not full-university route coverage or factual acceptance; other route notices still need checking.",
+      "extraction_status": "draft_imported",
       "human_review_status": "not_reviewed"
     }
   ]
 }
-

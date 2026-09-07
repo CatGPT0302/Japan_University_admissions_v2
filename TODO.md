@@ -19,8 +19,13 @@
 - [ ] Import drafts, verify completeness and independently check high-impact fields.
 - [ ] A human reviews and publishes actual admissions records.
 
-Source discovery is not extraction completion. Current seven-school extracted
-record count is zero; the 12 existing real draft records are Fukui/KIT regression data.
+Source discovery is not extraction completion. Current seven-school draft count
+is 14: Keio main 11 + medicine 1; Rikkyo intercultural written/interview 1 +
+document screening 1. None is human-confirmed. Seven other acquired PDFs remain
+unread; Waseda's direct PDF download returns HTTP 403. The 12 older Fukui/KIT
+records are separate regression data. Local final outputs are under
+runtime/acceptance_2027/; PDF sources stay under data/uploads/acceptance_2027/.
+The readable report now distinguishes selection routes in both overview and detail.
 
 ## Next product work
 
