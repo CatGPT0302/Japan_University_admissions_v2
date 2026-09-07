@@ -49,3 +49,8 @@ demo/*.json
 demo/*.xlsx
 demo/*.tsv
 Japan_University_admissions_v2/
+
+.pytest_cache/
+*.sqlite3
+*.db-shm
+*.db-wal

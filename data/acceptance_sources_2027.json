@@ -1,0 +1,111 @@
+{
+  "year": "2027",
+  "checked_at": "2026-09-08",
+  "scope": "Undergraduate international-student admission; source discovery is not extraction acceptance.",
+  "universities": [
+    {
+      "id": "meiji",
+      "name": "明治大学",
+      "source_page": "https://www.meiji.ac.jp/cip/prospective/admission_exams/ug_application.html",
+      "pdfs": [
+        {
+          "id": "main",
+          "url": "https://www.meiji.ac.jp/cip/prospective/admission_exams/6t5h7p00000ivf38-att/yoko.pdf"
+        }
+      ],
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    },
+    {
+      "id": "aoyama",
+      "name": "青山学院大学",
+      "source_page": "https://www.aoyama.ac.jp/admission/undergraduate/request/request.html",
+      "pdfs": [
+        {
+          "id": "main",
+          "url": "https://www.aoyama.ac.jp/wp-content/uploads/2026/07/ad_2027_internationalstudent_20260709_e1Nf5.pdf"
+        },
+        {
+          "id": "english_department",
+          "url": "https://www.aoyama.ac.jp/wp-content/uploads/2026/07/ad_2027_internationalstudents_doe_20260709_f3C2a.pdf"
+        }
+      ],
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    },
+    {
+      "id": "rikkyo",
+      "name": "立教大学",
+      "source_page": "https://www.rikkyo.ac.jp/admissions/undergraduate/guidelines/",
+      "pdfs": [],
+      "viewer_pages": [
+        "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/H_guideline/",
+        "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G_guideline/",
+        "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G001_guideline/",
+        "https://exam-entry-sp.52school.com/rikkyo-html/admissions/undergraduate/guidelines/G055_guideline/"
+      ],
+      "note": "Resolve PDF assets from the public official-linked viewers; never treat viewer HTML as a PDF.",
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    },
+    {
+      "id": "chuo",
+      "name": "中央大学",
+      "source_page": "https://www.chuo-u.ac.jp/connect/admission/special/guide/",
+      "pdfs": [
+        {
+          "id": "april",
+          "url": "https://www.chuo-u.ac.jp/common_d/connect/admission/2027/special/12_1_2.pdf"
+        }
+      ],
+      "note": "September Method B is still marked 2026 reference on the source page; do not relabel as 2027.",
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    },
+    {
+      "id": "hosei",
+      "name": "法政大学",
+      "source_page": "https://nyushi.hosei.ac.jp/news/article/20260630_02/",
+      "pdfs": [
+        {
+          "id": "main",
+          "url": "https://www.guide.52school.com/export/sites/default/guidance/net-hosei-tokubetsu/gid/pdf/hosei_yoko_ryugakusei_zenki2027_20260709.pdf"
+        }
+      ],
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    },
+    {
+      "id": "waseda",
+      "name": "早稲田大学",
+      "source_page": "https://www.waseda.jp/inst/admission/undergraduate/system/international/",
+      "pdfs": [
+        {
+          "id": "main",
+          "url": "https://www.waseda.jp/inst/admission/assets/uploads/2026/02/01_2027_gaikokugakusei_nyushiyoukou.pdf"
+        }
+      ],
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    },
+    {
+      "id": "keio",
+      "name": "慶應義塾大学",
+      "source_page": "https://www.keio.ac.jp/ja/admissions/faculty/examinations/international-student/",
+      "pdfs": [
+        {
+          "id": "main",
+          "url": "https://www.keio.ac.jp/fixed-files/ryugaku_youkou.pdf"
+        },
+        {
+          "id": "medicine",
+          "url": "https://www.keio.ac.jp/fixed-files/ryugaku_medicine_youkou.pdf"
+        }
+      ],
+      "note": "Medicine is separate. Check the official notice stopping the SFC international-student route from 2027.",
+      "extraction_status": "not_started",
+      "human_review_status": "not_reviewed"
+    }
+  ]
+}
+

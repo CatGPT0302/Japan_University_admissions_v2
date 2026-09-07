@@ -37,7 +37,7 @@ import type {
 } from "../types";
 
 const envBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
-const BASE_URL = envBaseUrl || "http://127.0.0.1:8000";
+const BASE_URL = envBaseUrl === "same-origin" ? window.location.origin : envBaseUrl || "http://127.0.0.1:8000";
 export const API_BASE_URL = BASE_URL;
 
 const client = axios.create({

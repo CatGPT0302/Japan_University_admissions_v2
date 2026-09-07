@@ -80,7 +80,7 @@ ensure_runtime_dirs()
 INPUT_DIR = uploads_dir()
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
 FRONTEND_DIST_DIR = frontend_dist_dir()
-DEFAULT_SEED_PACKAGE_DIR = ROOT / "data" / "exports" / "seed_data_package"
+DEFAULT_SEED_PACKAGE_DIR = Path(os.environ.get("SEED_PACKAGE_DIR") or ROOT / "data" / "exports" / "seed_data_package")
 
 EXPORT_REQUIRED_COLUMNS = {
     "application_period": "application_period",
@@ -300,6 +300,11 @@ def _require_user(request: Request, roles: set[str] | None = None) -> dict[str, 
 
 def _require_owner(request: Request) -> dict[str, Any]:
     return _require_user(request, {"owner_admin"})
+
+
+from scripts.ingestion_api import register_ingestion_routes  # noqa: E402
+
+register_ingestion_routes(app, _require_owner, INPUT_DIR)
 
 
 def _extract_api_secret(request: Request) -> str:
@@ -1025,6 +1030,7 @@ def list_staging(doc_id: int, request: Request) -> list[dict[str, Any]]:
         "eju_physics", "eju_chemistry", "eju_biology",
         "english_requirement", "screening_method", "screening_schedule",
         "result_date", "enrollment_period", "prefecture", "campus",
+        "required_documents", "eligibility", "evidence",
         "confidence", "needs_review", "is_confirmed", "updated_at",
         "field_confidence", "field_evidence", "risk_level",
         "manual_modified_fields", "is_reviewed", "reviewed_at", "warnings_json",

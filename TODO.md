@@ -1,28 +1,42 @@
 # TODO
 
-## Now
+## Completed foundation
 
-- Stabilize the partner service center as the first usable cooperation flow.
-- Keep owner/admin, partner service center, and student frontend visually and semantically separate.
-- Keep `/public/*` and `/v1/*` reading confirmed admissions data only.
-- Keep partner submissions owner-controlled: submitted material enters a queue, extraction can be started by owner/admin, and final confirmation stays in the admin review flow.
+- [x] Isolated local demo with direct Codex reading, no additional model calls.
+- [x] Authenticated extraction package + PDF submission to the configured draft DB.
+- [x] Source hash/page validation, atomic document writes and exact-retry receipts.
+- [x] Preserve existing drafts/human edits; never confirm records during ingestion.
+- [x] Standalone submission helper in the shareable skill package.
+- [x] Review deep link survives login; browser review/export regression passes.
+- [x] Record repository privacy and workspace cleanup rules in AGENTS.md.
 
-## Next
+## Current acceptance: seven universities
 
-- Improve student result ranking with more real confirmed records.
-- Keep extraction quality improvements focused on known gaps; do not rewrite the pipeline.
+- [x] Locate official 2027 admissions source entrypoints for MARCH, Waseda and Keio.
+- [ ] Resolve all source PDFs, including Rikkyo's official-linked viewers and errata.
+- [ ] Inventory all in-scope faculties/departments/routes and document exclusions.
+- [ ] Codex reads every source and extracts conditions with physical-page evidence.
+- [ ] Import drafts, verify completeness and independently check high-impact fields.
+- [ ] A human reviews and publishes actual admissions records.
+
+Source discovery is not extraction completion. Current seven-school extracted
+record count is zero; the 12 existing real draft records are Fukui/KIT regression data.
+
+## Next product work
+
+- [ ] Versioned schema: separate selection route/intake, requirements_note, multi-page evidence.
+- [ ] Immutable publication snapshots; draft edits must not affect public evidence.
+- [ ] Minimal pending/published maintenance lists and shared detail preview.
+- [ ] Student search, readable timeline/requirements and 2-4 program comparison.
+- [ ] Mobile/desktop usability checks with restrained Liquid Glass styling.
+- [ ] Real user task trial and documented feedback, without fabricated outcomes.
+- [ ] Audit dependencies, authentication, file access and backup recovery before hosting.
 
 ## Later
 
-- Add organization-level reporting and usage summaries.
-- Add more universities only after the core review and confirmation loop is stable.
-- Do not add email/calendar/payment/booking flows unless the product direction explicitly changes.
-- Consider larger data model migrations only after the projection layer becomes a bottleneck.
+- Historical competition and score data with explicit statistical definitions.
+- Eligibility-aware shortlist; no unsupported acceptance probabilities.
+- No billing, CRM, bookings, tenant expansion or eligibility guarantees in this MVP.
 
-## Out Of Scope For v1
-
-- 倍率数据
-- Full SaaS tenant management
-- Partner self-confirmation into the master database
-- Full database export for partner users
-- Rebuilding the extraction workflow as a separate packaged tool
+See docs/PROJECT_ROADMAP.md and docs/AI_INGESTION.md. Keep the repository private,
+retain source evidence, and remove only task-owned disposable intermediates.

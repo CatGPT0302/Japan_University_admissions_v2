@@ -1385,18 +1385,19 @@ def update_document_submission(
     return get_document_submission_for_owner(submission_id)
 
 
-def create_source_document(university, file_name, file_path="", pdf_url="", admission_year="") -> int:
+def create_source_document(university, file_name, file_path="", pdf_url="", admission_year="", *, connection=None) -> int:
     sql = (
         f"INSERT INTO source_documents (university,file_name,file_path,pdf_url,admission_year) "
         f"VALUES ({_ph()},{_ph()},{_ph()},{_ph()},{_ph()})"
     )
     if _pg():
         sql += " RETURNING id"
-    conn = get_conn()
+    conn = connection if connection is not None else get_conn()
     cur = _execute(conn, sql, (university, file_name, file_path, pdf_url, admission_year))
     doc_id = _lastrowid(cur)
-    conn.commit()
-    conn.close()
+    if connection is None:
+        conn.commit()
+        conn.close()
     return doc_id
 
 
@@ -1448,7 +1449,7 @@ def update_document_page(page_id, status, raw_llm_json=""):
     conn.close()
 
 
-def insert_staging_record(doc_id, page_number, record) -> int:
+def insert_staging_record(doc_id, page_number, record, *, connection=None) -> int:
     fields = [
         "document_id",
         "page_number",
@@ -1494,11 +1495,12 @@ def insert_staging_record(doc_id, page_number, record) -> int:
     sql = f"INSERT INTO admission_records_staging ({','.join(fields)}) VALUES ({_phn(len(fields))})"
     if _pg():
         sql += " RETURNING id"
-    conn = get_conn()
+    conn = connection if connection is not None else get_conn()
     cur = _execute(conn, sql, values)
     row_id = _lastrowid(cur)
-    conn.commit()
-    conn.close()
+    if connection is None:
+        conn.commit()
+        conn.close()
     return row_id
 
 
@@ -1824,7 +1826,7 @@ def confirm_staging_record(staging_id, pdf_url="") -> int:
         conn.close()
         return 0
     row = _decode_staging_row(row)
-    if row.get("risk_level") == "high" and not row.get("is_reviewed"):
+    if (os.environ.get("ADMISSIONS_REQUIRE_HUMAN_REVIEW") == "1" or row.get("risk_level") == "high") and not row.get("is_reviewed"):
         conn.close()
         return 0
     new_id = _confirm_row(conn, row, pdf_url)
@@ -1892,7 +1894,7 @@ def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
     now = _now()
 
     for key, row in best.items():
-        if row.get("risk_level") == "high" and not row.get("is_reviewed"):
+        if (os.environ.get("ADMISSIONS_REQUIRE_HUMAN_REVIEW") == "1" or row.get("risk_level") == "high") and not row.get("is_reviewed"):
             skipped += 1
             continue
         if key in existing_keys:
@@ -1902,7 +1904,7 @@ def confirm_all_by_doc(doc_id, pdf_url="") -> dict:
         written += 1
 
     for row in decoded_rows:
-        if row.get("risk_level") == "high" and not row.get("is_reviewed"):
+        if (os.environ.get("ADMISSIONS_REQUIRE_HUMAN_REVIEW") == "1" or row.get("risk_level") == "high") and not row.get("is_reviewed"):
             continue
         _execute(
             conn,
@@ -2761,3 +2763,4 @@ def get_document_file(doc_id: int) -> dict | None:
 
 if __name__ == "__main__":
     init_db()
+

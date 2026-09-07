@@ -95,7 +95,13 @@ def normalize_field_confidence(raw: Any) -> dict[str, float]:
 def normalize_field_evidence(raw: Any) -> dict[str, dict[str, Any]]:
     data = raw if isinstance(raw, dict) else {}
     normalized: dict[str, dict[str, Any]] = {}
-    for field in CRITICAL_FIELDS:
+    # Reviewable metadata also needs provenance, even when it is not risk-scored.
+    extra_fields = (
+        "university", "admission_year", "admission_period", "faculty", "department",
+        "prefecture", "campus", "required_documents", "eligibility", "evidence",
+    )
+    fields = [*CRITICAL_FIELDS, *(field for field in extra_fields if field in data)]
+    for field in fields:
         item = data.get(field)
         if isinstance(item, dict):
             text = _s(item.get("text"))

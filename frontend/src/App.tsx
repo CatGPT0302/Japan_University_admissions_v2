@@ -58,8 +58,15 @@ function serviceText(backendOk: boolean | null) {
 }
 
 function pageFromHash(): OwnerPage {
-  const value = window.location.hash.replace(/^#\/?/, "");
+  const value = window.location.hash.replace(/^#\/?/, "").split("?")[0];
   return NAV.some((item) => item.key === value) ? (value as OwnerPage) : "run";
+}
+
+function documentFromHash(): number | null {
+  if (pageFromHash() !== "review") return null;
+  const query = window.location.hash.split("?")[1] || "";
+  const value = Number(new URLSearchParams(query).get("doc_id"));
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
 function roleHome(role?: AppRole) {
@@ -79,7 +86,9 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
     try {
       const user = await login(email, password);
       onSignedIn(user);
-      window.location.hash = roleHome(user.role);
+      if (user.role !== "owner_admin" || pageFromHash() !== "review") {
+        window.location.hash = roleHome(user.role);
+      }
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -113,7 +122,7 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
 export default function App() {
   const surface = appSurface();
   const [page, setPage] = useState<OwnerPage>(() => pageFromHash());
-  const [activeDocId, setActiveDocId] = useState<number | null>(null);
+  const [activeDocId, setActiveDocId] = useState<number | null>(() => documentFromHash());
   const [reviewFocus, setReviewFocus] = useState<ReviewFocus | null>(null);
   const [exportSeed, setExportSeed] = useState<{ university?: string; year?: string; token: number } | null>(null);
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
@@ -135,7 +144,11 @@ export default function App() {
       setIsStudentApp(studentRoute);
       setIsSettingsApp(settingsRoute);
       setIsPartnerAdminApp(partnerAdminRoute);
-      if (!studentRoute && !settingsRoute && !partnerAdminRoute) setPage(pageFromHash());
+      if (!studentRoute && !settingsRoute && !partnerAdminRoute) {
+        setPage(pageFromHash());
+        const docId = documentFromHash();
+        if (docId !== null) setActiveDocId(docId);
+      }
     };
     window.addEventListener("hashchange", syncRoute);
     return () => window.removeEventListener("hashchange", syncRoute);

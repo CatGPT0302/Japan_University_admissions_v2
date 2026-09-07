@@ -2,7 +2,25 @@
 
 ## Project Overview
 
-admissions_v2 is an owner-hosted Japanese university admissions system.
+admissions_v2 is a personal, AI-assisted Japanese university admissions information project.
+
+当前目标是一个大一学生能展示、能解释的 Vibe Coding 原型：把官方募集要項 PDF 整理成可人工复核、可查询和复用的数据。项目不代表任何大学的官方服务，也不承诺自动判断申请资格。
+
+产品主线：官方 PDF → Codex／多模态 AI 抽取 → 自动入草稿库 → 人工复核发布 → 学生查询与比较。当前完成自动导入基础能力；独立发布版本、简化维护端和新的学生端仍在建设。现有合作方等旧页面暂时保留，不再扩展。
+
+- 总项目方向：[项目路线图](docs/PROJECT_ROADMAP.md)
+- AI 自动入库：[提交接口与使用方法](docs/AI_INGESTION.md)
+- 七校验收来源：[2027 年度来源清单](data/acceptance_sources_2027.json)
+- Mac 演示启动与数据隔离：[本地演示说明](docs/LOCAL_DEMO.md)
+- 本轮验收清单：[展示版计划](docs/DEMO_PLAN.md)
+- 直接给别人使用：[Skill 分享与安装](docs/SKILL_SHARING.md)
+- 文件夹整理入口：[批量数据包说明](docs/BATCH_DEMO.md)
+- 阅读案例：[福井大学](docs/DEMO_CASE.md)、[京都工艺纤维大学](docs/DEMO_CASE_KIT.md)
+- 展示与试用：[三分钟演示稿](docs/PROJECT_DEMO.md)、[用户试用任务](docs/USER_TRIAL.md)
+
+当前可复现：两份真实 PDF、12 条带来源依据的待复核草稿、JSONL/Markdown/CSV 阅读数据包、本机可发现的 skill。技术测试不等于事实准确率或真实用户认可。合成数据的 UI 确认流程已验证；七校完整抽取、人工复审和真实用户试用尚未完成。
+
+The sections below describe existing capabilities, not a claim of production readiness.
 
 It has three product surfaces:
 
@@ -10,7 +28,7 @@ It has three product surfaces:
 - Partner service center: issue limited access, receive submitted PDFs or links, track processing progress, and keep final data confirmation under the owner.
 - Student/parent frontend: collect a student's profile, show schools worth checking, and explain requirements in plain language. It does not collect consultation bookings.
 
-The project is not a pure OCR tool and is no longer only a local extraction MVP. The core data and extraction workflow stay owner-controlled.
+These are retained application capabilities, not the current demo scope. The current project is a local MVP focused on source-backed drafts and human review; it is not presented as a production SaaS.
 
 ## Current Workflow
 
@@ -51,7 +69,8 @@ Licensed API keys are stored as hashes. The full secret is only shown once when 
 - Frontend: React, TypeScript, Vite
 - Database: SQLite for local use, PostgreSQL-compatible deployment option
 - Export: openpyxl
-- LLM: OpenAI-compatible chat completion API
+- Demo reading: Codex directly reads PDFs; no additional model API calls
+- Existing optional extraction backend: OpenAI-compatible chat completion API
 
 ## Local Setup
 

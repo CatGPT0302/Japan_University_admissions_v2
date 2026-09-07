@@ -385,6 +385,8 @@ def _image_data_url(path: Path) -> str:
 
 
 def _call_llm(image_paths: list[Path], university: str, year: str, page_numbers: list[int] | None = None) -> tuple[str, str]:
+    if os.environ.get("ADMISSIONS_DISABLE_MODEL_CALLS") == "1":
+        raise RuntimeError("本地演示不调用模型 API。请由 Codex 阅读 PDF 后导入结构化结果，再进行人工复核。")
     page_numbers = page_numbers or list(range(1, len(image_paths) + 1))
     if page_numbers:
         page_note = "当前请求包含 PDF 第 " + "、".join(str(page) for page in page_numbers) + " 页。请只抽取这些页面中真实出现的招生记录；全局信息写入 global_fields。"
@@ -626,6 +628,8 @@ def evaluate_quality(
 
 
 def run_extraction(pdf_path: Path, university: str, year: str, url: str = "") -> dict[str, Any]:
+    if os.environ.get("ADMISSIONS_DISABLE_MODEL_CALLS") == "1":
+        raise RuntimeError("本地演示使用 Codex 直接阅读 PDF 后导入的数据，不启动外部模型抽取。")
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
     init_db()

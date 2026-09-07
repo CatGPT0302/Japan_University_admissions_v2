@@ -1835,6 +1835,7 @@ a {
 }
 
 .review-main {
+  container-type: inline-size;
   display: grid;
   gap: 16px;
   min-width: 0;
@@ -1847,12 +1848,19 @@ a {
   border-radius: 28px;
 }
 
+.review-topbar > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .review-topbar h1 {
-  font-size: clamp(26px, 3vw, 40px);
+  overflow-wrap: anywhere;
+  font-size: 28px;
   line-height: 1.08;
 }
 
 .review-topbar p {
+  overflow-wrap: anywhere;
   max-width: 68ch;
   margin: 8px 0 0;
   font-size: 14px;
@@ -5485,5 +5493,38 @@ a {
 
   .quality-row em {
     text-align: left;
+  }
+}
+
+/* Adapt to space remaining beside navigation and the document queue. */
+@container (max-width: 1000px) {
+  .review-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .review-row-list {
+    grid-column: 1 / -1;
+    position: static;
+    height: auto;
+  }
+  .review-record-list {
+    max-height: 240px;
+  }
+}
+
+@container (max-width: 760px) {
+  .review-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .review-pdf-panel,
+  .review-editor-panel {
+    position: static;
+    height: auto;
+    min-height: 0;
+  }
+  .review-pdf-scroll {
+    max-height: 65vh;
+  }
+  .review-editor-scroll {
+    max-height: none;
   }
 }
