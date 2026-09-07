@@ -710,6 +710,9 @@ _RECORD_MIGRATION_COLUMNS = {
     "required_documents": "TEXT",
     "eligibility": "TEXT",
     "evidence": "TEXT",
+    "publication_evidence": "TEXT DEFAULT '{}'",
+    "publication_risk_level": "TEXT",
+    "publication_source_file": "TEXT",
 }
 
 _BOOKING_MIGRATION_COLUMNS = {
@@ -1633,14 +1636,11 @@ def update_staging_record(staging_id, data) -> dict | None:
     merged["manual_modified_fields"] = list(dict.fromkeys(manual_modified))
 
     field_confidence = dict(existing.get("field_confidence") or {})
-    field_evidence = dict(existing.get("field_evidence") or {})
+    field_evidence = dict(patch.get("field_evidence", existing.get("field_evidence")) or {})
     for field in TRACKABLE_FIELDS:
         if field in patch and str(existing.get(field) or "") != str(patch.get(field) or ""):
             field_confidence[field] = 1.0
-            field_evidence[field] = {
-                "text": str(patch.get(field) or ""),
-                "page": existing.get("page_number"),
-            }
+            # A corrected value is not a quotation from the source PDF.
     merged["field_confidence"] = field_confidence
     merged["field_evidence"] = field_evidence
 
@@ -1770,7 +1770,7 @@ def prune_duplicate_documents(keep_doc_id: int) -> dict:
 
 
 def _confirm_row(conn, row: dict, pdf_url="") -> int:
-    doc = _fetchone(conn, f"SELECT pdf_url FROM source_documents WHERE id={_ph()}", (row["document_id"],))
+    doc = _fetchone(conn, f"SELECT pdf_url, file_name FROM source_documents WHERE id={_ph()}", (row["document_id"],))
     doc_url = pdf_url or (doc["pdf_url"] if doc else "")
     sql = (
         "INSERT INTO admission_records ("
@@ -1778,8 +1778,9 @@ def _confirm_row(conn, row: dict, pdf_url="") -> int:
         "faculty,department,application_period,deadline_rule,"
         "eju_session,eju_japanese,eju_general,eju_math,eju_physics,eju_chemistry,eju_biology,"
         "english_requirement,screening_method,screening_schedule,"
-        "result_date,enrollment_period,prefecture,campus,required_documents,eligibility,evidence"
-        f") VALUES ({_phn(27)})"
+        "result_date,enrollment_period,prefecture,campus,required_documents,eligibility,evidence,"
+        "publication_evidence,publication_risk_level,publication_source_file"
+        f") VALUES ({_phn(30)})"
     )
     if _pg():
         sql += " RETURNING id"
@@ -1814,6 +1815,9 @@ def _confirm_row(conn, row: dict, pdf_url="") -> int:
             row.get("required_documents", ""),
             row.get("eligibility", ""),
             row.get("evidence", ""),
+            json.dumps(row.get("field_evidence") or {}, ensure_ascii=False),
+            row.get("risk_level", ""),
+            (doc or {}).get("file_name", ""),
         ),
     )
     return _lastrowid(cur)
@@ -2141,11 +2145,10 @@ def get_public_programs(
         "ar.eju_chemistry, ar.eju_biology, ar.english_requirement, ar.screening_method, "
         "ar.screening_schedule, ar.result_date, ar.enrollment_period, ar.prefecture, ar.campus, "
         "ar.required_documents, ar.eligibility, ar.evidence, "
-        "sd.file_name AS source_file_name, sd.pdf_url AS source_pdf_url, "
-        "st.confidence AS staging_confidence, st.field_evidence, st.risk_level AS staging_risk_level "
+        "ar.publication_source_file AS source_file_name, ar.pdf_url AS source_pdf_url, "
+        "ar.publication_evidence AS field_evidence, ar.publication_risk_level AS staging_risk_level "
         "FROM admission_records ar "
-        "LEFT JOIN source_documents sd ON sd.id = ar.document_id "
-        f"LEFT JOIN admission_records_staging st ON st.id = ar.source_staging_id {where} "
+        f"{where} "
         f"ORDER BY ar.id DESC LIMIT {_ph()} OFFSET {_ph()}"
     )
     conn = get_conn()
@@ -2162,11 +2165,10 @@ def get_public_program(program_id: int, *, include_quality: bool = False) -> dic
         "ar.eju_chemistry, ar.eju_biology, ar.english_requirement, ar.screening_method, "
         "ar.screening_schedule, ar.result_date, ar.enrollment_period, ar.prefecture, ar.campus, "
         "ar.required_documents, ar.eligibility, ar.evidence, "
-        "sd.file_name AS source_file_name, sd.pdf_url AS source_pdf_url, "
-        "st.confidence AS staging_confidence, st.field_evidence, st.risk_level AS staging_risk_level "
+        "ar.publication_source_file AS source_file_name, ar.pdf_url AS source_pdf_url, "
+        "ar.publication_evidence AS field_evidence, ar.publication_risk_level AS staging_risk_level "
         "FROM admission_records ar "
-        "LEFT JOIN source_documents sd ON sd.id = ar.document_id "
-        f"LEFT JOIN admission_records_staging st ON st.id = ar.source_staging_id WHERE ar.id = {_ph()}"
+        f"WHERE ar.id = {_ph()}"
     )
     conn = get_conn()
     row = _fetchone(conn, sql, (int(program_id),))

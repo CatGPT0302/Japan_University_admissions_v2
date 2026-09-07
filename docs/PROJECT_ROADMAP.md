@@ -21,13 +21,17 @@ structural validation is not factual verification. Never publish automatically.
 5. Historical statistics and score comparison only with documented source and scope.
    Never confuse application thresholds with successful applicant scores.
 
-## Seven-university acceptance scope
+## Current acceptance scope
 
 Default: 2027 undergraduate international-student admission routes at Meiji,
 Aoyama Gakuin, Rikkyo, Chuo, Hosei, Waseda and Keio. Inventory every faculty,
 department and route before claiming completion. Graduate, transfer and separate
 English-medium programs are outside the initial scope unless explicitly added.
 Unavailable 2027 sources stay unavailable; do not replace them with another year.
+
+Waseda is excluded from this acceptance run at the user's request. Do not retry
+its failed download or count it as a failed gate. The remaining six universities
+still require full route coverage; the initial 14 drafts are a partial sample.
 
 Check eligibility, application and postal deadlines, EJU subject combinations,
 valid sittings, English tests, documents, selection, results and enrollment dates.

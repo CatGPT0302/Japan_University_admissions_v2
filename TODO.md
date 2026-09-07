@@ -10,7 +10,7 @@
 - [x] Review deep link survives login; browser review/export regression passes.
 - [x] Record repository privacy and workspace cleanup rules in AGENTS.md.
 
-## Current acceptance: seven universities
+## Current acceptance: six universities (Waseda excluded)
 
 - [x] Locate official 2027 admissions source entrypoints for MARCH, Waseda and Keio.
 - [ ] Resolve all source PDFs, including Rikkyo's official-linked viewers and errata.
@@ -22,7 +22,7 @@
 Source discovery is not extraction completion. Current seven-school draft count
 is 14: Keio main 11 + medicine 1; Rikkyo intercultural written/interview 1 +
 document screening 1. None is human-confirmed. Seven other acquired PDFs remain
-unread; Waseda's direct PDF download returns HTTP 403. The 12 older Fukui/KIT
+unread; Waseda is excluded at the user's request, with no further retries. The 12 older Fukui/KIT
 records are separate regression data. Local final outputs are under
 runtime/acceptance_2027/; PDF sources stay under data/uploads/acceptance_2027/.
 The readable report now distinguishes selection routes in both overview and detail.
@@ -30,7 +30,10 @@ The readable report now distinguishes selection routes in both overview and deta
 ## Next product work
 
 - [ ] Versioned schema: separate selection route/intake, requirements_note, multi-page evidence.
-- [ ] Immutable publication snapshots; draft edits must not affect public evidence.
+- [x] Snapshot confirmed evidence, risk and source metadata; public queries no longer join drafts.
+- [x] Preserve original PDF evidence when a reviewed field value is edited.
+- [x] Read-only sample audit and quality checkpoint: docs/QUALITY_ACCEPTANCE.md.
+- [ ] Explicit republication/version history and consumer-facing evidence view.
 - [ ] Minimal pending/published maintenance lists and shared detail preview.
 - [ ] Student search, readable timeline/requirements and 2-4 program comparison.
 - [ ] Mobile/desktop usability checks with restrained Liquid Glass styling.
