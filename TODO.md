@@ -34,7 +34,10 @@ The readable report now distinguishes selection routes in both overview and deta
 - [x] Preserve original PDF evidence when a reviewed field value is edited.
 - [x] Read-only sample audit and quality checkpoint: docs/QUALITY_ACCEPTANCE.md.
 - [ ] Explicit republication/version history and consumer-facing evidence view.
-- [ ] Minimal pending/published maintenance lists and shared detail preview.
+- [x] Two primary maintenance entries; advanced tools collapsed; default opens review.
+- [x] Unsaved/unreviewed publication guards and return to published records.
+- [x] Desktop/mobile maintenance smoke tests, including refresh and source preview.
+- [ ] Finish pending-only document queue, shared detail preview and explicit republication.
 - [ ] Student search, readable timeline/requirements and 2-4 program comparison.
 - [ ] Mobile/desktop usability checks with restrained Liquid Glass styling.
 - [ ] Real user task trial and documented feedback, without fabricated outcomes.

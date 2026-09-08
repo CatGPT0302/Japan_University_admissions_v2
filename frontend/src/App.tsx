@@ -1,3 +1,4 @@
+import "./maintenance.css";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { checkHealth, getCurrentUser, login, logout, toErrorMessage } from "./api/client";
 import ExportPage from "./pages/ExportPage";
@@ -14,28 +15,10 @@ type OwnerNavItem = { key: OwnerPage; label: string; hint: string; short: string
 
 const NAV: OwnerNavItem[] = [
   { key: "run", label: "上传整理", hint: "提交招生资料，生成待核对内容", short: "01" },
-  { key: "review", label: "人工核对", hint: "对着来源资料快速修正词条", short: "02" },
-  { key: "records", label: "正式资料", hint: "查看已经确认的招生资料", short: "03" },
+  { key: "review", label: "待复核", hint: "对着来源资料快速修正词条", short: "02" },
+  { key: "records", label: "已发布", hint: "查看已经确认的招生资料", short: "03" },
   { key: "exports", label: "导出中心", hint: "按学校、年度和学部取出表格", short: "04" },
   { key: "quality", label: "质量与更新", hint: "查看来源变化和整理稳定性", short: "05" },
-];
-
-const NAV_GROUPS: Array<{ title: string; note: string; items: OwnerNavItem[] }> = [
-  {
-    title: "资料生产",
-    note: "从来源资料到可确认内容",
-    items: NAV.filter((item) => item.key === "run" || item.key === "review"),
-  },
-  {
-    title: "资料库",
-    note: "查询、取出、合并表格",
-    items: NAV.filter((item) => item.key === "records" || item.key === "exports"),
-  },
-  {
-    title: "维护",
-    note: "来源变化与质量回看",
-    items: NAV.filter((item) => item.key === "quality"),
-  },
 ];
 
 const OWNER_PARTNER_ROUTE = String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "");
@@ -59,7 +42,7 @@ function serviceText(backendOk: boolean | null) {
 
 function pageFromHash(): OwnerPage {
   const value = window.location.hash.replace(/^#\/?/, "").split("?")[0];
-  return NAV.some((item) => item.key === value) ? (value as OwnerPage) : "run";
+  return NAV.some((item) => item.key === value) ? (value as OwnerPage) : "review";
 }
 
 function documentFromHash(): number | null {
@@ -190,7 +173,7 @@ export default function App() {
             ? (docId) => {
                 setActiveDocId(docId);
                 setPage("review");
-                window.location.hash = "#/review";
+                window.location.hash = `#/review?doc_id=${docId}`;
               }
             : undefined
         }
@@ -206,44 +189,31 @@ export default function App() {
         <div className="product-brand">
           <div className="brand-overline">本地工作台</div>
           <h1 className="brand-title">招生资料中心</h1>
-          <p className="brand-subtitle">整理 PDF，核对内容，维护招生资料。</p>
         </div>
 
         <div className="sidebar-section">
           <div className="sidebar-section-label">Owner 工作台</div>
           <nav className="product-nav" aria-label="主导航">
-            {NAV_GROUPS.map((group) => (
-              <section className="workspace-nav-group" key={group.title} aria-label={group.title}>
-                <div className="workspace-nav-group-head">
-                  <strong>{group.title}</strong>
-                  <span>{group.note}</span>
-                </div>
-                <div className="workspace-nav-group-items">
-                  {group.items.map((item) => {
-                    const active = item.key === page;
-                    return (
-                      <button
-                        key={item.key}
-                        className={`workspace-tab${active ? " is-active" : ""}`}
-                        onClick={() => {
-                          window.location.hash = item.key === "run" ? "#/" : `#/${item.key}`;
-                          setPage(item.key);
-                        }}
-                        type="button"
-                      >
-                        <span className="workspace-tab-icon" aria-hidden="true">
-                          {item.short}
-                        </span>
-                        <span className="workspace-tab-copy">
-                          <span className="workspace-tab-label">{item.label}</span>
-                          <span className="workspace-tab-hint">{item.hint}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
+            {NAV.filter((item) => item.key === "review" || item.key === "records").map((item) => (
+              <button key={item.key} className={`workspace-tab${page === item.key ? " is-active" : ""}`}
+                aria-current={page === item.key ? "page" : undefined}
+                onClick={() => { window.location.hash = `#/${item.key}`; setPage(item.key); }} type="button">
+                <span className="workspace-tab-label">{item.label}</span>
+              </button>
             ))}
+            <details className="maintenance-tools" key={page === "review" || page === "records" ? "primary" : "tools"}
+              open={page !== "review" && page !== "records" ? true : undefined}>
+              <summary>更多工具</summary>
+              <div className="workspace-nav-group-items">
+                {NAV.filter((item) => item.key !== "review" && item.key !== "records").map((item) => (
+                  <button key={item.key} className={`workspace-tab${page === item.key ? " is-active" : ""}`}
+                    aria-current={page === item.key ? "page" : undefined}
+                    onClick={() => { window.location.hash = `#/${item.key}`; setPage(item.key); }} type="button">
+                    <span className="workspace-tab-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
           </nav>
         </div>
 
@@ -260,7 +230,6 @@ export default function App() {
           <div className="workspace-heading">
             <div className="workspace-header-label">当前位置</div>
             <div className="workspace-header-title">{activeItem.label}</div>
-            <p className="workspace-header-copy">{activeItem.hint}</p>
           </div>
           <div className="workspace-header-side">
             <div className={`connection-pill workspace-connection${backendOk === false ? " is-down" : ""}`}>
@@ -286,7 +255,7 @@ export default function App() {
                 setActiveDocId(docId);
                 setReviewFocus(null);
                 setPage("review");
-                window.location.hash = "#/review";
+                window.location.hash = `#/review?doc_id=${docId}`;
               }}
               onOpenExports={() => {
                 setPage("exports");
@@ -305,13 +274,7 @@ export default function App() {
                 setActiveDocId(null);
                 setReviewFocus(null);
                 setPage("records");
-              }}
-              onOpenExports={(filters) => {
-                setActiveDocId(null);
-                setReviewFocus(null);
-                setExportSeed({ ...filters, token: Date.now() });
-                setPage("exports");
-                window.location.hash = "#/exports";
+                window.location.hash = "#/records";
               }}
             />
           ) : page === "records" ? (
@@ -323,7 +286,7 @@ export default function App() {
                 setActiveDocId(docId);
                 setReviewFocus(focus ?? null);
                 setPage("review");
-                window.location.hash = "#/review";
+                window.location.hash = `#/review?doc_id=${docId}`;
               }}
             />
           ) : (
@@ -332,7 +295,7 @@ export default function App() {
                 setActiveDocId(docId);
                 setReviewFocus(focus ?? null);
                 setPage("review");
-                window.location.hash = "#/review";
+                window.location.hash = `#/review?doc_id=${docId}`;
               }}
             />
           )}

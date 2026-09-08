@@ -19,7 +19,7 @@ const surfaces = [
     path: "/",
     expect: ["登录资料中心", "邮箱", "密码"],
     login: ownerCredentials,
-    afterLoginExpect: ["招生资料中心", "资料生产", "资料库"],
+    afterLoginExpect: ["招生资料中心", "待复核", "已发布"],
     action: "owner-core-pages",
     reject: ["学生・家长入口", "登录服务中心"],
     afterLoginReject: ["学生・家长入口", "登录服务中心"],
@@ -50,7 +50,7 @@ const surfaces = [
     path: "/",
     expect: ["登录资料中心", "邮箱", "密码"],
     login: ownerCredentials,
-    afterLoginExpect: ["招生资料中心", "资料生产", "资料库"],
+    afterLoginExpect: ["招生资料中心", "待复核", "已发布"],
     action: "owner-review-seeded",
     reject: ["学生・家长入口", "登录服务中心"],
     afterLoginReject: ["学生・家长入口", "登录服务中心"],
@@ -236,6 +236,8 @@ async function assertBodyIncludes(page, expected, label) {
 
 async function runSurfaceAction(page, surface) {
   if (surface.action === "owner-core-pages") {
+    await page.locator(".maintenance-tools > summary").click();
+    await page.getByRole("button", { name: "上传整理", exact: true }).click();
     await assertBodyIncludes(page, "今日工作队列", `${surface.name} owner work queue`);
     await assertBodyIncludes(page, "待复审", `${surface.name} owner work queue`);
     await assertBodyIncludes(page, "可导出", `${surface.name} owner work queue`);
@@ -267,11 +269,12 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "临时勾选", `${surface.name} selected export basket`);
     await assertBodyIncludes(page, "请先勾选要导出的资料", `${surface.name} selected export check`);
 
-    await page.getByRole("button", { name: /人工核对/ }).click();
+    await page.locator(".product-nav").getByRole("button", { name: "待复核", exact: true }).click();
     await assertBodyIncludes(page, "资料队列", `${surface.name} review page`);
     await assertBodyIncludes(page, "请选择一份资料", `${surface.name} review page`);
     await assertBodyIncludes(page, "先看", `${surface.name} review filters`);
 
+    await page.locator(".maintenance-tools > summary").click();
     await page.getByRole("button", { name: /质量与更新/ }).click();
     await assertBodyIncludes(page, "今天先处理这些", `${surface.name} owner issue queue`);
     await assertBodyIncludes(page, "导出清单", `${surface.name} owner issue export`);
@@ -331,7 +334,7 @@ async function runSurfaceAction(page, surface) {
   }
 
   if (surface.action === "owner-review-seeded") {
-    await page.getByRole("button", { name: /人工核对/ }).click();
+    await page.locator(".product-nav").getByRole("button", { name: "待复核", exact: true }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} document queue`);
     await assertBodyIncludes(page, "条待复审", `${surface.name} document queue status`);
     await assertBodyIncludes(page, "待处理", `${surface.name} review filters`);
@@ -376,11 +379,16 @@ async function runSurfaceAction(page, surface) {
     const confirmResponsePromise = page.waitForResponse((response) => response.url().includes("/confirm/") && response.request().method() === "POST", {
       timeout: 15_000,
     });
-    await page.getByRole("button", { name: "确认整份入库" }).click();
+    await page.getByRole("button", { name: "发布这份资料" }).click();
     const confirmResponse = await confirmResponsePromise;
     if (!confirmResponse.ok()) {
       throw new Error(`${surface.name} confirm failed with ${confirmResponse.status()}`);
     }
+    await page.waitForURL("**/#/records");
+    await page.locator(".maintenance-tools > summary").click();
+    await page.getByRole("button", { name: "导出中心", exact: true }).click();
+    await page.getByLabel("学校名").fill("东京测试大学");
+    await page.getByRole("button", { name: "预览这所学校", exact: true }).click();
     await assertBodyIncludes(page, "单校快速取出", `${surface.name} confirm export handoff`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} confirm export handoff`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirm export preview`);
@@ -406,8 +414,8 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "从导出缺口进入", `${surface.name} export gap focus notice`);
     await assertBodyIncludes(page, "先补齐：", `${surface.name} export gap focus target`);
 
-    await page.locator(".product-nav").getByRole("button", { name: /正式资料/ }).click();
-    await assertBodyIncludes(page, "已确认的招生资料", `${surface.name} confirmed records`);
+    await page.locator(".product-nav").getByRole("button", { name: "已发布", exact: true }).click();
+    await assertBodyIncludes(page, "已发布的招生资料", `${surface.name} confirmed records`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} confirmed records`);
     await page.getByRole("button", { name: /东京测试大学/ }).click();
     await assertBodyIncludes(page, "导出这所学校", `${surface.name} record detail export`);

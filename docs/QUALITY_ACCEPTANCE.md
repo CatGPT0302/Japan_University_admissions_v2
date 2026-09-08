@@ -58,3 +58,21 @@ The command checks structure, coverage and package/database drift. Legitimate
 human edits are reported for inspection, never overwritten. It cannot certify
 admissions facts and has no publication action. The local machine-readable
 checkpoint is runtime/acceptance_2027/quality_audit.json.
+
+## Maintenance UI checkpoint
+
+The default owner screen is now review, with two primary entries: pending review
+and published records. Upload, export and quality remain available under More
+Tools. Publishing returns to records and keeps that route after refresh. Review
+handoffs preserve the document ID, and published details include the route name.
+Unsaved changes, outstanding reviews and in-flight saves block publication.
+Saving an edited unpublished draft without reviewing it resets its review flag.
+
+Verification: TypeScript/Vite build passed; the 295-test Python suite passed with
+3 skips. The dedicated maintenance-smoke.mjs passed at 1440px and 390px using
+intercepted API fixtures, including publication guards and refresh. Screenshots
+were inspected; a real local draft and PDF preview were also opened read-only.
+The older multi-surface smoke script was updated for navigation labels but its
+full multi-surface suite was not run in this checkpoint. Real drafts remain 14,
+with zero confirmed records. Pending-only queue filtering and explicit version
+republication remain unfinished.

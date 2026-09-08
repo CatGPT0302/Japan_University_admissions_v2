@@ -6,6 +6,7 @@ import type { ConfirmedRecord, StatsResponse } from "../types";
 const RECORD_FIELDS: Array<{ key: keyof ConfirmedRecord; label: string }> = [
   { key: "university", label: "大学名称" },
   { key: "admission_year", label: "入学年度" },
+  { key: "admission_period", label: "入试方式" },
   { key: "faculty", label: "学部" },
   { key: "department", label: "学科/专业" },
   { key: "application_period", label: "出愿期间" },
@@ -96,8 +97,7 @@ export default function RecordsPage() {
         <div className="split-row split-row-start">
           <div>
             <div className="section-kicker">正式资料</div>
-            <h2 className="section-title">已确认的招生资料与 Excel 表</h2>
-            <p className="section-copy">这里只显示已经确认过的资料。导出按钮会读取最新内容，不用再为每所学校维护单独 Excel。</p>
+            <h2 className="section-title">已发布的招生资料</h2>
           </div>
           <div className="hero-metrics">
             <div className="metric-card">

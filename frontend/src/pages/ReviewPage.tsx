@@ -15,7 +15,6 @@ interface Props {
   defaultDocId?: number | null;
   defaultFocus?: ReviewFocus | null;
   onDone: () => void;
-  onOpenExports?: (filters: { university?: string; year?: string }) => void;
 }
 
 type ReviewField = {
@@ -32,7 +31,7 @@ const FIELD_GROUPS: Array<{ title: string; fields: ReviewField[] }> = [
     fields: [
       { key: "university", label: "学校" },
       { key: "admission_year", label: "年度" },
-      { key: "admission_period", label: "入学时期" },
+      { key: "admission_period", label: "入试方式" },
       { key: "faculty", label: "学部" },
       { key: "department", label: "学科・专攻", rows: 2 },
       { key: "prefecture", label: "地区" },
@@ -227,7 +226,7 @@ function findFocusedRow(rows: StagingRecord[], focus?: ReviewFocus | null) {
   );
 }
 
-export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenExports }: Props) {
+export default function ReviewPage({ defaultDocId, defaultFocus, onDone }: Props) {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
   const [rows, setRows] = useState<StagingRecord[]>([]);
@@ -237,6 +236,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("pending");
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [focusedEvidencePage, setFocusedEvidencePage] = useState<number | null>(null);
@@ -244,6 +244,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   const [pageInput, setPageInput] = useState("1");
   const editorPanelRef = useRef<HTMLElement | null>(null);
   const pendingFocusRef = useRef<ReviewFocus | null>(null);
+  const documentRequestRef = useRef(0);
 
   const allOrderedRows = useMemo(() => sortRows(rows), [rows]);
   const orderedRows = useMemo(() => filterRows(allOrderedRows, reviewFilter), [allOrderedRows, reviewFilter]);
@@ -254,7 +255,6 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   );
   const reviewedCount = rows.filter((row) => Number(row.is_reviewed) || Number(row.is_confirmed)).length;
   const remainingCount = Math.max(rows.length - reviewedCount, 0);
-  const pendingReviewCount = rows.filter((row) => Number(row.needs_review) && !isReviewed(row)).length;
   const priorityCount = rows.filter((row) => needsAttention(row)).length;
   const currentPage = focusedEvidencePage || selectedRow?.page_number || 1;
   const sourceFileAvailable = summary?.source_file_available !== false;
@@ -321,15 +321,21 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
     if (hasUnsavedChanges && !window.confirm("当前修改还没有保存。要先切换到其他资料吗？")) return;
     setError("");
     setMessage("");
-    const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
-    const nextRows = sortRows(stagingRows);
-    const focusedRow = findFocusedRow(nextRows, focus);
-    pendingFocusRef.current = focus ?? null;
-    setFocusNotice(focus?.field ? focus : null);
-    setSelectedDocId(docId);
-    setSummary(docSummary);
-    setRows(stagingRows);
-    setSelectedRowId(focusedRow?.id ?? nextRows[0]?.id ?? null);
+    const requestId = ++documentRequestRef.current;
+    try {
+      const [docSummary, stagingRows] = await Promise.all([getDocumentSummary(docId), getStaging(docId)]);
+      if (requestId !== documentRequestRef.current) return;
+      const nextRows = sortRows(stagingRows);
+      const focusedRow = findFocusedRow(nextRows, focus);
+      pendingFocusRef.current = focus ?? null;
+      setFocusNotice(focus?.field ? focus : null);
+      setSelectedDocId(docId);
+      setSummary(docSummary);
+      setRows(stagingRows);
+      setSelectedRowId(focusedRow?.id ?? nextRows[0]?.id ?? null);
+    } catch (nextError) {
+      if (requestId === documentRequestRef.current) setError(toErrorMessage(nextError));
+    }
   }
 
   async function save(markReviewed: boolean, moveNext = false) {
@@ -339,7 +345,7 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
     try {
       const updated = await patchStaging(selectedRow.id, {
         ...draft,
-        ...(markReviewed ? { is_reviewed: 1, needs_review: 0 } : {}),
+        ...(markReviewed ? { is_reviewed: 1, needs_review: 0 } : hasUnsavedChanges ? { is_reviewed: 0, needs_review: 1 } : {}),
       });
       const nextRows = rows.map((row) => (row.id === selectedRow.id ? updated : row));
       const nextOrdered = sortRows(nextRows);
@@ -361,21 +367,17 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
   }
 
   async function confirmCurrentDocument() {
-    if (!selectedDocId) return;
+    if (!selectedDocId || !rows.length || hasUnsavedChanges || remainingCount > 0 || saving || publishing) return;
+    setPublishing(true);
     setError("");
     try {
       const result = await confirmDoc(selectedDocId);
-      setMessage(`已写入确认数据 ${result.confirmed} 条，跳过 ${result.skipped} 条。`);
-      if (onOpenExports) {
-        onOpenExports({
-          university: summary?.university_name || selectedRow?.university || "",
-          year: summary?.admission_year || selectedRow?.admission_year || "",
-        });
-      } else {
-        onDone();
-      }
+      setMessage(`已发布 ${result.confirmed} 条，跳过 ${result.skipped} 条。`);
+      onDone();
     } catch (nextError) {
       setError(toErrorMessage(nextError));
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -507,18 +509,14 @@ export default function ReviewPage({ defaultDocId, defaultFocus, onDone, onOpenE
               <strong>{remainingCount}</strong>
               <span>待处理</span>
             </div>
-            <div className="review-progress-pill">
-              <strong>{priorityCount}</strong>
-              <span>先看</span>
-            </div>
             <button
               className="btn btn-green"
-              disabled={!selectedDocId || !rows.length || pendingReviewCount > 0}
+              disabled={!selectedDocId || !rows.length || remainingCount > 0 || hasUnsavedChanges || saving || publishing}
               onClick={() => void confirmCurrentDocument()}
               type="button"
-              title={pendingReviewCount > 0 ? "请先处理待复审内容" : undefined}
+              title={hasUnsavedChanges ? "请先保存当前修改" : remainingCount > 0 ? "请先完成全部复核" : undefined}
             >
-              {pendingReviewCount > 0 ? `还有 ${pendingReviewCount} 条待复审` : "确认整份入库"}
+              {publishing ? "正在发布" : hasUnsavedChanges ? "请先保存修改" : remainingCount > 0 ? `还有 ${remainingCount} 条待复核` : "发布这份资料"}
             </button>
           </div>
         </header>
