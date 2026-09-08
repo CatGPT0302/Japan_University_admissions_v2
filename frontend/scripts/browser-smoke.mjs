@@ -21,8 +21,8 @@ const surfaces = [
     login: ownerCredentials,
     afterLoginExpect: ["招生资料中心", "待复核", "已发布"],
     action: "owner-core-pages",
-    reject: ["学生・家长入口", "登录服务中心"],
-    afterLoginReject: ["学生・家长入口", "登录服务中心"],
+    reject: ["学校与报考信息", "登录服务中心"],
+    afterLoginReject: ["学校与报考信息", "登录服务中心"],
   },
   {
     name: "partner",
@@ -31,7 +31,7 @@ const surfaces = [
     login: partnerCredentials,
     afterLoginExpect: ["提交资料，看整理进度", "服务中心", "整理进度"],
     action: "partner-submission",
-    reject: ["招生资料中心", "学生・家长入口"],
+    reject: ["招生资料中心", "学校与报考信息"],
     afterLoginReject: ["招生资料中心", "Owner 管理"],
   },
   {
@@ -41,8 +41,8 @@ const surfaces = [
     login: ownerCredentials,
     afterLoginExpect: ["合作方服务中心", "今日待办", "资料进度"],
     action: "owner-service-queue",
-    reject: ["学生・家长入口", "登录服务中心"],
-    afterLoginReject: ["学生・家长入口", "招生资料中心"],
+    reject: ["学校与报考信息", "登录服务中心"],
+    afterLoginReject: ["学校与报考信息", "招生资料中心"],
   },
   {
     name: "owner-review",
@@ -52,13 +52,13 @@ const surfaces = [
     login: ownerCredentials,
     afterLoginExpect: ["招生资料中心", "待复核", "已发布"],
     action: "owner-review-seeded",
-    reject: ["学生・家长入口", "登录服务中心"],
-    afterLoginReject: ["学生・家长入口", "登录服务中心"],
+    reject: ["学校与报考信息", "登录服务中心"],
+    afterLoginReject: ["学校与报考信息", "登录服务中心"],
   },
   {
     name: "student",
     path: "/",
-    expect: ["学生・家长入口", "先说情况，再看学校。"],
+    expect: ["学校与报考信息", "出愿时间、考试要求、官方原文。"],
     action: "student-search-confirmed",
     reject: ["登录资料中心", "登录服务中心"],
   },
@@ -67,7 +67,7 @@ const surfaces = [
     buildSurface: "combined",
     path: "/#/student",
     expect: ["登录资料中心", "邮箱", "密码"],
-    reject: ["学生・家长入口", "登录服务中心"],
+    reject: ["学校与报考信息", "登录服务中心"],
   },
 ];
 
@@ -316,7 +316,7 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /资料进度/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} queue`);
     await assertBodyIncludes(page, "资料详情", `${surface.name} submission detail`);
-    await assertBodyIncludes(page, "下一步", `${surface.name} submission detail`);
+    await assertBodyIncludes(page, "报考前再确认", `${surface.name} submission detail`);
     await assertBodyIncludes(page, "开始整理", `${surface.name} queue`);
     const submissionDetail = page.getByLabel("资料详情");
     const startResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/submissions/") && response.url().endsWith("/start"), {
@@ -490,19 +490,19 @@ async function runSurfaceAction(page, surface) {
       }
     }
 
-    await page.getByPlaceholder("例：早稻田 / 商学 / 东京 / TOEFL").fill("东京测试大学");
-    await assertBodyIncludes(page, "先按学校和条件查找", `${surface.name} search results`);
+    await page.getByPlaceholder("搜索大学、学部或考试要求").fill("东京测试大学");
+    await assertBodyIncludes(page, "学校与报考信息", `${surface.name} search results`);
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} search results`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} search results`);
 
     await page.getByRole("button", { name: /东京测试大学/ }).click();
-    await assertBodyIncludes(page, "这所学校要看什么", `${surface.name} program detail`);
+    await assertBodyIncludes(page, "考试与出愿条件", `${surface.name} program detail`);
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} program detail`);
-    await assertBodyIncludes(page, "EJU 日本语", `${surface.name} program detail`);
-    await assertBodyIncludes(page, "需要提前准备", `${surface.name} preparation checklist`);
-    await assertBodyIncludes(page, "下一步", `${surface.name} next step panel`);
-    await assertBodyIncludes(page, "复制这所学校", `${surface.name} copy school action`);
-    await assertBodyIncludes(page, "回到学校列表", `${surface.name} return action`);
+    await assertBodyIncludes(page, "EJU 日本留学试验", `${surface.name} program detail`);
+    await assertBodyIncludes(page, "出愿材料", `${surface.name} preparation checklist`);
+    await assertBodyIncludes(page, "报考前再确认", `${surface.name} next step panel`);
+    await page.getByRole("button", { name: "复制报考信息" }).waitFor();
+    await assertBodyIncludes(page, "学校查询", `${surface.name} return action`);
 
     const studentText = await page.locator("body").innerText({ timeout: 10_000 });
     for (const blocked of ["预约咨询", "提交预约", "邮箱或手机号", "方便的时间"]) {
@@ -510,8 +510,8 @@ async function runSurfaceAction(page, surface) {
         throw new Error(`${surface.name} still exposes consultation UI: ${blocked}`);
       }
     }
-    await page.getByRole("button", { name: "回到学校列表" }).click();
-    await assertBodyIncludes(page, "先按学校和条件查找", `${surface.name} back to results`);
+    await page.getByRole("button", { name: "学校查询", exact: true }).last().click();
+    await assertBodyIncludes(page, "学校与报考信息", `${surface.name} back to results`);
     return;
   }
 
@@ -553,8 +553,8 @@ async function checkSurface(browser, surface, port) {
       assertNoBlockedTerms(bodyText, nonOwnerBlockedTerms, surface.name);
     }
     if (surface.name === "student") {
-      const brandHref = await page.locator(".student-brand").getAttribute("href");
-      if (brandHref && brandHref.includes("#/")) {
+      const brandHref = await page.locator(".ad-brand").getAttribute("href");
+      if (brandHref !== "#/student") {
         throw new Error(`${surface.name} brand link should stay within its split site root, got ${brandHref}`);
       }
     }

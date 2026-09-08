@@ -1,745 +1,141 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import {
-  getPublicProgram,
-  getPublicPrograms,
-  getPublicRecommendations,
-  toErrorMessage,
-} from "../api/client";
-import type {
-  PublicProgram,
-  RecommendationResult,
-  StudentProfile,
-} from "../types";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { getPublicProgram, getPublicPrograms, getPublicRecommendations, toErrorMessage } from "../api/client";
+import type { PublicProgram, StudentProfile } from "../types";
+import "../student-discovery.css";
 
-type ResultSource = "recommendation" | "browse";
-type StudentTab = "explore" | "match" | "detail";
-type PickerKey = "fields" | "areas" | "english" | "eju" | "keywords";
-
-type DisplayResult = RecommendationResult & {
-  source: ResultSource;
-};
-
-const TABS: Array<{ key: StudentTab; label: string; hint: string }> = [
-  { key: "match", label: "填情况", hint: "成绩与方向" },
-  { key: "explore", label: "看学校", hint: "适合先看" },
-  { key: "detail", label: "看要求", hint: "时间与条件" },
-];
-
-const QUICK_FIELDS = ["商学", "社会", "国际", "经济", "理工", "文学"];
-const QUICK_AREAS = ["东京", "神奈川", "大阪", "京都", "埼玉", "千叶"];
-const QUICK_EJU = ["日本语", "数学", "综合科目", "物理", "化学", "生物"];
-const QUICK_ENGLISH = ["TOEFL", "IELTS", "TOEIC", "英检"];
-const QUICK_KEYWORDS = ["面试", "书类选考", "小论文", "私费外国人", "秋入学", "首都圈"];
-
-function splitTerms(value: string): string[] {
-  return value
-    .split(/[,;\n\u3001\uff0c\uff1b]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+const assets = import.meta.glob("../assets/admissions-icons/*.svg", { eager: true, query: "?url", import: "default" });
+function Icon({ name }: { name: string }) {
+  return <img className="ad-icon" src={assets[`../assets/admissions-icons/${name}.svg`] as string} alt="" aria-hidden="true" />;
 }
-
-function toggleTerm(value: string, current: string): string {
-  const terms = splitTerms(current);
-  if (terms.includes(value)) return terms.filter((item) => item !== value).join(", ");
-  return [...terms, value].join(", ");
+const text = (value?: string) => value?.trim() || "待补充";
+const terms = (value: string) => value.split(/[,，、;；\n]+/).map(s => s.trim()).filter(Boolean);
+const fold = (value: string) => value.normalize("NFKC").toLowerCase().replace(/东京/g, "東京").replace(/经济/g, "経済");
+function sourceUrl(program: PublicProgram) {
+  try { const url = new URL(program.source_document?.pdf_url || ""); return ["https:", "http:"].includes(url.protocol) ? url.href : ""; }
+  catch { return ""; }
 }
-
-function textOrPending(value?: string | null): string {
-  const text = String(value || "").trim();
-  return text || "资料里暂时没有写清楚";
+function ejuRows(p: PublicProgram) {
+  const e = p.requirements?.eju || {};
+  return [["有效场次", e.session], ["日本语", e.japanese], ["综合科目", e.general], ["数学", e.math], ["物理", e.physics], ["化学", e.chemistry], ["生物", e.biology]];
 }
-
-function programSearchText(program: PublicProgram): string {
-  const eju = program.requirements?.eju ?? {};
-  return [
-    program.school_name,
-    program.faculty,
-    program.department,
-    program.admission_year,
-    program.prefecture,
-    program.campus,
-    program.exam_method,
-    program.deadline_rule,
-    program.admission_period,
-    program.enrollment_period,
-    program.requirements?.english?.raw_text,
-    program.requirements?.jlpt?.raw_text,
-    program.requirements?.eligibility,
-    ...(program.requirements?.required_documents || []),
-    ...Object.values(eju),
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
-function fallbackResult(program: PublicProgram): DisplayResult {
-  return {
-    program,
-    score: 0,
-    fit_level: "check_carefully",
-    reasons: ["可以先看。"],
-    check_items: [],
-    source: "browse",
-  };
-}
-
-function includesTerm(text: string, term: string): boolean {
-  return text.includes(term.trim().toLowerCase());
-}
-
-function matchFirst(text: string, terms: string[]): string {
-  return terms.find((term) => includesTerm(text, term)) || "";
-}
-
-function profileMatchResult(program: PublicProgram, profile: StudentProfile, keywordText: string): DisplayResult | null {
-  const searchText = programSearchText(program);
-  const reasons: string[] = [];
-  let score = 0;
-
-  const year = String(profile.target_year || "").trim();
-  if (year) {
-    const programYear = String(program.admission_year || "").toLowerCase();
-    if (programYear && !programYear.includes(year.toLowerCase())) return null;
-    if (programYear.includes(year.toLowerCase())) {
-      score += 14;
-      reasons.push(`${year} 年度可以先看`);
-    }
+function ejuSummary(p: PublicProgram) {
+  const groups = new Map<string, string[]>();
+  for (const [label, value] of ejuRows(p).slice(1)) {
+    if (value?.trim()) groups.set(value, [...(groups.get(value) || []), label!]);
   }
-
-  const field = matchFirst(searchText, profile.desired_fields || []);
-  if (profile.desired_fields?.length) {
-    if (!field) return null;
-    score += 24;
-    reasons.push(`方向里有「${field}」`);
-  }
-
-  const area = matchFirst(searchText, profile.preferred_prefectures || []);
-  if (profile.preferred_prefectures?.length) {
-    if (!area) return null;
-    score += 20;
-    reasons.push(`地区接近「${area}」`);
-  }
-
-  const english = matchFirst(searchText, profile.english_tests || []);
-  if (profile.english_tests?.length) {
-    if (!english) return null;
-    score += 16;
-    reasons.push(`英语要求提到「${english}」`);
-  }
-
-  const eju = matchFirst(searchText, profile.eju_subjects || []);
-  if (profile.eju_subjects?.length) {
-    if (!eju) return null;
-    score += 16;
-    reasons.push(`EJU 条件提到「${eju}」`);
-  }
-
-  const japaneseTerms = splitTerms(profile.japanese_level || "");
-  const japanese = matchFirst(searchText, japaneseTerms);
-  if (japaneseTerms.length && japanese) {
-    score += 10;
-    reasons.push(`日语条件提到「${japanese}」`);
-  }
-
-  const keywords = splitTerms(keywordText);
-  const keyword = matchFirst(searchText, keywords);
-  if (keywords.length) {
-    if (!keyword) return null;
-    score += 18;
-    reasons.push(`关键词命中「${keyword}」`);
-  }
-
-  const noteKeyword = matchFirst(searchText, splitTerms(profile.notes || ""));
-  if (noteKeyword) {
-    score += 6;
-    reasons.push(`补充说明提到「${noteKeyword}」`);
-  }
-
-  return {
-    program,
-    score,
-    fit_level: score >= 62 ? "likely_fit" : "check_carefully",
-    reasons: reasons.length ? reasons.slice(0, 3) : ["可以先看。"],
-    check_items: [],
-    source: "browse",
-  };
+  return [...groups].map(([value, labels]) => `${labels.join(" / ")}：${value}`).join("；");
 }
-
-function friendlyReasons(item: DisplayResult): string[] {
-  if (item.source === "browse" && item.score === 0) return [];
-  return item.reasons.slice(0, 2);
-}
-
-function formatProgramName(program: PublicProgram): string {
-  const parts = [program.faculty, program.department].filter((item) => String(item || "").trim());
-  return parts.length ? parts.join(" / ") : "可查看的方向";
-}
-
-function requirementRows(program: PublicProgram): Array<{ label: string; value: string }> {
-  const eju = program.requirements?.eju ?? {};
-  return [
-    { label: "出愿时间", value: textOrPending(program.application_period) },
-    { label: "选考方式", value: textOrPending(program.exam_method) },
-    { label: "考试日期", value: textOrPending(program.exam_date) },
-    { label: "合格发表", value: textOrPending(program.result_date) },
-    { label: "EJU 日本语", value: textOrPending(eju.japanese) },
-    { label: "EJU 数学", value: textOrPending(eju.math) },
-    { label: "EJU 其他科目", value: textOrPending([eju.general, eju.physics, eju.chemistry, eju.biology].filter(Boolean).join(" / ")) },
-    { label: "英语要求", value: textOrPending(program.requirements?.english?.raw_text) },
-    { label: "出愿资格", value: textOrPending(program.requirements?.eligibility) },
-    { label: "所需材料", value: textOrPending((program.requirements?.required_documents || []).join(" / ")) },
-  ];
-}
-
-function preparationItems(program: PublicProgram, recommendedItems?: string[]): string[] {
-  const eju = program.requirements?.eju ?? {};
-  const items = [...(recommendedItems || [])];
-  if (program.application_period) items.push(`确认出愿时间：${program.application_period}`);
-  if (program.deadline_rule) items.push(`留意截止规则：${program.deadline_rule}`);
-  const ejuText = [eju.session, eju.japanese, eju.general, eju.math, eju.physics, eju.chemistry, eju.biology].filter(Boolean).join(" / ");
-  if (ejuText) items.push(`准备 EJU：${ejuText}`);
-  if (program.requirements?.english?.raw_text) items.push(`准备英语成绩：${program.requirements.english.raw_text}`);
-  if (program.requirements?.required_documents?.length) items.push(`准备材料：${program.requirements.required_documents.slice(0, 4).join(" / ")}`);
-  if (program.exam_method) items.push(`确认校内考方式：${program.exam_method}`);
-  if (program.exam_date) items.push(`确认考试时间：${program.exam_date}`);
-  return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean))).slice(0, 6);
-}
-
-function programShareText(program: PublicProgram, preparation: string[]): string {
-  const rows = requirementRows(program);
-  return [
-    `${program.school_name} ${formatProgramName(program)}`,
-    "",
-    ...rows.map((row) => `${row.label}: ${row.value}`),
-    preparation.length ? "" : "",
-    ...(preparation.length ? ["需要提前准备:", ...preparation.map((item) => `- ${item}`)] : []),
-    "",
-    `资料来源: ${program.source_document?.file_name || "招生资料"}`,
-    program.source_document?.pdf_url ? `来源链接: ${program.source_document.pdf_url}` : "",
-  ]
-    .filter((line, index, lines) => line || (index > 0 && lines[index - 1]))
-    .join("\n");
-}
-
-function ChoicePicker({
-  label,
-  value,
-  options,
-  expanded,
-  placeholder,
-  onChange,
-  onToggle,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  expanded: boolean;
-  placeholder: string;
-  onChange: (value: string) => void;
-  onToggle: () => void;
-}) {
-  const selected = splitTerms(value);
-  const summary = selected.length ? selected.join("、") : "还没选择";
-
-  return (
-    <div className={`student-choice${expanded ? " is-open" : ""}`}>
-      <button className="student-choice-row" type="button" onClick={onToggle} aria-expanded={expanded}>
-        <span>
-          <strong>{label}</strong>
-          <small>{summary}</small>
-        </span>
-        <b aria-hidden="true">{expanded ? "−" : "+"}</b>
-      </button>
-      {expanded ? (
-        <div className="student-choice-body">
-          <div className="student-chip-group" aria-label={`${label}选项`}>
-            {options.map((item) => (
-              <button
-                className={selected.includes(item) ? "is-selected" : ""}
-                type="button"
-                key={item}
-                onClick={() => onChange(toggleTerm(item, value))}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <label className="student-field student-choice-custom">
-            <span>补充输入</span>
-            <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
-          </label>
-        </div>
-      ) : null}
-    </div>
-  );
+function Datum({ label, value }: { label: string; value?: string }) {
+  return <div className="ad-datum"><dt>{label}</dt><dd className={!value?.trim() ? "ad-missing" : undefined}>{text(value)}</dd></div>;
 }
 
 export default function StudentApp() {
-  const [activeTab, setActiveTab] = useState<StudentTab>("match");
-  const [targetYear, setTargetYear] = useState("2027");
-  const [desiredFieldsText, setDesiredFieldsText] = useState("商学, 社会, 国际");
-  const [prefecturesText, setPrefecturesText] = useState("东京, 神奈川");
-  const [englishTestsText, setEnglishTestsText] = useState("TOEFL, IELTS");
-  const [ejuSubjectsText, setEjuSubjectsText] = useState("日本语, 数学");
-  const [profileKeywordsText, setProfileKeywordsText] = useState("");
-  const [submittedKeywordsText, setSubmittedKeywordsText] = useState("");
-  const [japaneseLevel, setJapaneseLevel] = useState("");
-  const [notes, setNotes] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [expandedPickers, setExpandedPickers] = useState<Record<PickerKey, boolean>>({
-    fields: false,
-    areas: false,
-    english: false,
-    eju: false,
-    keywords: false,
-  });
-
   const [programs, setPrograms] = useState<PublicProgram[]>([]);
-  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
-  const [submittedProfile, setSubmittedProfile] = useState<StudentProfile | null>(null);
-  const [selectedResult, setSelectedResult] = useState<DisplayResult | null>(null);
-  const [selectedProgram, setSelectedProgram] = useState<PublicProgram | null>(null);
-
-  const [programsLoading, setProgramsLoading] = useState(true);
-  const [recommendationLoading, setRecommendationLoading] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reload, setReload] = useState(0);
+  const [query, setQuery] = useState("");
+  const [year, setYear] = useState("");
+  const [region, setRegion] = useState("");
+  const [faculty, setFaculty] = useState("");
+  const [selected, setSelected] = useState<PublicProgram | null>(null);
+  const [detailBusy, setDetailBusy] = useState(false);
+  const [detailError, setDetailError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [matching, setMatching] = useState(false);
+  const [matchIds, setMatchIds] = useState<number[] | null>(null);
+  const requestId = useRef(0);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     let active = true;
-    setProgramsLoading(true);
-    getPublicPrograms({ limit: 50 })
-      .then((items) => {
-        if (active) setPrograms(items);
-      })
-      .catch((err) => {
-        if (active) setError(toErrorMessage(err));
-      })
-      .finally(() => {
-        if (active) setProgramsLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const displayResults = useMemo<DisplayResult[]>(() => {
-    if (!submittedProfile) return programs.map(fallbackResult);
-
-    const recommended = new Map(recommendations.map((item) => [item.program.id, item]));
-    const locallyMatched = programs
-      .map((program) => profileMatchResult(program, submittedProfile, submittedKeywordsText))
-      .filter((item): item is DisplayResult => Boolean(item));
-
-    return locallyMatched
-      .map((item) => {
-        const recommendation = recommended.get(item.program.id);
-        if (!recommendation) return item;
-        return {
-          ...item,
-          source: "recommendation" as const,
-          score: Math.max(item.score, recommendation.score),
-          reasons: recommendation.reasons.length ? recommendation.reasons : item.reasons,
-          check_items: recommendation.check_items,
-        };
-      })
-      .sort((a, b) => b.score - a.score || a.program.school_name.localeCompare(b.program.school_name));
-  }, [programs, recommendations, submittedKeywordsText, submittedProfile]);
-
-  const filteredResults = useMemo(() => {
-    const query = searchText.trim().toLowerCase();
-    if (!query) return displayResults;
-    return displayResults.filter((item) => programSearchText(item.program).includes(query));
-  }, [displayResults, searchText]);
-
-  const submittedFilterLabels = useMemo(() => {
-    if (!submittedProfile) return [];
-    return [
-      submittedProfile.target_year ? `年度：${submittedProfile.target_year}` : "",
-      ...submittedProfile.desired_fields.map((item) => `方向：${item}`),
-      ...submittedProfile.preferred_prefectures.map((item) => `地区：${item}`),
-      ...submittedProfile.english_tests.map((item) => `英语：${item}`),
-      ...submittedProfile.eju_subjects.map((item) => `EJU：${item}`),
-      ...splitTerms(submittedKeywordsText).map((item) => `关键词：${item}`),
-    ].filter(Boolean);
-  }, [submittedKeywordsText, submittedProfile]);
-
-  async function selectResult(result: DisplayResult) {
-    setSelectedResult(result);
-    setSelectedProgram(result.program);
-    setActiveTab("detail");
-    setDetailLoading(true);
-    try {
-      const detail = await getPublicProgram(result.program.id);
-      setSelectedProgram(detail);
-    } catch {
-      setSelectedProgram(result.program);
-    } finally {
-      setDetailLoading(false);
+    async function load() {
+      setLoading(true); setError("");
+      try {
+        const all: PublicProgram[] = [];
+        for (let offset = 0; active; offset += 100) {
+          const batch = await getPublicPrograms({ limit: 100, offset });
+          all.push(...batch);
+          if (batch.length < 100) break;
+        }
+        if (active) setPrograms([...new Map(all.map(p => [p.id, p])).values()]);
+      } catch (err) { if (active) setError(toErrorMessage(err)); }
+      finally { if (active) setLoading(false); }
     }
-  }
+    void load();
+    return () => { active = false; };
+  }, [reload]);
+  useEffect(() => () => { requestId.current++; }, []);
 
-  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const profile: StudentProfile = {
-      target_year: targetYear.trim(),
-      desired_fields: splitTerms(desiredFieldsText),
-      preferred_prefectures: splitTerms(prefecturesText),
-      english_tests: splitTerms(englishTestsText),
-      eju_subjects: splitTerms(ejuSubjectsText),
-      japanese_level: japaneseLevel.trim(),
-      notes: notes.trim(),
-    };
-    setRecommendationLoading(true);
-    setSubmittedProfile(profile);
-    setSubmittedKeywordsText(profileKeywordsText.trim());
-    setError(null);
+  const choices = (key: "admission_year" | "prefecture" | "faculty") => [...new Set(programs.map(p => p[key]).filter((v): v is string => Boolean(v)))].sort();
+  const filtered = useMemo(() => programs.filter(p => {
+    const content = fold([p.school_name, p.faculty, p.department, p.prefecture, p.campus, p.admission_period, p.exam_method, p.requirements?.english?.raw_text, ...ejuRows(p).map(row => row[1])].join(" "));
+    return (!year || p.admission_year === year) && (!region || p.prefecture === region) && (!faculty || p.faculty === faculty)
+      && fold(query).split(/\s+/).filter(Boolean).every(term => content.includes(term)) && (matchIds === null || matchIds.includes(p.id));
+  }).sort((a, b) => a.school_name.localeCompare(b.school_name, "ja") || a.faculty.localeCompare(b.faculty, "ja") || a.id - b.id), [programs, query, year, region, faculty, matchIds]);
+  const hasFilters = Boolean(query || year || region || faculty || matchIds !== null);
+  function reset() { setQuery(""); setYear(""); setRegion(""); setFaculty(""); setMatchIds(null); }
+  function back() { requestId.current++; setSelected(null); setDetailBusy(false); setDetailError(""); setCopyMessage(""); }
+  async function open(p: PublicProgram) {
+    const id = ++requestId.current;
+    setSelected(p); setDetailBusy(true); setDetailError(""); setCopyMessage("");
+    window.scrollTo({ top: 0, behavior: "instant" });
+    try { const result = await getPublicProgram(p.id); if (id === requestId.current) setSelected(result); }
+    catch (err) { if (id === requestId.current) setDetailError(toErrorMessage(err)); }
+    finally { if (id === requestId.current) { setDetailBusy(false); heading.current?.focus(); } }
+  }
+  async function match(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const data = new FormData(event.currentTarget);
+    const value = (key: string) => String(data.get(key) || "");
+    const profile: StudentProfile = { target_year: value("year"), desired_fields: terms(value("fields")), preferred_prefectures: terms(value("regions")), english_tests: terms(value("english")), eju_subjects: terms(value("eju")), japanese_level: value("japanese"), notes: value("notes") };
+    setMatching(true); setError("");
+    try { const response = await getPublicRecommendations(profile); reset(); setMatchIds(response.results.map(r => r.program.id)); setProfileOpen(false); }
+    catch (err) { setError(toErrorMessage(err)); }
+    finally { setMatching(false); }
+  }
+  async function copy() {
+    if (!selected) return;
+    const p = selected;
     try {
-      const response = await getPublicRecommendations(profile);
-      const firstResult = response.results[0] ? { ...response.results[0], source: "recommendation" as const } : null;
-      setRecommendations(response.results);
-      setSelectedResult(firstResult);
-      setSelectedProgram(firstResult?.program ?? null);
-      setActiveTab("explore");
-    } catch (err) {
-      setRecommendations([]);
-      setError(toErrorMessage(err));
-    } finally {
-      setRecommendationLoading(false);
-    }
+      await navigator.clipboard.writeText([`${p.school_name} · ${p.admission_year} · ${p.faculty} ${p.department}`, `入试方式：${text(p.admission_period)}`, `出愿：${text(p.application_period)}`, `截止规则：${text(p.deadline_rule)}`, ...ejuRows(p).map(([key, value]) => `EJU ${key}：${text(value)}`), `英语：${text(p.requirements?.english?.raw_text)}`, `选考：${text(p.exam_method)}`, `考试：${text(p.exam_date)}`, `合格发表：${text(p.result_date)}`, `入学手续：${text(p.enrollment_period)}`, `资格：${text(p.requirements?.eligibility)}`, `材料：${p.requirements?.required_documents?.join("；") || "待补充"}`, `来源：${sourceUrl(p) || "待补充"}`].join("\n"));
+      setCopyMessage("已复制报考信息");
+    } catch { setCopyMessage("复制失败，请选择页面文字复制。"); }
   }
 
-  function togglePicker(key: PickerKey) {
-    setExpandedPickers((current) => ({ ...current, [key]: !current[key] }));
-  }
-
-  async function copyActiveProgram() {
-    if (!activeProgram) return;
-    const text = programShareText(activeProgram, activePreparationItems);
-    setCopyMessage("");
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyMessage("已复制这所学校的要求。");
-    } catch {
-      setCopyMessage("浏览器没有开放复制权限，可以手动选择页面内容。");
-    }
-  }
-
-  const activeProgram = selectedProgram;
-  const activeResult = activeProgram
-    ? selectedResult?.program.id === activeProgram.id
-      ? selectedResult
-      : displayResults.find((item) => item.program.id === activeProgram.id) ?? null
-    : null;
-  const activePreparationItems = activeProgram ? preparationItems(activeProgram, activeResult?.check_items) : [];
-
-  return (
-    <div className="student-shell student-shell-ios">
-      <header className="student-topbar">
-        <a className="student-brand" href="#/student" aria-label="学生入口首页">
-          <span>
-            <strong>学生・家长入口</strong>
-            <small>日本大学申请</small>
-          </span>
-        </a>
-        <nav className="student-nav" aria-label="学生端导航">
-          {TABS.map((item) => (
-            <button
-              className={activeTab === item.key ? "is-active" : ""}
-              key={item.key}
-              type="button"
-              onClick={() => setActiveTab(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <a className="btn btn-ghost btn-small" href="#/account">登录 / 我的账号</a>
-      </header>
-
-      <main className="student-main">
-        <section className="student-hero">
-          <div className="student-hero-copy">
-            <p className="student-kicker">学生・家长入口</p>
-            <h1>先说情况，再看学校。</h1>
-            <p>
-              填一下目标年度、方向、地区和已经准备的考试。
-              页面会带你回到学校页，先看值得认真比较的选择。
-            </p>
-
-            <label className="student-hero-search">
-              <span>直接搜学校、学部、地区或考试</span>
-              <input
-                value={searchText}
-                onChange={(event) => {
-                  setSearchText(event.target.value);
-                  setActiveTab("explore");
-                }}
-                placeholder="例：早稻田 / 商学 / 东京 / TOEFL"
-              />
-            </label>
-          </div>
-
-          <div className="student-liquid-card" aria-label="开始">
-            <span className="student-liquid-label">从这里开始</span>
-            <strong>先填三件事。</strong>
-            <p>方向、地区、考试情况先给个大概。填完后直接看学校，不用在一页里来回找。</p>
-            <button className="student-soft-button" type="button" onClick={() => setActiveTab("match")}>
-              填我的情况
-            </button>
-          </div>
+  return <div className="ad-student">
+    <header className="ad-topbar"><div className="ad-topbar-inner">
+      <a className="ad-brand" href="#/student" onClick={back}><span className="ad-brand-symbol"><Icon name="GraduationCap" /></span><span>日本大学申请<span className="ad-brand-sub">ADMISSIONS GUIDE</span></span></a>
+      <nav aria-label="学生端导航"><button className={!profileOpen ? "ad-nav-active" : undefined} onClick={() => { back(); setProfileOpen(false); }}>学校查询</button><button className={profileOpen ? "ad-nav-active" : undefined} onClick={() => { back(); setProfileOpen(v => !v); }}>按条件选校</button></nav>
+      <a className="ad-account" href="#/account" aria-label="登录 / 我的账号" title="登录 / 我的账号"><Icon name="UserRound" /><span>我的账号</span></a>
+    </div></header>
+    <main className="ad-main">
+      {!selected ? <>
+        <section className="ad-intro"><div><p className="ad-eyebrow">留学生入试 · 募集要项</p><h1>学校与报考信息</h1><p className="ad-subtitle">出愿时间、考试要求、官方原文。</p></div><div className="ad-publication"><span /> 人工复核后发布</div></section>
+        <section className="ad-search-area" aria-label="学校查询条件">
+          <label className="ad-search"><Icon name="Search" /><input aria-label="搜索学校或条件" value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索大学、学部或考试要求" />{query && <button title="清空搜索" aria-label="清空搜索" onClick={() => setQuery("")}>×</button>}</label>
+          <div className="ad-filters">{([['入学年度', year, setYear, choices('admission_year')], ['地区', region, setRegion, choices('prefecture')], ['学部 / 方向', faculty, setFaculty, choices('faculty')]] as const).map(([label, value, setter, options]) => <label key={label}><span>{label}</span><select aria-label={label} value={value} onChange={e => setter(e.target.value)}><option value="">全部</option>{options.map(v => <option key={v}>{v}</option>)}</select></label>)}<button className="ad-reset" onClick={reset} disabled={!hasFilters}><Icon name="RotateCcw" />重置</button></div>
         </section>
-
-        <div className="student-tabbar" role="tablist" aria-label="学生端步骤">
-          {TABS.map((item) => (
-            <button
-              aria-selected={activeTab === item.key}
-              className={activeTab === item.key ? "is-active" : ""}
-              key={item.key}
-              type="button"
-              role="tab"
-              onClick={() => setActiveTab(item.key)}
-            >
-              <strong>{item.label}</strong>
-              <span>{item.hint}</span>
-            </button>
-          ))}
-        </div>
-
-        {error ? <div className="student-message student-message-error">{error}</div> : null}
-
-        {activeTab === "explore" ? (
-          <section className="student-tab-panel student-explore-panel" role="tabpanel">
-            <div className="student-section-head student-results-head">
-              <div>
-                <p className="student-kicker">学校</p>
-                <h2>{submittedProfile ? "适合先看的学校" : "先按学校和条件查找"}</h2>
-                <p>{submittedProfile ? "根据你刚才填写的方向、地区和考试情况筛选。" : "可以先搜索学校、学部、地区或考试要求。"}</p>
-              </div>
-              <button className="student-soft-button" type="button" onClick={() => setActiveTab("match")}>
-                填我的情况
-              </button>
-            </div>
-
-            <label className="student-field student-inline-search">
-              <span>继续关键词检索</span>
-              <input
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="学校、学部、地区、考试、面试、小论文都可以"
-              />
-            </label>
-
-            {submittedFilterLabels.length ? (
-              <div className="student-filter-strip" aria-label="当前筛选条件">
-                {submittedFilterLabels.slice(0, 10).map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-                {submittedFilterLabels.length > 10 ? <span>还有 {submittedFilterLabels.length - 10} 项</span> : null}
-              </div>
-            ) : null}
-
-            {programsLoading ? (
-              <div className="student-empty">正在读取学校信息。</div>
-            ) : filteredResults.length ? (
-              <div className="student-result-list">
-                {filteredResults.map((item) => {
-                  const active = selectedProgram?.id === item.program.id;
-                  const reasons = friendlyReasons(item);
-                  return (
-                    <button
-                      className={`student-result-card${active ? " is-active" : ""}`}
-                      key={`${item.source}-${item.program.id}`}
-                      type="button"
-                      onClick={() => void selectResult(item)}
-                    >
-                      <div className="student-result-topline">
-                        <small>{textOrPending(item.program.admission_year)}</small>
-                      </div>
-                      <strong>{item.program.school_name}</strong>
-                      <span>{formatProgramName(item.program)}</span>
-                      <small>{textOrPending(item.program.prefecture || item.program.campus)}</small>
-                      <span>{textOrPending(item.program.exam_method || item.program.application_period)}</span>
-                      {reasons.length ? (
-                        <div className="student-result-reasons">
-                          <small>可以先看的原因</small>
-                          {reasons.map((reason) => (
-                            <em key={reason}>{reason}</em>
-                          ))}
-                        </div>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="student-empty">
-                {programs.length ? "暂时没有匹配结果。可以放宽地区或方向后再试一次。" : "现在还没有可查看的学校。等资料整理好后，这里会出现学校。"}
-              </div>
-            )}
-          </section>
-        ) : null}
-
-        {activeTab === "match" ? (
-          <form className="student-tab-panel student-profile-panel" role="tabpanel" onSubmit={handleProfileSubmit}>
-            <div className="student-section-head">
-              <p className="student-kicker">个人情况</p>
-              <h2>告诉我们你的情况</h2>
-              <p>不用一次填完。先选方向、地区和已经准备的考试，之后还可以再改。</p>
-              <p>点开每一项右侧的加号，就能选择常见条件。</p>
-            </div>
-
-            <label className="student-field">
-              <span>目标入学年度</span>
-              <input value={targetYear} onChange={(event) => setTargetYear(event.target.value)} placeholder="例如 2027" />
-            </label>
-
-            <div className="student-choice-stack">
-              <ChoicePicker
-                label="想读的方向"
-                value={desiredFieldsText}
-                options={QUICK_FIELDS}
-                expanded={expandedPickers.fields}
-                placeholder="例如 商学, 社会, 国际"
-                onChange={setDesiredFieldsText}
-                onToggle={() => togglePicker("fields")}
-              />
-              <ChoicePicker
-                label="希望地区"
-                value={prefecturesText}
-                options={QUICK_AREAS}
-                expanded={expandedPickers.areas}
-                placeholder="例如 东京, 大阪"
-                onChange={setPrefecturesText}
-                onToggle={() => togglePicker("areas")}
-              />
-              <ChoicePicker
-                label="英语考试"
-                value={englishTestsText}
-                options={QUICK_ENGLISH}
-                expanded={expandedPickers.english}
-                placeholder="例如 TOEFL, IELTS, TOEIC"
-                onChange={setEnglishTestsText}
-                onToggle={() => togglePicker("english")}
-              />
-              <ChoicePicker
-                label="EJU 科目"
-                value={ejuSubjectsText}
-                options={QUICK_EJU}
-                expanded={expandedPickers.eju}
-                placeholder="例如 日本语, 数学, 综合科目"
-                onChange={setEjuSubjectsText}
-                onToggle={() => togglePicker("eju")}
-              />
-              <ChoicePicker
-                label="想特别查找"
-                value={profileKeywordsText}
-                options={QUICK_KEYWORDS}
-                expanded={expandedPickers.keywords}
-                placeholder="例如 面试, 小论文, 秋入学, 私费外国人"
-                onChange={setProfileKeywordsText}
-                onToggle={() => togglePicker("keywords")}
-              />
-            </div>
-
-            <label className="student-field">
-              <span>日语情况</span>
-              <input
-                value={japaneseLevel}
-                onChange={(event) => setJapaneseLevel(event.target.value)}
-                placeholder="例如 JLPT N2, EJU 日本语 280"
-              />
-            </label>
-
-            <label className="student-field">
-              <span>补充说明</span>
-              <textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="例如 想避开面试、优先首都圈、成绩还在准备中"
-              />
-            </label>
-
-            <button className="student-primary-button" type="submit" disabled={recommendationLoading}>
-              {recommendationLoading ? "正在整理" : "查看适合先看的学校"}
-            </button>
-          </form>
-        ) : null}
-
-        {activeTab === "detail" ? (
-          <section className="student-tab-panel student-detail-panel" role="tabpanel">
-            <div className="student-section-head student-results-head">
-              <div>
-                <p className="student-kicker">学校要求</p>
-                <h2>这所学校要看什么</h2>
-                <p>把出愿时间、考试方式、EJU 和英语要求放在一起看。</p>
-              </div>
-              <button className="student-soft-button" type="button" onClick={() => setActiveTab("explore")}>
-                返回学校
-              </button>
-            </div>
-
-            {activeProgram ? (
-              <>
-                <div className="student-detail-title">
-                  <h3>{activeProgram.school_name}</h3>
-                  <p>{formatProgramName(activeProgram)}</p>
-                  {detailLoading ? <small>正在更新详情。</small> : null}
-                </div>
-
-                <div className="student-requirement-grid">
-                  {requirementRows(activeProgram).map((row) => (
-                    <div className="student-requirement" key={row.label}>
-                      <span>{row.label}</span>
-                      <strong>{row.value}</strong>
-                    </div>
-                  ))}
-                </div>
-
-                {activePreparationItems.length ? (
-                  <div className="student-prepare-panel">
-                    <h4>需要提前准备</h4>
-                    <ul>
-                      {activePreparationItems.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <div className="student-source-panel">
-                  <h4>资料来源</h4>
-                  <p>{activeProgram.source_document?.file_name || "招生资料"}</p>
-                  {activeProgram.source_document?.pdf_url ? (
-                    <a href={activeProgram.source_document.pdf_url} target="_blank" rel="noreferrer">
-                      查看来源资料
-                    </a>
-                  ) : null}
-                </div>
-
-                <div className="student-next-panel">
-                  <div className="student-section-head">
-                    <p className="student-kicker">下一步</p>
-                    <h2>把这所学校放进自己的申请清单</h2>
-                    <p>先确认时间、考试科目和材料准备。需要继续比较时，可以回到学校列表换一所看。</p>
-                  </div>
-
-                  {copyMessage ? <div className="student-message student-message-success">{copyMessage}</div> : null}
-                  <button className="student-soft-button student-return-button" type="button" onClick={() => void copyActiveProgram()}>
-                    复制这所学校
-                  </button>
-                  <button className="student-primary-button student-return-button" type="button" onClick={() => setActiveTab("explore")}>
-                    回到学校列表
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="student-empty">请选择一所学校，或先填写个人情况。</div>
-            )}
-          </section>
-        ) : null}
-      </main>
-    </div>
-  );
+        {profileOpen && <section className="ad-profile"><h2>按已有条件筛选</h2><p>仅按公开要求整理候选，不代表录取概率。</p><form onSubmit={e => void match(e)}><div className="ad-profile-fields">{[["year", "目标年度"], ["fields", "专业方向"], ["regions", "希望地区"], ["english", "英语考试"], ["eju", "EJU 科目"], ["japanese", "日语情况"], ["notes", "补充条件"]].map(([name, label]) => <label key={name}>{label}<input name={name} /></label>)}</div><button className="ad-primary" disabled={matching}>{matching ? "筛选中…" : "查看候选学校"}</button><button type="button" className="ad-text-button" onClick={() => setProfileOpen(false)}>收起</button></form></section>}
+        {error ? <div className="ad-alert" role="alert">读取失败：{error} <button onClick={() => setReload(v => v + 1)}>重新加载</button></div> : null}
+        <section className="ad-results" aria-label="学校查询结果"><div className="ad-results-heading"><h2>{matchIds !== null ? "条件筛选结果" : "招生信息"}<span>{loading ? "读取中" : `${new Set(filtered.map(p => p.school_name)).size} 所大学 · ${filtered.length} 个招生项目`}</span></h2><span className="ad-muted">以大学最新公告为准</span></div>
+          {loading ? <div className="ad-loading" role="status">正在读取已发布资料…<div /><div /><div /></div> : error ? null : filtered.length ? <div className="ad-program-list">{filtered.map(p => <article className="ad-program" key={p.id}>
+            <div className="ad-program-title"><span className="ad-school-mark" aria-hidden="true">{p.school_name.slice(0, 1)}</span><div><span className="ad-meta">{text(p.admission_year)} 年度 · {text(p.prefecture)}</span><h3><button onClick={() => void open(p)}>{p.school_name}<Icon name="ChevronRight" /></button></h3><p>{[p.faculty, p.department].filter(Boolean).join(" / ") || "学部待补充"}</p><span className="ad-route">{text(p.admission_period)}</span></div></div>
+            <dl className="ad-program-facts"><Datum label="出愿期间" value={p.application_period} /><Datum label="EJU 要求" value={ejuSummary(p)} /><Datum label="英语要求" value={p.requirements?.english?.raw_text} /></dl>
+            <div className="ad-program-footer"><span>{p.deadline_rule || "截止规则待补充"}</span><button onClick={() => void open(p)}>查看报考详情<Icon name="ArrowUpRight" /></button></div>
+          </article>)}</div> : <div className="ad-empty"><div className="ad-empty-art"><Icon name={programs.length ? "Search" : "FileSearch"} /></div><p className="ad-eyebrow">{programs.length ? "没有匹配结果" : "资料准备中"}</p><h2>{programs.length ? "换一组条件，再看看" : "下一份报考信息，正在核对"}</h2><p>{programs.length ? "可以减少关键词，或取消年度、地区与学部限制。" : "已整理的资料完成复核后，会出现在这里。尚未确认的内容暂不公开。"}</p>{hasFilters && <button className="ad-primary" onClick={reset}>清除筛选条件</button>}<div className="ad-empty-boundary"><Icon name="BookOpen" /><span>不确定的信息不作结论<br /><small>“待补充”不等于“不要求”</small></span></div></div>}
+        </section>
+      </> : <>
+        <button className="ad-back" onClick={back}><Icon name="ArrowLeft" />学校查询</button>
+        <section className="ad-detail-heading"><div><p className="ad-eyebrow">{text(selected.admission_year)} 年度 · {text(selected.admission_period)}</p><h1 ref={heading} tabIndex={-1}>{selected.school_name}</h1><p>{[selected.faculty, selected.department].filter(Boolean).join(" / ")}</p><span className="ad-muted">{[selected.prefecture, selected.campus].filter(Boolean).join(" · ")}</span></div><div className="ad-detail-actions">{sourceUrl(selected) && <a className="ad-primary" href={sourceUrl(selected)} target="_blank" rel="noreferrer">募集要项原文<Icon name="ArrowUpRight" /></a>}<button className="ad-icon-button" onClick={() => void copy()} aria-label="复制报考信息" title="复制报考信息"><Icon name="Copy" /></button></div></section>
+        {copyMessage && <p role="status">{copyMessage}</p>}{detailBusy && <p role="status">正在更新详情…</p>}{detailError && <div className="ad-alert" role="alert">详情更新失败，以下为列表快照。<button onClick={() => void open(selected)}>重试</button></div>}
+        <div className="ad-detail-grid"><div>
+          <section className="ad-detail-section"><h2><Icon name="CalendarDays" />申请时间线</h2><ol className="ad-timeline">{[["出愿期间", selected.application_period], ["考试 / 选考", selected.exam_date], ["合格发表", selected.result_date], ["入学手续", selected.enrollment_period]].map(([label, value], i) => <li key={label}><span className="ad-step">0{i + 1}</span><div><h3>{label}</h3><p>{text(value)}</p>{i === 0 && <small>{text(selected.deadline_rule)}</small>}</div></li>)}</ol></section>
+          <section className="ad-detail-section"><h2><Icon name="BookOpen" />考试与出愿条件</h2><h3 className="ad-group-title">EJU 日本留学试验</h3><dl className="ad-requirements">{ejuRows(selected).map(([label, value]) => <Datum key={label} label={label!} value={value} />)}</dl><dl className="ad-requirements ad-other-requirements"><Datum label="英语要求" value={selected.requirements?.english?.raw_text} /><Datum label="JLPT 要求" value={selected.requirements?.jlpt?.raw_text} /><Datum label="选考方式" value={selected.exam_method} /><Datum label="出愿资格" value={selected.requirements?.eligibility} /></dl></section>
+          <section className="ad-detail-section"><h2>出愿材料</h2>{selected.requirements?.required_documents?.length ? <ul className="ad-documents">{selected.requirements.required_documents.map((item, i) => <li key={i}>{item}</li>)}</ul> : <p className="ad-muted">材料清单待补充，请核对募集要项原文。</p>}</section>
+        </div><aside className="ad-source"><span className="ad-eyebrow">SOURCE</span><h2>回到官方资料</h2><Icon name="FileSearch" /><p>{selected.source_document?.file_name || "来源文件名待补充"}</p>{sourceUrl(selected) ? <a href={sourceUrl(selected)} target="_blank" rel="noreferrer">打开募集要项<Icon name="ArrowUpRight" /></a> : <p>原文链接待补充</p>}<small>证据页码暂未提供</small><hr /><h3>报考前再确认</h3><p>截止日的必着 / 消印规则、EJU 选科组合与有效场次，以及大学后续发布的更正公告。</p><p className="ad-muted">空白字段标为“待补充”；原文明确写“不要求”或“未记载”的内容按原文保留。</p></aside></div>
+      </>}
+      <footer className="ad-footer"><span>日本大学申请 / Admissions Guide</span><span>公开资料整理 · 人工复核发布</span></footer>
+    </main>
+  </div>;
 }

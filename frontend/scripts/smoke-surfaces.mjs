@@ -6,7 +6,7 @@ const surfaces = [
   { name: "owner", script: "build:owner", outDir: "dist-owner", mustContain: ["招生资料中心", "资料生产", "资料库", "维护"] },
   { name: "owner-service", script: "build:owner-service", outDir: "dist-owner-service", mustContain: ["合作方服务中心", "资料进度"] },
   { name: "partner", script: "build:partner", outDir: "dist-partner", mustContain: ["合作方入口", "提交资料"] },
-  { name: "student", script: "build:student", outDir: "dist-student", mustContain: ["学生・家长入口", "先说情况，再看学校。"] },
+  { name: "student", script: "build:student", outDir: "dist-student", mustContain: ["学校与报考信息", "出愿时间、考试要求、官方原文。"] },
 ];
 
 const root = process.cwd();
