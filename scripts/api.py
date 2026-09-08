@@ -263,8 +263,8 @@ class SeedPackageImportRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=128)
 
 
 class PartnerSubmissionRequest(BaseModel):
@@ -782,9 +782,21 @@ def health() -> dict[str, Any]:
     }
 
 
+from scripts.student_accounts import RegistrationRequest, create_student
+
+
+@app.post("/auth/register", status_code=201)
+def register_student(payload: RegistrationRequest) -> dict[str, str]:
+    create_student(payload)
+    return {"status": "created"}
+
+
 @app.post("/auth/login")
 def login(payload: LoginRequest) -> JSONResponse:
-    session = create_app_session(payload.email, payload.password)
+    email = payload.email
+    if os.environ.get("ADMISSIONS_LOCAL_LOGIN_ALIAS") == "demo" and email.strip().lower() == "demo":
+        email = "demo@localhost"
+    session = create_app_session(email, payload.password)
     if not session:
         raise HTTPException(status_code=401, detail="Email or password is not correct")
     token, user = session

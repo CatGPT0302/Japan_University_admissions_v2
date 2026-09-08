@@ -464,6 +464,10 @@ export async function login(email: string, password: string): Promise<AppUser> {
   return data.user;
 }
 
+export async function registerStudent(email: string, password: string, display_name: string): Promise<void> {
+  await client.post("/auth/register", { email, password, display_name });
+}
+
 export async function logout(): Promise<void> {
   await client.post("/auth/logout");
 }

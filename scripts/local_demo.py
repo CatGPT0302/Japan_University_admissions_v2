@@ -28,6 +28,7 @@ def demo_environment(root: Path, inherited: dict[str, str]) -> dict[str, str]:
     env["FRONTEND_DIST_DIR"] = str(ROOT / "frontend" / "dist-demo")
     env["ADMISSIONS_DISABLE_MODEL_CALLS"] = "1"
     env["ADMISSIONS_REQUIRE_HUMAN_REVIEW"] = "1"
+    env["ADMISSIONS_LOCAL_LOGIN_ALIAS"] = "demo"
     env["SEED_PACKAGE_DIR"] = str(root / "data" / "exports" / "seed_data_package")
     return env
 
@@ -67,7 +68,8 @@ def build_frontend() -> None:
     frontend = ROOT / "frontend"
     if not node or not (frontend / "node_modules/typescript/bin/tsc").is_file():
         raise RuntimeError("Install Node.js and run npm ci in frontend first; see docs/LOCAL_DEMO.md.")
-    env = {**os.environ, "VITE_APP_SURFACE": "owner", "VITE_API_BASE_URL": "same-origin"}
+    env = {**os.environ, "VITE_APP_SURFACE": "owner", "VITE_API_BASE_URL": "same-origin",
+           "VITE_ENABLE_STUDENT_ENTRY": "true"}
     subprocess.run([node, "node_modules/typescript/bin/tsc", "-b"], cwd=frontend, env=env, check=True)
     subprocess.run([node, "node_modules/vite/bin/vite.js", "build", "--outDir", "dist-demo"],
                    cwd=frontend, env=env, check=True)

@@ -1,0 +1,10 @@
+.student-account .login-card { width: min(440px, 100%); min-width: 0; }
+.student-account form { display: grid; gap: 16px; }
+.account-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.account-tabs > button { flex: 1; }
+.account-identity { overflow-wrap: anywhere; }
+.student-account .field { box-sizing: border-box; width: 100%; min-width: 0; }
+@media (max-width: 600px) {
+  .student-topbar { flex-wrap: wrap; gap: 12px; }
+  .student-topbar > .student-nav { order: 3; width: 100%; }
+}

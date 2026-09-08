@@ -12,6 +12,7 @@ admissions_v2 is a personal, AI-assisted Japanese university admissions informat
 - AI 自动入库：[提交接口与使用方法](docs/AI_INGESTION.md)
 - 七校验收来源：[2027 年度来源清单](data/acceptance_sources_2027.json)
 - Mac 演示启动与数据隔离：[本地演示说明](docs/LOCAL_DEMO.md)
+- 学生注册与管理员创建：[账号说明](docs/ACCOUNTS.md)
 - 本轮验收清单：[展示版计划](docs/DEMO_PLAN.md)
 - 直接给别人使用：[Skill 分享与安装](docs/SKILL_SHARING.md)
 - 文件夹整理入口：[批量数据包说明](docs/BATCH_DEMO.md)

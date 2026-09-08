@@ -1,4 +1,5 @@
 import "./maintenance.css";
+import "./student-account.css";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { checkHealth, getCurrentUser, login, logout, toErrorMessage } from "./api/client";
 import ExportPage from "./pages/ExportPage";
@@ -9,6 +10,7 @@ import RecordsPage from "./pages/RecordsPage";
 import ReviewPage from "./pages/ReviewPage";
 import SettingsPage from "./pages/SettingsPage";
 import StudentApp from "./pages/StudentApp";
+import StudentAccountPage from "./pages/StudentAccountPage";
 import type { AppRole, AppUser, OwnerPage, ReviewFocus } from "./types";
 
 type OwnerNavItem = { key: OwnerPage; label: string; hint: string; short: string };
@@ -23,6 +25,7 @@ const NAV: OwnerNavItem[] = [
 
 const OWNER_PARTNER_ROUTE = String(import.meta.env.VITE_OWNER_PARTNER_ROUTE || "owner-service").replace(/^#?\/?/, "");
 type AppSurface = "owner" | "owner-service" | "partner" | "student" | "combined";
+const STUDENT_ENTRY = import.meta.env.VITE_ENABLE_STUDENT_ENTRY === "true";
 
 function appSurface(): AppSurface {
   const value = String(import.meta.env.VITE_APP_SURFACE || "").trim();
@@ -68,6 +71,11 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
     setError("");
     try {
       const user = await login(email, password);
+      if (user.role !== expectedRole) {
+        await logout();
+        setError("此账号不能进入管理端，请从学生入口登录。");
+        return;
+      }
       onSignedIn(user);
       if (user.role !== "owner_admin" || pageFromHash() !== "review") {
         window.location.hash = roleHome(user.role);
@@ -86,17 +94,18 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
         <h1>{expectedRole === "partner_staff" ? "登录服务中心" : "登录资料中心"}</h1>
         <p>{expectedRole === "partner_staff" ? "提交资料、查看整理进度。" : "上传、整理、核对和维护正式资料。"}</p>
         <label className="field-wrap">
-          <span className="field-label">邮箱</span>
-          <input className="field" value={email} onChange={(event) => setEmail(event.target.value)} />
+          <span className="field-label">用户名 / 邮箱</span>
+          <input className="field" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
         <label className="field-wrap">
           <span className="field-label">密码</span>
-          <input className="field" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          <input className="field" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
         </label>
         {error ? <div className="message-box error">{error}</div> : null}
         <button className="btn btn-primary" disabled={busy} type="submit">
           {busy ? "正在登录" : "登录"}
         </button>
+        {STUDENT_ENTRY ? <a href="#/student">学生入口 · 登录 / 注册</a> : null}
       </form>
     </div>
   );
@@ -104,6 +113,8 @@ function LoginScreen({ expectedRole, onSignedIn }: { expectedRole?: AppRole; onS
 
 export default function App() {
   const surface = appSurface();
+  const studentEnabled = STUDENT_ENTRY || surface === "student" || surface === "combined";
+  const [accountOpen, setAccountOpen] = useState(() => window.location.hash === "#/account");
   const [page, setPage] = useState<OwnerPage>(() => pageFromHash());
   const [activeDocId, setActiveDocId] = useState<number | null>(() => documentFromHash());
   const [reviewFocus, setReviewFocus] = useState<ReviewFocus | null>(null);
@@ -111,7 +122,7 @@ export default function App() {
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [isStudentApp, setIsStudentApp] = useState(() => surface === "student" || (surface === "combined" && window.location.hash.startsWith("#/student")));
+  const [isStudentApp, setIsStudentApp] = useState(() => surface === "student" || (studentEnabled && window.location.hash.startsWith("#/student")));
   const [isSettingsApp, setIsSettingsApp] = useState(() => surface === "partner" || (surface === "combined" && window.location.hash.startsWith("#/settings")));
   const [isPartnerAdminApp, setIsPartnerAdminApp] = useState(
     () => surface === "owner-service" || (surface === "combined" && window.location.hash.replace(/^#\/?/, "") === OWNER_PARTNER_ROUTE),
@@ -119,7 +130,8 @@ export default function App() {
 
   useEffect(() => {
     const syncRoute = () => {
-      const studentRoute = surface === "student" || (surface === "combined" && window.location.hash.startsWith("#/student"));
+      setAccountOpen(window.location.hash === "#/account");
+      const studentRoute = surface === "student" || (studentEnabled && window.location.hash.startsWith("#/student"));
       const settingsRoute = surface === "partner" || (!studentRoute && surface === "combined" && window.location.hash.startsWith("#/settings"));
       const partnerAdminRoute =
         surface === "owner-service" ||
@@ -135,7 +147,7 @@ export default function App() {
     };
     window.addEventListener("hashchange", syncRoute);
     return () => window.removeEventListener("hashchange", syncRoute);
-  }, [surface]);
+  }, [surface, studentEnabled]);
 
   useEffect(() => {
     void checkHealth().then(setBackendOk);
@@ -147,6 +159,7 @@ export default function App() {
   const activeItem = useMemo(() => NAV.find((item) => item.key === page) ?? NAV[0], [page]);
   const canOpenOwnerReviewInsideApp = surface === "combined";
 
+  if (studentEnabled && accountOpen) return <StudentAccountPage user={user} onUserChange={setUser} loading={!authChecked} />;
   if (isStudentApp) return <StudentApp />;
   if (!authChecked) {
     return (
@@ -232,6 +245,7 @@ export default function App() {
             <div className="workspace-header-title">{activeItem.label}</div>
           </div>
           <div className="workspace-header-side">
+            {studentEnabled ? <a className="btn btn-ghost btn-small" href="#/student">学生入口</a> : null}
             <div className={`connection-pill workspace-connection${backendOk === false ? " is-down" : ""}`}>
               <span className="connection-dot" />
               {serviceText(backendOk)}
