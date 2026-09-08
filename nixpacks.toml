@@ -2,7 +2,7 @@
 nixPkgs = ["python311", "nodejs_20"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt", "pip install psycopg2-binary"]
+cmds = ["pip install -r admissions_v2/requirements.txt", "pip install psycopg2-binary"]
 
 [start]
-cmd = "python -m uvicorn scripts.api:app --host 0.0.0.0 --port $PORT"
+cmd = "cd admissions_v2 && python -m uvicorn scripts.api:app --host 0.0.0.0 --port $PORT"

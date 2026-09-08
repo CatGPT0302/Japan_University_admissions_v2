@@ -41,6 +41,8 @@ try {
     const errors = [];
     page.on("pageerror", e => errors.push(e.message));
     const shot = async name => {
+      const body = await page.locator("body").innerText();
+      for (const forbidden of ["不确定的信息不作结论", "不等于“不要求”", "人工复核", "证据页码暂未提供", "尚未确认的内容暂不公开", "列表快照"]) assert.ok(!body.includes(forbidden), `Internal copy leaked: ${forbidden}`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${name} horizontal overflow`);
       assert.equal(await page.locator(".ad-icon").evaluateAll(images => images.some(i => !i.complete || !i.naturalWidth)), false, "missing icon asset");
       await page.screenshot({ path: fileURLToPath(new URL(`${name}-${width}.png`, output)), fullPage: true });
@@ -51,19 +53,19 @@ try {
     await page.getByLabel("地区", { exact: true }).selectOption("大阪府");
     assert.equal(await page.locator(".ad-program").count(), 1);
     await page.getByRole("button", { name: "検証用大学 B" }).click();
-    await page.getByText("证据页码暂未提供").waitFor();
+    await page.getByRole("heading", { name: "募集要项", exact: true }).waitFor();
     assert.equal(await page.locator('a[href^="javascript:"]').count(), 0);
     await page.getByRole("button", { name: "学校查询", exact: true }).last().click();
     assert.equal(await page.getByLabel("地区", { exact: true }).inputValue(), "大阪府");
     await page.getByRole("button", { name: "重置", exact: true }).click();
     await page.getByRole("button", { name: "検証用大学 A" }).click();
-    await page.getByText("证据页码暂未提供").waitFor();
+    await page.getByRole("heading", { name: "募集要项", exact: true }).waitFor();
     assert.equal(await page.getByRole("link", { name: "募集要项原文" }).getAttribute("href"), "https://example.ac.jp/admissions.pdf");
     assert.ok(await page.getByText("物理・化学・生物から2科目選択", { exact: true }).count());
     await shot("detail");
     await page.getByRole("button", { name: "学校查询", exact: true }).last().click();
     await page.getByLabel("搜索学校或条件").fill("不存在的学校");
-    await page.getByRole("heading", { name: "换一组条件，再看看" }).waitFor();
+    await page.getByRole("heading", { name: "没有匹配的招生信息" }).waitFor();
     await page.getByRole("button", { name: "清除筛选条件" }).click();
     await page.getByRole("button", { name: "按条件选校", exact: true }).click();
     await page.getByRole("button", { name: "查看候选学校" }).click();
@@ -71,7 +73,7 @@ try {
     assert.equal(await page.locator(".ad-program").count(), 1);
     mode = "empty";
     await page.reload();
-    await page.getByRole("heading", { name: "下一份报考信息，正在核对" }).waitFor();
+    await page.getByRole("heading", { name: "暂无招生信息" }).waitFor();
     await shot("empty");
     mode = "error";
     await page.reload();

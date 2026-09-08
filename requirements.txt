@@ -1,11 +1,2 @@
-fastapi
-uvicorn
-sqlalchemy
-python-multipart
-streamlit
-requests
-beautifulsoup4
-psycopg2-binary
-pypdfium2
-pdfminer.six
-openpyxl
+# Compatibility entrypoint for Python buildpack detection at repository root.
+-r admissions_v2/requirements.txt

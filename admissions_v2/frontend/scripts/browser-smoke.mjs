@@ -58,7 +58,7 @@ const surfaces = [
   {
     name: "student",
     path: "/",
-    expect: ["学校与报考信息", "出愿时间、考试要求、官方原文。"],
+    expect: ["学校与报考信息", "招生信息"],
     action: "student-search-confirmed",
     reject: ["登录资料中心", "登录服务中心"],
   },
@@ -316,7 +316,7 @@ async function runSurfaceAction(page, surface) {
     await page.getByRole("button", { name: /资料进度/ }).click();
     await assertBodyIncludes(page, "东京测试大学", `${surface.name} queue`);
     await assertBodyIncludes(page, "资料详情", `${surface.name} submission detail`);
-    await assertBodyIncludes(page, "报考前再确认", `${surface.name} submission detail`);
+    await assertBodyIncludes(page, "募集要项", `${surface.name} submission detail`);
     await assertBodyIncludes(page, "开始整理", `${surface.name} queue`);
     const submissionDetail = page.getByLabel("资料详情");
     const startResponsePromise = page.waitForResponse((response) => response.url().includes("/admin/submissions/") && response.url().endsWith("/start"), {
@@ -500,7 +500,7 @@ async function runSurfaceAction(page, surface) {
     await assertBodyIncludes(page, "ブラウザテスト修正学部", `${surface.name} program detail`);
     await assertBodyIncludes(page, "EJU 日本留学试验", `${surface.name} program detail`);
     await assertBodyIncludes(page, "出愿材料", `${surface.name} preparation checklist`);
-    await assertBodyIncludes(page, "报考前再确认", `${surface.name} next step panel`);
+    await assertBodyIncludes(page, "募集要项", `${surface.name} next step panel`);
     await page.getByRole("button", { name: "复制报考信息" }).waitFor();
     await assertBodyIncludes(page, "学校查询", `${surface.name} return action`);
 
