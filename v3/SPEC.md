@@ -1,6 +1,6 @@
 # admissions v3 需求文档
 
-> 状态：草案 r3（2026-11-29）　负责人：ZHANG FENG　实现：Claude Code
+> 状态：草案 r4（2026-11-29）　负责人：ZHANG FENG　实现：Claude Code
 > v2（`admissions_v2/`）冻结，只作参考，不再修改。
 
 ## 0. 一句话
@@ -76,15 +76,16 @@ PDF（本地）
 | 表 | 主要字段 | 说明 |
 |---|---|---|
 | `source_document` | id, university, year, url, sha256, page_count, fetched_at | 一份 PDF 一行 |
-| `program` | id, university, year, faculty, department, route, published_at | 一个报考单位一行。**默认粒度是「学部 × 入试类型」**（如「国際日本学部 Ⅰ型」），只有原文按学科区分要求时才拆到学科。这几列是报考单位的标识，不进 `fact`，也不逐条复审 |
-| `fact` | id, program_id, field, value_json, display_text, source_document_id, page, quote, status, prompt_version, note, updated_at | 一个字段一行。status ∈ `draft` / `confirmed` / `edited` / `needs_inquiry` / `missing` |
+| `program` | id, university, year, faculty, department, route, published_at | 一个报考单位一行。**默认粒度是「学部 × 入试类型」**（如「国際日本学部 Ⅰ型」）。**只要原文按学科给出不同的要求（科目、英语、选拔方式任一项），就拆到学科**，例如明治农学部 4 个学科的 EJU 理科各不相同，就是 4 个 program。这几列是报考单位的标识，不进 `fact`，也不逐条复审 |
+| `fact` | id, program_id, university, year, field, value_json, display_text, source_document_id, page, quote, status, prompt_version, note, updated_at | 一个字段一行。status ∈ `draft` / `confirmed` / `edited` / `needs_inquiry` / `missing`。**program_id 可以为空**，表示全校通用的信息（如并愿规则、TOEFL 送分代码、退费期限），此时用 university + year 定位 |
 | `event` | id, program_id, kind, starts_at, ends_at, submission_rules_json, exception_note, source_document_id, page, quote, status | 日程。**所有日期只存在这里**，`fact` 里不存日期 |
 | `review_log` | id, target_table, target_id, action, before_json, after_json, at | 每一次确认或修改都留记录 |
 
 ### event
 
 - 所有时间一律带时区存储（`2026-09-01T23:30+09:00`）。学生端统一按日本时间显示，并明确标注「日本时间」，不按浏览器所在时区换算。
-- `kind` ∈ `mypage_open` / `overseas_contact` / `application` / `fee_payment` / `stage1_result` / `exam` / `result` / `enrollment`
+- `kind` ∈ `eligibility_precheck` / `mypage_open` / `overseas_contact` / `application` / `fee_payment` / `admission_ticket` / `stage1_result` / `exam` / `result` / `enrollment` / `refund_request`
+- `exam` 的考试会场（如「生田」「オンライン」）记在该 event 的 `venue` 字段，不放进 fact 的 campus。
 - `submission_rules_json`：按提交方式和寄出地分别记录，例如：
 
 ```json
@@ -97,9 +98,11 @@ PDF（本地）
 
 来自 v2 的 `FIELD_HIGHEST_PRINCIPLE.md`，去掉日期类字段（已移到 event），再加上费用和资格条件：
 
-campus, prefecture, eju, english, screening_method, required_documents, eligibility, fee, refund_policy。
+study_campus, prefecture, eju, english, screening_method, required_documents, eligibility, fee, refund_policy, combination_rules。
 
-university、faculty、department、route 只存在 `program` 表；campus、prefecture 需要溯源，只存在 `fact`。同一个信息只有一个存放位置。
+- university、faculty、department、route 只存在 `program` 表；study_campus、prefecture 需要溯源，只存在 `fact`。同一个信息只有一个存放位置。
+- **study_campus 是入学后上课的校区，不是考试会场。** 原文没写就标 `missing`，不能从考试会场推断。明治 2027 的要项就没有写上课校区。
+- prefecture 跟着 study_campus 走（明治生田校区在神奈川县），study_campus 是 missing 时 prefecture 也是 missing。
 
 ### 结构化要求（供学生端匹配）
 
@@ -109,7 +112,7 @@ university、faculty、department、route 只存在 `program` 表；campus、pre
 {
   "eju": {
     "sessions": ["2025-2", "2026-1"],
-    "language": "ja",
+    "language": ["ja"],
     "required": [
       {"subject": "japanese", "min": 280, "excludes_writing": true}
     ],
@@ -124,7 +127,8 @@ university、faculty、department、route 只存在 `program` 表；campus、pre
       {"test": "TOEFL iBT", "taken_on_or_before": "2026-01-20", "min": 45},
       {"test": "TOEFL iBT", "taken_on_or_after": "2026-01-21", "min": 3},
       {"test": "TOEIC L&R", "min": 565},
-      {"test": "IELTS", "min": 4.0}
+      {"test": "IELTS", "min": 4.0},
+      {"test": "TOEIC L&R", "min": null, "submission_required": true}
     ],
     "valid_from": null,
     "conflict": null
@@ -140,7 +144,8 @@ university、faculty、department、route 只存在 `program` 表；campus、pre
 要点：
 
 - **EJU**：只用 `required`（必考）和 `choose`（N 选 1）两种结构，「N 选 1」可以跨科目（例如「综合科目或数学」）。「物理必考、化学生物选一」就是物理放进 `required`、化学生物放进 `choose`。如果遇到「方案 A 或方案 B」这种多套并列的组合，先标 `needs_inquiry` 并在 note 里写明，出现两次以上再扩展 schema。
-- **英语**：多种考试是「任选其一」（`any_of`）。同一考试的门槛可能随**受验日期**变化（TOEFL 在 2026 年改为新分数制，新旧分数并存）。不要求英语时写 `not_required: true`。
+- **EJU 受验语言**是列表，有的学部日语、英语都可以（明治经营学部）。
+- **英语**：多种考试是「任选其一」（`any_of`）。同一考试的门槛可能随**受验日期**变化（TOEFL 在 2026 年改为新分数制，新旧分数并存）。「必须提交但没有基准分」写 `min: null, submission_required: true`，和「不要求英语」（`not_required: true`）区分开。
 - **资格条件**：Ⅱ型等路线有「在规定期间内不能在日本登记住民票」这类条件，必须结构化，学生端匹配要用到。
 - 原文有矛盾时，在 `conflict` 中写明两处页码和各自的写法，并把对应 fact 的 status 设为 `needs_inquiry`。
 
@@ -184,10 +189,35 @@ university、faculty、department、route 只存在 `program` 表；campus、pre
 
 ## 8. 评测
 
-- 标准答案：v2 的 `admissions_v2/quality_baselines/meiji_2027_schedule.expected.json`（`review_status: human_checked_seed`，12 条，按学部）复制到 `v3/eval/`。福井、京都工艺纤维的标准答案作为通用性检查。
-- **覆盖范围的缺口**：现有的明治标准答案只来自 `2027intexam.pdf`（科目和日程表），没有覆盖募集要项正文（资格、材料、费用）。人工复审完成后，把确认过的正文字段补进标准答案。
-- **比对方式**：先把全角数字和半角数字统一、去掉空白，再比较。结构化字段按值比较；只有文字字段才用「包含」比较。
-- `python -m v3.eval` 输出：按字段的准确率、总准确率、漏抽字段数，以及使用的提示词版本。
+### 标准答案：募集要项本身
+
+**一份要项里提取出来的全部有效信息，就是这份要项的标准答案。** 标准答案以「事实断言」的形式存储，和 v3 的数据 schema 无关：schema 怎么改，标准答案都不用动。
+
+文件：`v3/eval/<university>_<year>.claims.jsonl`，一行一条断言：
+
+```json
+{"id": "meiji-2027-c042", "scope": "commerce-1", "topic": "result.date", "value": "2026-12-03", "page": 5, "quote": "2026年12月3日(木)", "status": "confirmed"}
+```
+
+- `scope`：program 的短 id，或 `all`（全校通用）。
+- `topic`：点分路径，例如 `eju.required`、`english.min[TOEFL iBT|<=2026-01-20]`、`mail_rule.application.from_abroad`。
+- `value`：**规范值**。日期用 ISO，带时刻时加 `+09:00`；分数和金额用数字；科目用代码（`japanese` / `general` / `math:course2` / `physics` …）并排序；规则用枚举（`keshiin` / `hikkyaku`）。原文没有的信息写 `"not_in_document"`，用来抓「编造」。
+- `status`：`unreviewed` / `confirmed` / `rejected`。**只有 `confirmed` 的断言参与评测。**
+
+### 标准答案怎么来
+
+1. 第一次抽取某份要项时，从草稿生成断言清单，全部是 `unreviewed`。
+2. 负责人对照原文逐条复审，复审结果就是标准答案。这一步和数据复审是同一件事，不另外花时间。
+3. 之后改提示词、换模型、换年度，都用这份固定的清单检验。
+
+**禁止**：把没有复审过的断言当作标准答案；用当前这次抽取的结果去评测它自己。
+
+### 评测
+
+- `python -m v3.eval`：把草稿转换成断言（转换层是唯一需要随 schema 修改的代码），按 (scope, topic) 和标准答案逐条比对。
+- 比对前先规范化（NFKC 统一全角半角、去空白、列表排序）。
+- 输出：准确数、错误数、漏抽数（标准答案有、草稿没有）、多出数（草稿有、标准答案没有，可能是编造），按 topic 分组的准确率，以及使用的提示词版本。
+- 福井、京都工艺纤维：v2 的旧标准答案转换成断言格式后，作为通用性检查。
 - 每次修改抽取提示词或 schema 后都要跑一次，结果追加到 `v3/eval/HISTORY.md`。
 
 ## 9. 部署
@@ -236,3 +266,14 @@ university、faculty、department、route 只存在 `program` 表；campus、pre
 3. match 的优先级未写明 → 不符合 > 需确认 > 条件符合。
 4. `with_required` 让结构变复杂 → 删除，只用 required + choose。
 5. 手机端可能忽略 `#page=N`；海外用户可能按本地时区看错截止时间 → 页码明文显示；时间带 +09:00 存储，按日本时间显示。
+
+## 附：r3 → r4 的修改依据（明治 2027 全量抽取）
+
+2026-11-29 对 `yoko.pdf`（29 页）逐页读图抽取，得到 15 个报考单位，并和 v2 标准答案对比。
+
+1. v2 标准答案 12 条里有 3 条和原文第 5 页不符（抄串了相邻行），另有 1 条把合格发表日当成考试日 → 标准答案改为「要项本身」，用断言格式存储，必须人工复审（第 8 节）。
+2. 农学部 4 个学科的 EJU 科目不同 → 明确「要求按学科不同就拆 program」。
+3. 要项只写了考试会场，没写上课校区 → campus 拆成 study_campus（fact）和考试会场（exam event 的 venue）。
+4. 准考证开放日、事前资格审查截止日没有对应的 event 种类 → 增加 `admission_ticket`、`eligibility_precheck`、`refund_request`。
+5. 并愿规则、送分代码等全校通用信息没地方放 → fact 的 program_id 可以为空。
+6. 经营学部 EJU 可用日语或英语；多个学部「英语必须提交但无基准分」→ EJU 语言改为列表，英语增加 `submission_required`。
