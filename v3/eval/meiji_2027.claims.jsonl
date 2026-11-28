@@ -1,0 +1,303 @@
+{"id": "meiji-2027-c001", "scope": "agri-agrichem-1", "topic": "eju.required", "value": ["chemistry", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c002", "scope": "agri-agrichem-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c003", "scope": "agri-agrichem-1", "topic": "english.min[IELTS|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c004", "scope": "agri-agrichem-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c005", "scope": "agri-agrichem-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c006", "scope": "agri-agrichem-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c007", "scope": "agri-agrichem-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c008", "scope": "agri-agrichem-1", "topic": "exam.date", "value": "2026-11-28", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c009", "scope": "agri-agrichem-1", "topic": "result.date", "value": "2026-12-18", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c010", "scope": "agri-agrichem-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c011", "scope": "agri-agrichem-1", "topic": "screening.stage2", "value": ["小論文", "面接"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c012", "scope": "agri-agrichem-1", "topic": "stage1_result.date", "value": "2026-11-12", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c013", "scope": "agri-agriculture-1", "topic": "eju.required", "value": ["biology", "japanese", "math:course2"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c014", "scope": "agri-agriculture-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c015", "scope": "agri-agriculture-1", "topic": "english.min[IELTS|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c016", "scope": "agri-agriculture-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c017", "scope": "agri-agriculture-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c018", "scope": "agri-agriculture-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c019", "scope": "agri-agriculture-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c020", "scope": "agri-agriculture-1", "topic": "exam.date", "value": "2026-11-28", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c021", "scope": "agri-agriculture-1", "topic": "result.date", "value": "2026-12-18", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c022", "scope": "agri-agriculture-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c023", "scope": "agri-agriculture-1", "topic": "screening.stage2", "value": ["小論文", "面接"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c024", "scope": "agri-agriculture-1", "topic": "stage1_result.date", "value": "2026-11-12", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c025", "scope": "agri-foodpolicy-1", "topic": "eju.required", "value": ["general", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c026", "scope": "agri-foodpolicy-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c027", "scope": "agri-foodpolicy-1", "topic": "english.min[IELTS|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c028", "scope": "agri-foodpolicy-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c029", "scope": "agri-foodpolicy-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c030", "scope": "agri-foodpolicy-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c031", "scope": "agri-foodpolicy-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c032", "scope": "agri-foodpolicy-1", "topic": "exam.date", "value": "2026-11-28", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c033", "scope": "agri-foodpolicy-1", "topic": "result.date", "value": "2026-12-18", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c034", "scope": "agri-foodpolicy-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c035", "scope": "agri-foodpolicy-1", "topic": "screening.stage2", "value": ["小論文", "面接"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c036", "scope": "agri-foodpolicy-1", "topic": "stage1_result.date", "value": "2026-11-12", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c037", "scope": "agri-lifesci-1", "topic": "eju.required", "value": ["biology", "chemistry", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c038", "scope": "agri-lifesci-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c039", "scope": "agri-lifesci-1", "topic": "english.min[IELTS|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c040", "scope": "agri-lifesci-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c041", "scope": "agri-lifesci-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c042", "scope": "agri-lifesci-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c043", "scope": "agri-lifesci-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c044", "scope": "agri-lifesci-1", "topic": "exam.date", "value": "2026-11-28", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c045", "scope": "agri-lifesci-1", "topic": "result.date", "value": "2026-12-18", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c046", "scope": "agri-lifesci-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c047", "scope": "agri-lifesci-1", "topic": "screening.stage2", "value": ["小論文", "面接"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c048", "scope": "agri-lifesci-1", "topic": "stage1_result.date", "value": "2026-11-12", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c049", "scope": "commerce-1", "topic": "eju.required", "value": ["general", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c050", "scope": "commerce-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c051", "scope": "commerce-1", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 48, "page": 5, "quote": "48以上", "status": "unreviewed"}
+{"id": "meiji-2027-c052", "scope": "commerce-1", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c053", "scope": "commerce-1", "topic": "english.min[TOEIC L&R|any]", "value": 600, "page": 5, "quote": "600以上", "status": "unreviewed"}
+{"id": "meiji-2027-c054", "scope": "commerce-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c055", "scope": "commerce-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c056", "scope": "commerce-1", "topic": "exam.date", "value": "2026-11-28", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c057", "scope": "commerce-1", "topic": "result.date", "value": "2026-12-03", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c058", "scope": "commerce-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c059", "scope": "commerce-1", "topic": "screening.stage2", "value": ["口頭試問（オンライン）"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c060", "scope": "commerce-1", "topic": "stage1_result.date", "value": "2026-11-12", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c061", "scope": "commerce-2", "topic": "eju.required", "value": ["general", "japanese", "math:course1"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c062", "scope": "commerce-2", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1", "2026-2"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c063", "scope": "commerce-2", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 48, "page": 5, "quote": "48以上", "status": "unreviewed"}
+{"id": "meiji-2027-c064", "scope": "commerce-2", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c065", "scope": "commerce-2", "topic": "english.min[TOEIC L&R|any]", "value": 600, "page": 5, "quote": "600以上", "status": "unreviewed"}
+{"id": "meiji-2027-c066", "scope": "commerce-2", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c067", "scope": "commerce-2", "topic": "english.valid_period", "value": ["2024-12-01", "2026-09-30"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c068", "scope": "commerce-2", "topic": "result.date", "value": "2027-01-14", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c069", "scope": "commerce-2", "topic": "screening.stage1", "value": "書類選考のみ", "page": 5, "quote": "書類選考のみ", "status": "unreviewed"}
+{"id": "meiji-2027-c070", "scope": "gj-1", "topic": "eju.required", "value": ["general", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c071", "scope": "gj-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c072", "scope": "gj-1", "topic": "english.min[IELTS|any]", "value": 4.0, "page": 5, "quote": "4.0以上", "status": "unreviewed"}
+{"id": "meiji-2027-c073", "scope": "gj-1", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 44, "page": 5, "quote": "44以上", "status": "unreviewed"}
+{"id": "meiji-2027-c074", "scope": "gj-1", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c075", "scope": "gj-1", "topic": "english.min[TOEIC L&R|any]", "value": 565, "page": 5, "quote": "565以上", "status": "unreviewed"}
+{"id": "meiji-2027-c076", "scope": "gj-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c077", "scope": "gj-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c078", "scope": "gj-1", "topic": "exam.date", "value": "2026-12-19", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c079", "scope": "gj-1", "topic": "result.date", "value": "2026-12-24", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c080", "scope": "gj-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c081", "scope": "gj-1", "topic": "screening.stage2", "value": ["口頭試問"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c082", "scope": "gj-1", "topic": "stage1_result.date", "value": "2026-11-24", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c083", "scope": "gj-2", "topic": "eju.required", "value": ["general", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c084", "scope": "gj-2", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c085", "scope": "gj-2", "topic": "english.min[IELTS|any]", "value": 4.0, "page": 5, "quote": "4.0以上", "status": "unreviewed"}
+{"id": "meiji-2027-c086", "scope": "gj-2", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 48, "page": 5, "quote": "48以上", "status": "unreviewed"}
+{"id": "meiji-2027-c087", "scope": "gj-2", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c088", "scope": "gj-2", "topic": "english.min[TOEIC L&R|any]", "value": 600, "page": 5, "quote": "600以上", "status": "unreviewed"}
+{"id": "meiji-2027-c089", "scope": "gj-2", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c090", "scope": "gj-2", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c091", "scope": "gj-2", "topic": "result.date", "value": "2026-12-24", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c092", "scope": "gj-2", "topic": "screening.stage1", "value": "書類選考のみ", "page": 5, "quote": "書類選考のみ", "status": "unreviewed"}
+{"id": "meiji-2027-c093", "scope": "infocomm-1", "topic": "eju.required", "value": ["general", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c094", "scope": "infocomm-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c095", "scope": "infocomm-1", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 42, "page": 5, "quote": "42以上", "status": "unreviewed"}
+{"id": "meiji-2027-c096", "scope": "infocomm-1", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c097", "scope": "infocomm-1", "topic": "english.min[TOEIC L&R|any]", "value": 550, "page": 5, "quote": "550以上", "status": "unreviewed"}
+{"id": "meiji-2027-c098", "scope": "infocomm-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c099", "scope": "infocomm-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c100", "scope": "infocomm-1", "topic": "exam.date", "value": "2026-12-05", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c101", "scope": "infocomm-1", "topic": "result.date", "value": "2026-12-15", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c102", "scope": "infocomm-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c103", "scope": "infocomm-1", "topic": "screening.stage2", "value": ["小論文", "面接"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c104", "scope": "infocomm-1", "topic": "stage1_result.date", "value": "2026-11-10", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c105", "scope": "law-1", "topic": "eju.choose[0]", "value": {"n": 1, "from": ["general", "math:course1/2"]}, "page": 5, "quote": "のうち、いずれか1科目", "status": "unreviewed"}
+{"id": "meiji-2027-c106", "scope": "law-1", "topic": "eju.required", "value": ["japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c107", "scope": "law-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c108", "scope": "law-1", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 45, "page": 5, "quote": "45以上", "status": "unreviewed"}
+{"id": "meiji-2027-c109", "scope": "law-1", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c110", "scope": "law-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c111", "scope": "law-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c112", "scope": "law-1", "topic": "exam.date", "value": "2026-12-05", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c113", "scope": "law-1", "topic": "result.date", "value": "2026-12-11", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c114", "scope": "law-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c115", "scope": "law-1", "topic": "screening.stage2", "value": ["小論文", "口頭試問"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c116", "scope": "law-1", "topic": "stage1_result.date", "value": "2026-10-23", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c117", "scope": "letters-1", "topic": "eju.required", "value": ["general", "japanese", "math:course1"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c118", "scope": "letters-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c119", "scope": "letters-1", "topic": "english.required", "value": false, "page": 5, "quote": "（斜線）", "status": "unreviewed"}
+{"id": "meiji-2027-c120", "scope": "letters-1", "topic": "exam.date", "value": "2026-11-28", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c121", "scope": "letters-1", "topic": "result.date", "value": "2026-12-02", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c122", "scope": "letters-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c123", "scope": "letters-1", "topic": "screening.stage2", "value": ["口頭試問"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c124", "scope": "letters-1", "topic": "stage1_result.date", "value": "2026-10-21", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c125", "scope": "management-1", "topic": "eju.required", "value": ["general", "japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c126", "scope": "management-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c127", "scope": "management-1", "topic": "english.min[TOEFL iBT|<=2026-01-20]", "value": 41, "page": 5, "quote": "41以上", "status": "unreviewed"}
+{"id": "meiji-2027-c128", "scope": "management-1", "topic": "english.min[TOEFL iBT|>=2026-01-21]", "value": 3, "page": 5, "quote": "3以上", "status": "unreviewed"}
+{"id": "meiji-2027-c129", "scope": "management-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c130", "scope": "management-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c131", "scope": "management-1", "topic": "exam.date", "value": "2026-12-05", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c132", "scope": "management-1", "topic": "result.date", "value": "2026-12-22", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c133", "scope": "management-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c134", "scope": "management-1", "topic": "screening.stage2", "value": ["口頭試問"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c135", "scope": "management-1", "topic": "stage1_result.date", "value": "2026-11-18", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c136", "scope": "mathsci-1", "topic": "eju.choose[0]", "value": {"n": 1, "from": ["biology", "chemistry", "physics"]}, "page": 5, "quote": "のうち、いずれか1科目", "status": "unreviewed"}
+{"id": "meiji-2027-c137", "scope": "mathsci-1", "topic": "eju.required", "value": ["japanese", "math:course2"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c138", "scope": "mathsci-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c139", "scope": "mathsci-1", "topic": "english.min[IELTS|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c140", "scope": "mathsci-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c141", "scope": "mathsci-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c142", "scope": "mathsci-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c143", "scope": "mathsci-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c144", "scope": "mathsci-1", "topic": "exam.date", "value": "2026-12-05", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c145", "scope": "mathsci-1", "topic": "result.date", "value": "2026-12-14", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c146", "scope": "mathsci-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c147", "scope": "mathsci-1", "topic": "screening.stage2", "value": ["数学・小論文", "口頭試問"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c148", "scope": "mathsci-1", "topic": "stage1_result.date", "value": "2026-10-26", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c149", "scope": "polecon-1", "topic": "eju.choose[0]", "value": {"n": 1, "from": ["general", "math:course1"]}, "page": 5, "quote": "のうち、いずれか1科目", "status": "unreviewed"}
+{"id": "meiji-2027-c150", "scope": "polecon-1", "topic": "eju.required", "value": ["japanese"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c151", "scope": "polecon-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c152", "scope": "polecon-1", "topic": "english.min[IELTS|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c153", "scope": "polecon-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c154", "scope": "polecon-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c155", "scope": "polecon-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c156", "scope": "polecon-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c157", "scope": "polecon-1", "topic": "exam.date", "value": "2026-12-05", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c158", "scope": "polecon-1", "topic": "result.date", "value": "2026-12-11", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c159", "scope": "polecon-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c160", "scope": "polecon-1", "topic": "screening.stage2", "value": ["小論文", "口頭試問"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c161", "scope": "polecon-1", "topic": "stage1_result.date", "value": "2026-11-06", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c162", "scope": "scieng-1", "topic": "eju.required", "value": ["chemistry", "japanese", "math:course2", "physics"], "page": 5, "quote": "科目", "status": "unreviewed"}
+{"id": "meiji-2027-c163", "scope": "scieng-1", "topic": "eju.sessions", "value": ["2025-1", "2025-2", "2026-1"], "page": 5, "quote": "有効受験回（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c164", "scope": "scieng-1", "topic": "english.min[TOEFL iBT|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c165", "scope": "scieng-1", "topic": "english.min[TOEIC L&R|any]", "value": null, "page": 5, "quote": "出願基準点なし", "status": "unreviewed"}
+{"id": "meiji-2027-c166", "scope": "scieng-1", "topic": "english.required", "value": true, "page": 5, "quote": "提出が必要な試験（いずれか一つ）", "status": "unreviewed"}
+{"id": "meiji-2027-c167", "scope": "scieng-1", "topic": "english.valid_period", "value": ["2024-10-01", "2026-07-31"], "page": 5, "quote": "有効受験期間", "status": "unreviewed"}
+{"id": "meiji-2027-c168", "scope": "scieng-1", "topic": "exam.date", "value": "2026-11-07", "page": 5, "quote": "入学試験日", "status": "unreviewed"}
+{"id": "meiji-2027-c169", "scope": "scieng-1", "topic": "result.date", "value": "2026-11-17", "page": 5, "quote": "最終合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c170", "scope": "scieng-1", "topic": "screening.stage1", "value": "書類選考", "page": 5, "quote": "書類選考", "status": "unreviewed"}
+{"id": "meiji-2027-c171", "scope": "scieng-1", "topic": "screening.stage2", "value": ["学科により異なる：小論文＋口頭試問（電気電子生命・機械工・機械情報工・建築）、口頭試問のみ（応用化学・物理）、数学＋口頭試問（情報科学・数学）"], "page": 5, "quote": "試験時間・科目", "status": "unreviewed"}
+{"id": "meiji-2027-c172", "scope": "scieng-1", "topic": "stage1_result.date", "value": "2026-10-20", "page": 5, "quote": "第一次選考合格発表", "status": "unreviewed"}
+{"id": "meiji-2027-c173", "scope": "commerce-2", "topic": "eligibility.no_residence_registration_period", "value": ["2026-04-01", "2026-12-17"], "page": 6, "quote": "2026年4月1日以降2026年12月17日以前に、日本国内において住民登録をしていない者", "status": "unreviewed"}
+{"id": "meiji-2027-c174", "scope": "gj-2", "topic": "eligibility.no_residence_registration_period", "value": ["2026-08-25", "2026-12-11"], "page": 6, "quote": "2026年8月25日以降2026年12月11日以前に、日本国内において住民登録をしていない者", "status": "unreviewed"}
+{"id": "meiji-2027-c175", "scope": "all", "topic": "combine.commerce_I_II", "value": false, "page": 7, "quote": "Ⅰ型とⅡ型を併願することはできません", "status": "unreviewed"}
+{"id": "meiji-2027-c176", "scope": "all", "topic": "combine.global_japanese_I_II", "value": true, "page": 7, "quote": "Ⅰ型とⅡ型を併願することができます", "status": "unreviewed"}
+{"id": "meiji-2027-c177", "scope": "all", "topic": "combine.multiple_departments_same_faculty", "value": false, "page": 7, "quote": "複数の学科（専攻）を併願することはできません", "status": "unreviewed"}
+{"id": "meiji-2027-c178", "scope": "all", "topic": "precheck.deadline.back", "value": "2026-09-18", "page": 7, "quote": "後期日程：2026年9月18日（金）", "status": "unreviewed"}
+{"id": "meiji-2027-c179", "scope": "all", "topic": "precheck.deadline.front", "value": "2026-07-21", "page": 7, "quote": "前期日程：2026年7月21日（火）", "status": "unreviewed"}
+{"id": "meiji-2027-c180", "scope": "agri-agrichem-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c181", "scope": "agri-agriculture-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c182", "scope": "agri-foodpolicy-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c183", "scope": "agri-lifesci-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c184", "scope": "all", "topic": "fee_payment.window", "value": "申込日から4日間（締切日優先）", "page": 8, "quote": "出願申込日から4日間", "status": "unreviewed"}
+{"id": "meiji-2027-c185", "scope": "all", "topic": "mail_rule.application.from_abroad", "value": "hikkyaku", "page": 8, "quote": "日本国外から出願：締切日必着", "status": "unreviewed"}
+{"id": "meiji-2027-c186", "scope": "all", "topic": "mail_rule.application.from_japan", "value": "keshiin", "page": 8, "quote": "日本国内から出願：締切日消印有効", "status": "unreviewed"}
+{"id": "meiji-2027-c187", "scope": "all", "topic": "mypage_open", "value": "2026-08-20T13:00+09:00", "page": 8, "quote": "2026年8月20日(木) 13:00〜", "status": "unreviewed"}
+{"id": "meiji-2027-c188", "scope": "all", "topic": "online_form.deadline_time", "value": "23:30", "page": 8, "quote": "出願締切日の23:30までに完了", "status": "unreviewed"}
+{"id": "meiji-2027-c189", "scope": "commerce-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c190", "scope": "commerce-2", "topic": "application.period", "value": ["2026-10-20T10:00+09:00", "2026-10-27T23:30+09:00"], "page": 8, "quote": "2026年10月20日(火)10:00〜2026年10月27日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c191", "scope": "gj-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c192", "scope": "gj-2", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c193", "scope": "infocomm-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c194", "scope": "law-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c195", "scope": "letters-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c196", "scope": "management-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c197", "scope": "mathsci-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c198", "scope": "polecon-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c199", "scope": "scieng-1", "topic": "application.period", "value": ["2026-08-25T10:00+09:00", "2026-09-01T23:30+09:00"], "page": 8, "quote": "2026年8月25日(火)10:00〜2026年9月1日(火)23:30", "status": "unreviewed"}
+{"id": "meiji-2027-c200", "scope": "all", "topic": "conflict.domestic_mail_rule", "value": "p.8 締切日消印有効 vs p.9 届かなければ受理できません", "page": 9, "quote": "needs_inquiry", "status": "unreviewed"}
+{"id": "meiji-2027-c201", "scope": "agri-agrichem-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c202", "scope": "agri-agrichem-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c203", "scope": "agri-agriculture-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c204", "scope": "agri-agriculture-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c205", "scope": "agri-foodpolicy-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c206", "scope": "agri-foodpolicy-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c207", "scope": "agri-lifesci-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c208", "scope": "agri-lifesci-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c209", "scope": "commerce-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c210", "scope": "commerce-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c211", "scope": "commerce-2", "topic": "fee.amount_jpy", "value": 15000, "page": 11, "quote": "Ⅱ型 15,000円 605円", "status": "unreviewed"}
+{"id": "meiji-2027-c212", "scope": "commerce-2", "topic": "fee.handling_jpy", "value": 605, "page": 11, "quote": "Ⅱ型 15,000円 605円", "status": "unreviewed"}
+{"id": "meiji-2027-c213", "scope": "gj-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c214", "scope": "gj-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c215", "scope": "gj-2", "topic": "fee.amount_jpy", "value": 15000, "page": 11, "quote": "Ⅱ型 15,000円 605円", "status": "unreviewed"}
+{"id": "meiji-2027-c216", "scope": "gj-2", "topic": "fee.handling_jpy", "value": 605, "page": 11, "quote": "Ⅱ型 15,000円 605円", "status": "unreviewed"}
+{"id": "meiji-2027-c217", "scope": "infocomm-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c218", "scope": "infocomm-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c219", "scope": "law-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c220", "scope": "law-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c221", "scope": "letters-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c222", "scope": "letters-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c223", "scope": "management-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c224", "scope": "management-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c225", "scope": "mathsci-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c226", "scope": "mathsci-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c227", "scope": "polecon-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c228", "scope": "polecon-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c229", "scope": "scieng-1", "topic": "fee.amount_jpy", "value": 35000, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c230", "scope": "scieng-1", "topic": "fee.handling_jpy", "value": 1045, "page": 11, "quote": "Ⅰ型 35,000円 1,045円", "status": "unreviewed"}
+{"id": "meiji-2027-c231", "scope": "all", "topic": "refund.handling_fee_refundable", "value": false, "page": 12, "quote": "手数料は返還できません", "status": "unreviewed"}
+{"id": "meiji-2027-c232", "scope": "all", "topic": "refund.request_deadline", "value": "2027-01-22T17:00+09:00", "page": 12, "quote": "2027年1月22日（金）17時まで", "status": "unreviewed"}
+{"id": "meiji-2027-c233", "scope": "all", "topic": "required_documents", "value": ["入学志願票（A票）", "パスポート", "志願理由書", "高校卒業（見込）証明書・成績証明書", "EJU受験票または成績確認書のコピー（カラー）", "英語外部試験の公式スコア（文学部を除く）", "在留カード／特定在留カード／住民票のいずれか（日本国内在住者のみ）"], "page": 12, "quote": "ア〜キ", "status": "unreviewed"}
+{"id": "meiji-2027-c234", "scope": "agri-agrichem-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c235", "scope": "agri-agriculture-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c236", "scope": "agri-foodpolicy-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c237", "scope": "agri-lifesci-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c238", "scope": "all", "topic": "eju.sessions_submittable", "value": 1, "page": 17, "quote": "提出できる成績は1回分のみ", "status": "unreviewed"}
+{"id": "meiji-2027-c239", "scope": "commerce-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c240", "scope": "commerce-2", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c241", "scope": "gj-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c242", "scope": "gj-2", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c243", "scope": "infocomm-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c244", "scope": "law-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c245", "scope": "letters-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c246", "scope": "management-1", "topic": "eju.language", "value": ["ja", "en"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c247", "scope": "mathsci-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c248", "scope": "polecon-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c249", "scope": "scieng-1", "topic": "eju.language", "value": ["ja"], "page": 17, "quote": "受験言語", "status": "unreviewed"}
+{"id": "meiji-2027-c250", "scope": "all", "topic": "ielts.module", "value": "Academic", "page": 18, "quote": "Academic Module", "status": "unreviewed"}
+{"id": "meiji-2027-c251", "scope": "all", "topic": "toefl.institution_code", "value": "7713", "page": 18, "quote": "登録コード番号：7713", "status": "unreviewed"}
+{"id": "meiji-2027-c252", "scope": "all", "topic": "toefl.mybest_accepted", "value": false, "page": 18, "quote": "Test Dateスコアが有効", "status": "unreviewed"}
+{"id": "meiji-2027-c253", "scope": "all", "topic": "toeic.digital_certificate_accepted", "value": false, "page": 18, "quote": "デジタル公式認定証の提出は認めません", "status": "unreviewed"}
+{"id": "meiji-2027-c254", "scope": "all", "topic": "toeic.ip_accepted", "value": false, "page": 18, "quote": "IPテストのスコアは無効", "status": "unreviewed"}
+{"id": "meiji-2027-c255", "scope": "agri-agrichem-1", "topic": "admission_ticket.date", "value": "2026-11-06", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c256", "scope": "agri-agrichem-1", "topic": "exam.venue", "value": "生田", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c257", "scope": "agri-agriculture-1", "topic": "admission_ticket.date", "value": "2026-11-06", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c258", "scope": "agri-agriculture-1", "topic": "exam.venue", "value": "生田", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c259", "scope": "agri-foodpolicy-1", "topic": "admission_ticket.date", "value": "2026-11-06", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c260", "scope": "agri-foodpolicy-1", "topic": "exam.venue", "value": "生田", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c261", "scope": "agri-lifesci-1", "topic": "admission_ticket.date", "value": "2026-11-06", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c262", "scope": "agri-lifesci-1", "topic": "exam.venue", "value": "生田", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c263", "scope": "commerce-1", "topic": "admission_ticket.date", "value": "2026-10-27", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c264", "scope": "commerce-1", "topic": "exam.venue", "value": "オンライン", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c265", "scope": "commerce-2", "topic": "admission_ticket.date", "value": "2026-12-18", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c266", "scope": "gj-1", "topic": "admission_ticket.date", "value": "2026-11-17", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c267", "scope": "gj-1", "topic": "exam.venue", "value": "中野", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c268", "scope": "gj-2", "topic": "admission_ticket.date", "value": "2026-12-01", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c269", "scope": "infocomm-1", "topic": "admission_ticket.date", "value": "2026-11-05", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c270", "scope": "infocomm-1", "topic": "exam.venue", "value": "駿河台", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c271", "scope": "law-1", "topic": "admission_ticket.date", "value": "2026-10-16", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c272", "scope": "law-1", "topic": "exam.venue", "value": "駿河台", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c273", "scope": "letters-1", "topic": "admission_ticket.date", "value": "2026-10-09", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c274", "scope": "letters-1", "topic": "exam.venue", "value": "駿河台", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c275", "scope": "management-1", "topic": "admission_ticket.date", "value": "2026-11-05", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c276", "scope": "management-1", "topic": "exam.venue", "value": "駿河台", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c277", "scope": "mathsci-1", "topic": "admission_ticket.date", "value": "2026-10-19", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c278", "scope": "mathsci-1", "topic": "exam.venue", "value": "中野", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c279", "scope": "polecon-1", "topic": "admission_ticket.date", "value": "2026-11-05", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c280", "scope": "polecon-1", "topic": "exam.venue", "value": "駿河台", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c281", "scope": "scieng-1", "topic": "admission_ticket.date", "value": "2026-10-09", "page": 21, "quote": "受験票取得開始日時", "status": "unreviewed"}
+{"id": "meiji-2027-c282", "scope": "scieng-1", "topic": "exam.venue", "value": "生田", "page": 21, "quote": "試験会場", "status": "unreviewed"}
+{"id": "meiji-2027-c283", "scope": "all", "topic": "result.homepage_listing_days", "value": 7, "page": 22, "quote": "合格発表日当日を含めて7日間", "status": "unreviewed"}
+{"id": "meiji-2027-c284", "scope": "all", "topic": "result.inquiry_by_phone_or_mail", "value": false, "page": 22, "quote": "一切応じません", "status": "unreviewed"}
+{"id": "meiji-2027-c285", "scope": "all", "topic": "enrollment.deferred_payment_deadline", "value": "2027-03-25", "page": 24, "quote": "2027年3月25日までに", "status": "unreviewed"}
+{"id": "meiji-2027-c286", "scope": "all", "topic": "enrollment.period", "value": ["2027-01-14", "2027-01-29"], "page": 24, "quote": "2027年1月14日（木）〜1月29日（金）", "status": "unreviewed"}
+{"id": "meiji-2027-c287", "scope": "all", "topic": "mail_rule.enrollment.from_abroad", "value": "hikkyaku", "page": 24, "quote": "（必着）", "status": "unreviewed"}
+{"id": "meiji-2027-c288", "scope": "all", "topic": "mail_rule.enrollment.from_japan", "value": "keshiin", "page": 24, "quote": "（消印有効）", "status": "unreviewed"}
+{"id": "meiji-2027-c289", "scope": "agri-agrichem-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c290", "scope": "agri-agriculture-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c291", "scope": "agri-foodpolicy-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c292", "scope": "agri-lifesci-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c293", "scope": "commerce-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c294", "scope": "commerce-2", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c295", "scope": "gj-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c296", "scope": "gj-2", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c297", "scope": "infocomm-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c298", "scope": "law-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c299", "scope": "letters-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c300", "scope": "management-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c301", "scope": "mathsci-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c302", "scope": "polecon-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}
+{"id": "meiji-2027-c303", "scope": "scieng-1", "topic": "study_campus", "value": "not_in_document", "page": null, "quote": null, "status": "unreviewed"}

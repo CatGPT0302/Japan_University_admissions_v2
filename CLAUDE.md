@@ -10,7 +10,7 @@
 
 - 不为某一所大学写专用解析代码；新增一所学校只能靠数据，不能靠代码。
 - AI 抽取结果只能写成 `draft`，只有人工操作能改成 `confirmed`。
-- 每个字段必须带 source_document_id、page 和 quote。
+- 每个字段必须带 source_document_id、page 和 quote（原文没有的信息标 missing，不编造）。
 - 必着和消印有效分开存储。
 - 不添加 SPEC「MVP 不做」清单里的功能。觉得需要时，先问负责人。
 - 没有 Web 后端，也不做管理页面；复审用命令行工具 `v3.review`。
