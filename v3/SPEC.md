@@ -1,6 +1,6 @@
 # admissions v3 需求文档
 
-> 状态：草案 r2（2026-11-26）　负责人：ZHANG FENG　实现：Claude Code
+> 状态：草案 r3（2026-11-29）　负责人：ZHANG FENG　实现：Claude Code
 > v2（`admissions_v2/`）冻结，只作参考，不再修改。
 
 ## 0. 一句话
@@ -76,13 +76,14 @@ PDF（本地）
 | 表 | 主要字段 | 说明 |
 |---|---|---|
 | `source_document` | id, university, year, url, sha256, page_count, fetched_at | 一份 PDF 一行 |
-| `program` | id, university, year, faculty, department, route, campus, prefecture, published_at | 一个报考单位一行。**默认粒度是「学部 × 入试类型」**（如「国際日本学部 Ⅰ型」），只有原文按学科区分要求时才拆到学科 |
+| `program` | id, university, year, faculty, department, route, published_at | 一个报考单位一行。**默认粒度是「学部 × 入试类型」**（如「国際日本学部 Ⅰ型」），只有原文按学科区分要求时才拆到学科。这几列是报考单位的标识，不进 `fact`，也不逐条复审 |
 | `fact` | id, program_id, field, value_json, display_text, source_document_id, page, quote, status, prompt_version, note, updated_at | 一个字段一行。status ∈ `draft` / `confirmed` / `edited` / `needs_inquiry` / `missing` |
 | `event` | id, program_id, kind, starts_at, ends_at, submission_rules_json, exception_note, source_document_id, page, quote, status | 日程。**所有日期只存在这里**，`fact` 里不存日期 |
 | `review_log` | id, target_table, target_id, action, before_json, after_json, at | 每一次确认或修改都留记录 |
 
 ### event
 
+- 所有时间一律带时区存储（`2026-09-01T23:30+09:00`）。学生端统一按日本时间显示，并明确标注「日本时间」，不按浏览器所在时区换算。
 - `kind` ∈ `mypage_open` / `overseas_contact` / `application` / `fee_payment` / `stage1_result` / `exam` / `result` / `enrollment`
 - `submission_rules_json`：按提交方式和寄出地分别记录，例如：
 
@@ -96,7 +97,9 @@ PDF（本地）
 
 来自 v2 的 `FIELD_HIGHEST_PRINCIPLE.md`，去掉日期类字段（已移到 event），再加上费用和资格条件：
 
-university, faculty, department, route, prefecture, campus, eju, english, screening_method, required_documents, eligibility, fee, refund_policy。
+campus, prefecture, eju, english, screening_method, required_documents, eligibility, fee, refund_policy。
+
+university、faculty、department、route 只存在 `program` 表；campus、prefecture 需要溯源，只存在 `fact`。同一个信息只有一个存放位置。
 
 ### 结构化要求（供学生端匹配）
 
@@ -112,7 +115,7 @@ university, faculty, department, route, prefecture, campus, eju, english, screen
     ],
     "choose": [
       {"n": 1, "from": [{"subject": "general"}, {"subject": "math", "course": [1, 2]}]},
-      {"n": 1, "from": [{"subject": "chemistry"}, {"subject": "biology"}], "with_required": ["physics"]}
+      {"n": 1, "from": [{"subject": "chemistry"}, {"subject": "biology"}]}
     ]
   },
   "english": {
@@ -136,7 +139,7 @@ university, faculty, department, route, prefecture, campus, eju, english, screen
 
 要点：
 
-- **EJU**：「必考」和「N 选 1」分开写，「N 选 1」可以跨科目（例如「综合科目或数学」）。
+- **EJU**：只用 `required`（必考）和 `choose`（N 选 1）两种结构，「N 选 1」可以跨科目（例如「综合科目或数学」）。「物理必考、化学生物选一」就是物理放进 `required`、化学生物放进 `choose`。如果遇到「方案 A 或方案 B」这种多套并列的组合，先标 `needs_inquiry` 并在 note 里写明，出现两次以上再扩展 schema。
 - **英语**：多种考试是「任选其一」（`any_of`）。同一考试的门槛可能随**受验日期**变化（TOEFL 在 2026 年改为新分数制，新旧分数并存）。不要求英语时写 `not_required: true`。
 - **资格条件**：Ⅱ型等路线有「在规定期间内不能在日本登记住民票」这类条件，必须结构化，学生端匹配要用到。
 - 原文有矛盾时，在 `conflict` 中写明两处页码和各自的写法，并把对应 fact 的 status 设为 `needs_inquiry`。
@@ -145,7 +148,8 @@ university, faculty, department, route, prefecture, campus, eju, english, screen
 
 `python -m v3.review [--university meiji --year 2027]`
 
-- 逐条显示：报考单位、字段、值、原文片段、物理页码，以及页面图像的本地路径（可以按 `o` 键用系统默认程序打开该页）。
+- **按页分组复审**：按 (program_id, source_document_id, page) 排序。进入新的一页时先显示这一页的图像路径，按 `o` 打开一次，然后把这一页上的所有 fact 和 event 连续审完，再进入下一页。
+- 每条显示：字段、值、原文片段。
 - 操作：`Enter` 确认，`e` 修改后确认，`i` 标记需向大学确认（必须填写原因），`s` 跳过。
 - 每次操作都写入 `review_log`。
 - 开头显示进度：共 N 条，已确认 X，需确认 Y，草稿 Z。
@@ -161,7 +165,7 @@ university, faculty, department, route, prefecture, campus, eju, english, screen
 - **能报的单位**：每个 program 显示三种状态之一：`条件符合` / `有 N 项需确认` / `不符合（原因）`。不符合的默认收起，可以展开查看。
 - **接下来的日程**：已选单位的所有 event 按日期排序。截止规则按用户所在地显示：住在日本就显示国内的规则，住在海外就显示海外的规则。必着用橙色，消印有效用灰色，例外规则写在下一行。
 - **详情页**：需确认的项目放在最上方；日程、科目、选拔方式和费用依次排列；每一项都附原文页码链接。
-- **原文链接**：直接链接到大学官网 PDF 的对应页（URL 加 `#page=N`）。**不在公网上放 PDF 页面截图或全文**，只引用短片段。
+- **原文链接**：直接链接到大学官网 PDF 的对应页（URL 加 `#page=N`）。手机浏览器可能忽略这个页码参数，所以链接旁边必须用文字写出物理页码（如「原文第 12 页」），方便用户手动翻到。**不在公网上放 PDF 页面截图或全文**，只引用短片段。
 - **比较**：最多选 4 个单位并排比较（MVP 最后再做，时间不够就砍）。
 - 界面语言为中文，日语术语保留原文（出愿、必着、消印有效、募集要项）。
 
@@ -169,9 +173,12 @@ university, faculty, department, route, prefecture, campus, eju, english, screen
 
 `match(profile, program) -> {status, reasons[]}`：
 
-- 只用 status 为 `confirmed` 或 `edited` 的 fact。
-- 任何参与判断的 fact 为 `needs_inquiry` 或 `missing` → 结果至少是「需确认」。
-- 有任何一项明确不满足 → 「不符合」，并在 reasons 中写明是哪一项。
+- 只用 status 为 `confirmed` 或 `edited` 的 fact 做「明确判断」。
+- **优先级：不符合 > 需确认 > 条件符合。**
+  1. 任何一项已确认的要求明确不满足 → 「不符合」，即使其他项目需确认。例：EJU 日语 200 分，门槛 280 分，就算英语要求是 `needs_inquiry`，也判「不符合（EJU 日语未达标）」。
+  2. 没有不满足项，但有参与判断的 fact 为 `needs_inquiry` 或 `missing` → 「需确认」。
+  3. 以上都不是 → 「条件符合」。
+- reasons 列出所有不满足项和所有需确认项。
 - 英语按受验日期选用对应的门槛；`any_of` 中满足任意一项即可。
 - 资格条件（如住民票）也参与判断。
 
@@ -221,3 +228,11 @@ university, faculty, department, route, prefecture, campus, eju, english, screen
 5. 文字提取时日程表的列会错位，两次读取对同一考试日期的结果不一致 → 抽取改为读页面图像，并保留人工复审。
 6. 日期在 fact 和 event 中重复 → 只存在 event 中。
 7. 一个人开发，不需要多人后台 → 去掉 Web 后端和管理页面，改为命令行复审，保留数据库。
+
+## 附：r2 → r3 的修改依据（外部评审）
+
+1. program 和 fact 字段重复 → 标识字段只放 program，campus、prefecture 只放 fact。
+2. 逐条复审需要频繁切换图片 → 按页分组复审。
+3. match 的优先级未写明 → 不符合 > 需确认 > 条件符合。
+4. `with_required` 让结构变复杂 → 删除，只用 required + choose。
+5. 手机端可能忽略 `#page=N`；海外用户可能按本地时区看错截止时间 → 页码明文显示；时间带 +09:00 存储，按日本时间显示。
